@@ -4,13 +4,11 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
@@ -35,9 +33,10 @@ public class Game extends JPanel {
     private Integer roll;
     private int adjust = 0;
     private static final Random r = new Random();
-    private Map<Node, SearchResult> targets;
+    private Map<Node, DamageAndPath> targets;
     private int curveStops = 0;
-    private List<Node> animation;
+    private List<Node> route;
+    private Double angle;
 
 	public Game() {
         backgroundImage = ImageCache.getImage("sebring.jpg");
@@ -51,49 +50,70 @@ public class Game extends JPanel {
         car = grid.get(0);
     }
 
-    private static class SearchResult {
-	    public final int damage;
-	    public final List<Node> path;
+    private static class DamageAndPath {
+	    private int damage;
+	    private List<Node> path;
 
-	    public SearchResult(final int damage, final List<Node> path) {
+	    public DamageAndPath(final int damage,
+                             final List<Node> head) {
 	        this.damage = damage;
-	        this.path = path;
+	        path = head;
         }
 
-        public SearchResult(final int damage, final List<Node> path, final SearchResult other) {
-            this.damage = damage + other.damage;
-            this.path = other.path;
-            this.path.addAll(0, path);
+        public DamageAndPath addPrefix(final int damage, final List<Node> prefix) {
+	        this.damage += damage;
+	        path.addAll(0, prefix);
+	        return this;
         }
     }
 
-    private static Map<Node, SearchResult> findNodes(final Node targetNode,
-                                                     final int targetDistance,
-                                                     final Set<Node> forbiddenNodes,
-                                                     final boolean allowCurveEntry,
-                                                     final int stopsDone) {
+    // Finds path from initial node to the given node at given distance
+    private static List<Node> findPath(final Node node,
+                                       final int distance,
+                                       final Map<Integer, Set<Node>> distanceMap) {
+	    final List<Node> path = new ArrayList<>();
+	    path.add(node);
+	    for (int i = distance - 1; i >= 0; i--) {
+	        for (final Node previous : distanceMap.get(i)) {
+	            if (previous.nextNodes.contains(path.get(0))) {
+	                path.add(0, previous);
+	                break;
+                }
+            }
+        }
+        if (path.size() != distance + 1) {
+	        throw new RuntimeException("Unable to find path");
+        }
+        return path;
+    }
+
+    private static void addWork(final Node node,
+                                final int currentDistance,
+                                final Map<Integer, Set<Node>> distanceMap) {
+        distanceMap.computeIfAbsent(currentDistance + 1, _node -> new HashSet<>()).add(node);
+    }
+
+    private static Map<Node, DamageAndPath> findNodes(final Node startNode,
+                                                      final int targetDistance,
+                                                      final Set<Node> forbiddenNodes,
+                                                      final boolean allowCurveEntry,
+                                                      final int stopsDone) {
         // Set of visited non-curve nodes, for finding the shortest path in straights
         final Set<Node> visited = new HashSet<>();
-        final List<Node> work = new ArrayList<>();
-        final Map<Node, SearchResult> result = new HashMap<>();
-        final Map<Node, List<Node>> paths = new HashMap<>();
-        work.add(targetNode);
-        work.add(null);
-        paths.computeIfAbsent(targetNode, _key -> new ArrayList<>()).add(targetNode);
-        if (!targetNode.isCurve()) {
-            visited.add(targetNode);
+        // For each node which is at target distance, calculate the damage and path
+        final Map<Node, DamageAndPath> result = new HashMap<>();
+        // Collects all nodes at certain distances, used for finding paths
+        final Map<Integer, Set<Node>> distanceMap = new HashMap<>();
+        addWork(startNode, -1, distanceMap);
+        if (!startNode.isCurve()) {
+            visited.add(startNode);
         }
-        int distance = 0;
-        while (!work.isEmpty()) {
-            final Node node = work.remove(0);
-            if (node == null) {
-                distance++;
-                if (!work.isEmpty()) work.add(null);
-                continue;
-            }
-            if (distance == targetDistance) {
-                result.put(node, new SearchResult(0, paths.get(node)));
-            } else if (distance < targetDistance) {
+        for (int distance = 0; distance <= targetDistance && distanceMap.containsKey(distance); distance++) {
+            for (final Node node : distanceMap.get(distance)) {
+                if (distance == targetDistance) {
+                    result.put(node, new DamageAndPath(0, findPath(node, distance, distanceMap)));
+                    continue;
+                }
                 for (final Node next : node.nextNodes) {
                     if (forbiddenNodes.contains(next)) {
                         // node is blocked
@@ -103,38 +123,31 @@ public class Game extends JPanel {
                         if (!node.isCurve()) {
                             // entering curve
                             if (allowCurveEntry) {
-                                work.add(next);
-                                paths.computeIfAbsent(next, _key -> new ArrayList<>(paths.get(node))).add(next);
+                                addWork(next, distance, distanceMap);
                             }
                         } else if (!next.isCurve()) {
                             // exiting curve
                             final int stopsToDo = (node.type == MapEditor.CURVE_1 ? 1 : 2) - stopsDone;
-                            if (stopsToDo <= 0) {
-                                findNodes(next, targetDistance - distance - 1, forbiddenNodes, true, 0)
-                                    .forEach((n, sr) -> result.merge(
+                            if (stopsToDo <= 1) {
+                                final boolean allowEntry = stopsToDo <= 0;
+                                final int damage = stopsToDo <= 0 ? 0 : targetDistance - distance;
+                                final List<Node> path = findPath(node, distance, distanceMap);
+                                findNodes(next, targetDistance - distance - 1, forbiddenNodes, allowEntry, 0)
+                                    .forEach((n, dp) -> result.merge(
                                         n,
-                                        new SearchResult(0, paths.get(node), sr),
-                                        (sr1, sr2) -> sr1.damage <= sr2.damage ? sr1 : sr2
+                                        dp.addPrefix(damage, path),
+                                        (dp1, dp2) -> dp1.damage <= dp2.damage ? dp1 : dp2
                                     ));
-                            } else if (stopsToDo == 1) {
-                                final int damage = targetDistance - distance;
-                                findNodes(next, damage - 1, forbiddenNodes, false, 0)
-                                    .forEach((n, sr) -> result.merge(
-                                        n,
-                                        new SearchResult(damage, paths.get(node), sr),
-                                        (sr1, sr2) -> sr1.damage <= sr2.damage ? sr1 : sr2
-                                    ));
+
                             }
                         } else {
                             // curve
-                            work.add(next);
-                            paths.computeIfAbsent(next, _key -> new ArrayList<>(paths.get(node))).add(next);
+                            addWork(next, distance, distanceMap);
                         }
                     } else {
                         // straight
                         if (visited.add(next)) {
-                            work.add(next);
-                            paths.computeIfAbsent(next, _key -> new ArrayList<>(paths.get(node))).add(next);
+                            addWork(next, distance, distanceMap);
                         }
                     }
                 }
@@ -188,38 +201,32 @@ public class Game extends JPanel {
         MapEditor.drawOval(g2d, 20, 20, 20, 20, true, true, Color.BLACK, 1);
         g2d.setColor(Color.WHITE);
         g.drawString(Integer.toString(gear), 16, 24);
-        {
-            final Rectangle r = new Rectangle(-5, -3, 10, 6);
-            Path2D.Double path = new Path2D.Double();
-            path.append(r, false);
-            AffineTransform at = new AffineTransform();
-            at.translate(car.x, car.y);
-            //at.rotate(node.angle);
-            path.transform(at);
-            g2d.draw(path);
-        }
-
         if (targets != null) {
-            g2d.setColor(Color.YELLOW);
-            for (Node node : targets.keySet()) {
-                final Rectangle r = new Rectangle(-5, -3, 10, 6);
-                Path2D.Double path = new Path2D.Double();
-                path.append(r, false);
-                AffineTransform at = new AffineTransform();
-                at.translate(node.x, node.y);
-                //at.rotate(no.angle);
-                path.transform(at);
-                g2d.draw(path);
+            for (Map.Entry<Node, DamageAndPath> entry : targets.entrySet()) {
+                final int posX = entry.getKey().x;
+                final int posY = entry.getKey().y;
+                if (entry.getValue().damage > 0) {
+                    // TODO: Smaller font and centralize
+                    g2d.setColor(Color.RED);
+                    g2d.drawString(Integer.toString(entry.getValue().damage), posX - 4, posY + 4);
+                }
+                MapEditor.drawOval(g2d, posX, posY, 12, 12, true, false, Color.YELLOW, 1);
             }
         }
-
-        if (animation != null && animation.size() > 1) {
-            for (int i = 0; i < animation.size() - 1; i++) {
-                final Node n1 = animation.get(i);
-                final Node n2 = animation.get(i + 1);
+        if (route != null && route.size() > 1) {
+            for (int i = 0; i < route.size() - 1; i++) {
+                final Node n1 = route.get(i);
+                final Node n2 = route.get(i + 1);
                 g.drawLine(n1.x, n1.y, n2.x, n2.y);
+                angle = Math.atan2(n2.y - n1.y, n2.x - n1.x);
             }
         }
+        AffineTransform at = new AffineTransform();
+        at.translate(car.x, car.y);
+        g2d.transform(at);
+        if (angle != null) g2d.rotate(angle);
+        g2d.drawImage(ImageCache.getImage("car.png"), -6, -3, null);
+        g2d.translate(-car.x, -car.y);
     }
 
     private static int roll(int gear) {
@@ -239,9 +246,9 @@ public class Game extends JPanel {
 	        final int newAdjust = adjust + delta;
             if (newAdjust <= 0 && roll + newAdjust >= 0 && hitpoints + newAdjust > 0) {
                 adjust = newAdjust;
-                final Map<Node, SearchResult> result = findNodes(car, roll + adjust, new HashSet<>(), true, curveStops);
+                final Map<Node, DamageAndPath> result = findNodes(car, roll + adjust, new HashSet<>(), true, curveStops);
                 targets = new HashMap<>();
-                for (final Map.Entry<Node, SearchResult> entry : result.entrySet()) {
+                for (final Map.Entry<Node, DamageAndPath> entry : result.entrySet()) {
                     if (entry.getValue().damage < hitpoints + adjust) {
                         targets.put(entry.getKey(), entry.getValue());
                     }
@@ -252,18 +259,21 @@ public class Game extends JPanel {
     }
 
     private void switchGear(final int newGear) {
+	    if (roll != null) {
+	        return;
+        }
 	    if (newGear > 0 && newGear < gear - 1 && hitpoints > gear - 1 - newGear) {
             // downwards more than 1
             hitpoints -= gear - 1 - newGear;
             gear = newGear;
         }
-	    if (roll == null && Math.abs(newGear - gear) <= 1) {
-	        animation = null;
+	    if (Math.abs(newGear - gear) <= 1) {
+	        route = null;
 	        gear = newGear;
 	        roll = roll(gear);
-	        final Map<Node, SearchResult> result = findNodes(car, roll + adjust, new HashSet<>(), true, curveStops);
+	        final Map<Node, DamageAndPath> result = findNodes(car, roll + adjust, new HashSet<>(), true, curveStops);
 	        targets = new HashMap<>();
-            for (final Map.Entry<Node, SearchResult> entry : result.entrySet()) {
+            for (final Map.Entry<Node, DamageAndPath> entry : result.entrySet()) {
                 if (entry.getValue().damage < hitpoints + adjust) {
                     targets.put(entry.getKey(), entry.getValue());
                 }
@@ -315,7 +325,7 @@ public class Game extends JPanel {
     }
 
     private void animate(final List<Node> path) {
-	    animation = path;
+	    route = path;
         repaint();
     }
 
