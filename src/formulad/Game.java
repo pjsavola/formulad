@@ -37,6 +37,7 @@ public class Game extends JPanel {
     private int curveStops = 0;
     private List<Node> route;
     private Double angle;
+    private int laps;
 
 	public Game() {
         backgroundImage = ImageCache.getImage("sebring.jpg");
@@ -225,7 +226,26 @@ public class Game extends JPanel {
         at.translate(car.x, car.y);
         g2d.transform(at);
         if (angle != null) g2d.rotate(angle);
-        g2d.drawImage(ImageCache.getImage("car.png"), -6, -3, null);
+        //g2d.drawImage(ImageCache.getImage("car.png"), -6, -3, null);
+        // car
+        g2d.setColor(Color.BLACK);
+        g2d.fillRect(-7, -3, 1, 7);
+        g2d.fillRect(-6, 0, 1, 1);
+        g2d.fillRect(-4, -4, 3, 2);
+        g2d.fillRect(-4, 3, 3, 2);
+        g2d.fillRect(6, -3, 1, 7);
+        g2d.fillRect(3, -2, 1, 1);
+        g2d.fillRect(3, 2, 1, 1);
+        g2d.fillRect(2, -4, 3, 2);
+        g2d.fillRect(2, 3, 3, 2);
+        g2d.setColor(new Color(0x770000));
+        g2d.fillRect(-5, -2, 6, 5);
+        g2d.fillRect(1, -1, 5, 3);
+        g2d.setColor(Color.RED);
+        g2d.fillRect(-4, -1, 5, 3);
+        g2d.fillRect(1, 0, 5, 1);
+        g2d.setColor(new Color(0x770000));
+        g2d.fillRect(-3, 0, 3, 1);
         g2d.translate(-car.x, -car.y);
     }
 
@@ -299,16 +319,16 @@ public class Game extends JPanel {
                 hitpoints += adjust;
                 hitpoints -= targets.get(target).damage;
                 final List<Node> path = targets.get(target).path;
-                if (hitpoints < 1) {
-                    // crash and burn
-                }
                 adjust = 0;
                 targets = null;
                 boolean onlyCurves = true;
+                boolean completeLap = false;
                 for (final Node node : path) {
+                    if (node.type == MapEditor.FINISH) {
+                        completeLap = true;
+                    }
                     if (!node.isCurve()) {
                         onlyCurves = false;
-                        break;
                     }
                 }
                 if (!onlyCurves) {
@@ -318,6 +338,9 @@ public class Game extends JPanel {
                 if (target.isCurve()) {
                     // movement ended in a curve
                     curveStops++;
+                }
+                if (completeLap) {
+                    laps++;
                 }
                 animate(path);
             }
