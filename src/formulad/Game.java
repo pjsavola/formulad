@@ -113,6 +113,7 @@ public class Game extends JPanel {
     private void adjustRoll(final int delta) {
 	    if (roll != null) {
             if (current.adjustRoll(roll, delta)) {
+                targets = current.findTargetNodes(roll, false);
                 repaint();
             }
         }
@@ -124,16 +125,12 @@ public class Game extends JPanel {
         }
         if (current.switchGear(newGear)) {
 	        roll = roll(newGear);
-	        targets = current.findTargetNodes(roll);
-            repaint();
-        }
-    }
-
-    private void forfeit() {
-	    if (roll != null) {
-	        if (targets.isEmpty()) {
-	            // crash and burn
+	        targets = current.findTargetNodes(roll, true);
+	        if (targets == null) {
+	            current.stop();
+	            roll = null;
             }
+            repaint();
         }
     }
 
@@ -183,9 +180,6 @@ public class Game extends JPanel {
                     break;
                 case '-':
                     p.adjustRoll(-1);
-                    break;
-                case 'q':
-                    p.forfeit();
                     break;
                 }
             }

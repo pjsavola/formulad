@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -20,9 +21,14 @@ public class Player {
     private int lapsToGo;
     private Color color1 = new Color(0x770000);
     private Color color2 = Color.RED;
+    private boolean stopped;
 
     public Player(final int laps) {
         lapsToGo = laps;
+    }
+
+    public void stop() {
+        stopped = true;
     }
 
     public void drawStats(final Graphics2D g2d, final Integer roll) {
@@ -77,12 +83,24 @@ public class Player {
         g.fillRect(1, 0, 5, 1);
         g.setColor(color1);
         g.fillRect(-3, 0, 3, 1);
+        if (stopped) {
+            if (lapsToGo < 0) {
+                g.setColor(Color.GREEN);
+            } else {
+                g.setColor(Color.BLACK);
+            }
+            g.drawLine(-7, -4, 6, 4);
+            g.drawLine(-7, 4, 6, -4);
+        }
         // needed if something is drawn after this
         g.rotate(-angle);
         g.translate(-node.x, -node.y);
     }
 
     public boolean adjustRoll(final int roll, final int delta) {
+        if (stopped) {
+            return false;
+        }
         final int newAdjust = adjust + delta;
         if (roll + newAdjust >= 0 && newAdjust <= 0 && hitpoints + newAdjust > 0) {
             adjust = newAdjust;
@@ -91,6 +109,9 @@ public class Player {
     }
 
     public boolean switchGear(final int newGear) {
+        if (stopped) {
+            return false;
+        }
         if (newGear > 0 && newGear < gear - 1 && hitpoints > gear - 1 - newGear) {
             // downwards more than 1
             hitpoints -= gear - 1 - newGear;
@@ -102,6 +123,9 @@ public class Player {
     }
 
     public void move(final DamageAndPath dp) {
+        if (stopped) {
+            return;
+        }
         final List<Node> route = dp.getPath();
         if (route == null || route.isEmpty()) {
             throw new RuntimeException("Invalid route: " + route);
@@ -143,14 +167,35 @@ public class Player {
         hitpoints += adjust;
         hitpoints -= dp.getDamage();
         adjust = 0;
+        if (lapsToGo < 0) {
+            stop();
+        }
     }
 
-    public Map<Node, DamageAndPath> findTargetNodes(final int roll) {
+    // returns null if finding target nodes would be impossible
+    public Map<Node, DamageAndPath> findTargetNodes(final int roll, final boolean checkDeath) {
+        if (stopped) {
+            return Collections.emptyMap();
+        }
         final Map<Node, DamageAndPath> result = NodeUtil.findNodes(node, roll + adjust, new HashSet<>(), true, curveStops, lapsToGo == 0);
         final Map<Node, DamageAndPath> targets = new HashMap<>();
         for (final Map.Entry<Node, DamageAndPath> entry : result.entrySet()) {
             if (entry.getValue().getDamage() < hitpoints + adjust) {
                 targets.put(entry.getKey(), entry.getValue());
+            }
+        }
+        if (targets.isEmpty() && checkDeath) {
+            final int maxAdjust = Math.min(0, 1 - hitpoints);
+            final Map<Node, DamageAndPath> deathCheck = NodeUtil.findNodes(node, roll + maxAdjust, new HashSet<>(), true, curveStops, lapsToGo == 0);
+            boolean match = false;
+            for (final Map.Entry<Node, DamageAndPath> entry : result.entrySet()) {
+                if (entry.getValue().getDamage() < hitpoints + maxAdjust) {
+                    match = true;
+                    break;
+                }
+            }
+            if (!match) {
+                return null;
             }
         }
         return targets;
