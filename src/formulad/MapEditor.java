@@ -26,6 +26,7 @@ import java.util.Map;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.WindowConstants;
 
@@ -43,6 +44,7 @@ public class MapEditor extends JPanel {
     private static final Color LIGHT_RED = new Color(0xFF6600);
 
     private final List<Node> nodes = new ArrayList<>();
+    private final Map<Node, Double> attributes = new HashMap<>();
     private Node selectedNode;
     private BufferedImage backgroundImage;
     private int stroke = STRAIGHT;
@@ -78,6 +80,7 @@ public class MapEditor extends JPanel {
                         for (final Node n : nodes) {
                             n.nextNodes.remove(node);
                         }
+                        attributes.remove(node);
                         repaint();
                     }
                 }
@@ -158,6 +161,15 @@ public class MapEditor extends JPanel {
                         writer.println(idMap.get(nextNode));
                     }
                 }
+                if (!attributes.isEmpty()) {
+                    writer.println();
+                    for (final Map.Entry<Node, Double> entry : attributes.entrySet()) {
+                        writer.print(idMap.get(entry.getKey()));
+                        writer.print(" ");
+                        writer.println(entry.getValue());
+                    }
+                }
+
             } catch (FileNotFoundException | UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
@@ -170,43 +182,71 @@ public class MapEditor extends JPanel {
         final int result = fileChooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             final File selectedFile = fileChooser.getSelectedFile();
-            final Collection<Node> loadedNodes = loadNodes(selectedFile);
-            if (loadedNodes != null) {
-                nodes.clear();
-                nodes.addAll(loadedNodes);
-                repaint();
-            }
+            loadNodes(selectedFile, nodes, attributes);
+            repaint();
         }
     }
 
-    public static Collection<Node> loadNodes(final File selectedFile) {
+    public static void loadNodes(final File selectedFile,
+                                 final Collection<Node> nodes,
+                                 final Map<Node, Double> attributes) {
         try (final BufferedReader br = new BufferedReader(new FileReader(selectedFile))) {
             // File format begins with nodes, then a single empty line and then edges.
             final Map<Integer, Node> idMap = new HashMap<>();
-            boolean edges = false;
+            final Map<Node, Double> attrMap = new HashMap<>();
+            int emptyLines = 0;
             String line;
             while ((line = br.readLine()) != null) {
                 final String[] parts = line.split(" ");
                 if (parts.length == 1 && "".equals(parts[0])) {
-                    edges = true;
-                } else if (edges) {
+                    emptyLines++;
+                } else if (emptyLines == 1) {
                     final int fromId = Integer.parseInt(parts[0]);
                     final int toId = Integer.parseInt(parts[1]);
                     idMap.get(fromId).nextNodes.add(idMap.get(toId));
-                } else {
+                } else if (emptyLines == 0) {
                     final int id = Integer.parseInt(parts[0]);
                     final int x = Integer.parseInt(parts[1]);
                     final int y = Integer.parseInt(parts[2]);
                     final int type = Integer.parseInt(parts[3]);
                     idMap.put(id, new Node(x, y, type));
+                } else {
+                    final int id = Integer.parseInt(parts[0]);
+                    final double attribute = Double.parseDouble(parts[1]);
+                    attrMap.put(idMap.get(id), attribute);
                 }
             }
             // The file format was appraently good.
-            return idMap.values();
+            nodes.clear();
+            nodes.addAll(idMap.values());
+            attributes.clear();
+            attributes.putAll(attrMap);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return null;
+    }
+
+    public void setAttribute() {
+	    if (selectedNode != null) {
+            final Object attr = JOptionPane.showInputDialog(
+                this,
+                "Set attribute:",
+                "Set attribute",
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                null,
+                attributes.get(selectedNode)
+            );
+            if (attr != null && !attr.toString().isEmpty()) {
+                attributes.put(selectedNode, Double.valueOf(attr.toString()));
+            } else {
+                attributes.remove(selectedNode);
+            }
+            if (autoSelectMode) {
+                selectedNode = null;
+                repaint();
+            }
+        }
     }
 
     public static void drawNode(final Graphics2D g, final Node node) {
@@ -310,6 +350,9 @@ public class MapEditor extends JPanel {
                     break;
                 case 'l':
                     p.load();
+                    break;
+                case 'z':
+                    p.setAttribute();
                     break;
                 }
             }

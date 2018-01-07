@@ -23,7 +23,9 @@ public class Player {
     private Color color2 = Color.RED;
     private boolean stopped;
 
-    public Player(final int laps) {
+    public Player(final Node node, final double angle, final int laps) {
+        this.node = node;
+        this.angle = angle;
         lapsToGo = laps;
     }
 
@@ -188,7 +190,7 @@ public class Player {
             final int maxAdjust = Math.min(0, 1 - hitpoints);
             final Map<Node, DamageAndPath> deathCheck = NodeUtil.findNodes(node, roll + maxAdjust, new HashSet<>(), true, curveStops, lapsToGo == 0);
             boolean match = false;
-            for (final Map.Entry<Node, DamageAndPath> entry : result.entrySet()) {
+            for (final Map.Entry<Node, DamageAndPath> entry : deathCheck.entrySet()) {
                 if (entry.getValue().getDamage() < hitpoints + maxAdjust) {
                     match = true;
                     break;

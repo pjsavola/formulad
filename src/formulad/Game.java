@@ -2,6 +2,7 @@ package formulad;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
@@ -11,12 +12,12 @@ import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -24,48 +25,142 @@ import javax.swing.WindowConstants;
 
 public class Game extends JPanel {
     private final List<Node> nodes = new ArrayList<>();
+    private final Map<Node, List<Node>> prevNodeMap = new HashMap<>();
+    private Map<Node, Double> attributes = new HashMap<>();
     private BufferedImage backgroundImage;
     private Player current;
     private Integer roll;
     private static final Random r = new Random();
     private Map<Node, DamageAndPath> targets;
-    private Map<Node, Integer> distanceMap;
+    private final Map<Node, Double> distanceMap = new HashMap<>();
 
 	public Game() {
         backgroundImage = ImageCache.getImage("sebring.jpg");
         setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
         final File file = new File("formulad.dat");
-        final Collection<Node> loadedNodes = MapEditor.loadNodes(file);
-        if (loadedNodes != null) {
-            nodes.addAll(loadedNodes);
+        MapEditor.loadNodes(file, nodes, attributes);
+        for (final Node node : nodes) {
+            for (final Node next : node.nextNodes) {
+                prevNodeMap.computeIfAbsent(next, _node -> new ArrayList<>()).add(node);
+            }
         }
         List<Node> grid = findGrid();
-        current = new Player(1);
-        current.move(new DamageAndPath(0, Collections.singletonList(grid.get(0))));
+        current = new Player(grid.get(0), attributes.get(grid.get(0)), 1);
     }
 
 	private List<Node> findGrid() {
+	    final Set<Node> visited = new HashSet<>();
         final List<Node> grid = new ArrayList<>();
-        distanceMap = new HashMap<>();
         final List<Node> work = new ArrayList<>();
+        final List<Node> edges = new ArrayList<>();
+        Node center = null;
         for (final Node node : nodes) {
             if (node.type == MapEditor.FINISH) {
                 work.add(node);
-                distanceMap.put(node, 0);
+                visited.add(node);
+                if (node.nextNodes.size() == 3) {
+                    center = node;
+                } else {
+                    edges.add(node);
+                }
             }
         }
         while (!work.isEmpty()) {
             final Node node = work.remove(0);
-            final int distance = distanceMap.get(node);
             if (node.type == MapEditor.START) {
                 grid.add(0, node);
             }
             for (final Node next : node.nextNodes) {
-                if (!distanceMap.containsKey(next)) {
+                if (visited.add(next)) {
                     work.add(next);
-                    distanceMap.put(next, distance + 1);
-                    //System.err.println("distance " + (distance + 1));
                 }
+            }
+        }
+        if (center == null) {
+            throw new RuntimeException("Finish line must have width 3");
+        }
+        if (center.nextNodes.containsAll(edges)) {
+            distanceMap.put(center, 0.0);
+        } else {
+            distanceMap.put(center, 0.5);
+            distanceMap.put(edges.get(0), 0.0);
+            distanceMap.put(edges.get(1), 0.0);
+        }
+        work.add(center);
+        final List<Node> curves = new ArrayList<>();
+        while (!work.isEmpty()) {
+            final Node node = work.remove(0);
+            final int childCount = node.nextNodes.size();
+            for (final Node next : node.nextNodes) {
+                if (distanceMap.containsKey(next)) {
+                    continue;
+                }
+                if (next.isCurve()) {
+                    curves.add(next);
+                    continue;
+                }
+                final int nextChildCount = next.nextNodes.size();
+                final boolean fromCenterToEdge = childCount == 3 && nextChildCount == 2;
+                distanceMap.put(next, distanceMap.get(node) + (fromCenterToEdge ? 0.5 : 1));
+                work.add(next);
+            }
+            if (work.isEmpty() && !curves.isEmpty()) {
+                double maxDistance = 0;
+                for (final double distance : distanceMap.values()) {
+                    if (distance > maxDistance) {
+                        maxDistance = distance;
+                    }
+                }
+                for (final Node curve : curves) {
+                    final double relativeDistance = attributes.get(curve);
+                    distanceMap.put(curve, maxDistance + relativeDistance);
+                }
+                while (!curves.isEmpty()) {
+                    final Node curve = curves.remove(0);
+                    for (final Node next : curve.nextNodes) {
+                        if (distanceMap.containsKey(next)) {
+                            continue;
+                        }
+                        if (!next.isCurve()) {
+                            work.add(next);
+                            continue;
+                        }
+                        curves.add(next);
+                        distanceMap.put(next, attributes.get(next) + maxDistance);
+                    }
+                }
+                maxDistance = 0;
+                for (final double distance : distanceMap.values()) {
+                    if (distance > maxDistance) {
+                        maxDistance = distance;
+                    }
+                }
+                center = null;
+                if (work.isEmpty()) {
+                    throw new RuntimeException("Curve exit must have size > 0");
+                }
+                for (final Node straight : work) {
+                    boolean allCurves = true;
+                    for (final Node prev : prevNodeMap.get(straight)) {
+                        if (!prev.isCurve()) {
+                            allCurves = false;
+                            break;
+                        }
+                    }
+                    if (allCurves) {
+                        distanceMap.put(straight, maxDistance);
+                        for (final Node otherStraight : work) {
+                            if (straight.nextNodes.contains(otherStraight)) {
+                                center = otherStraight;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+                work.clear();
+                work.add(center);
+                distanceMap.put(center, maxDistance + 0.5);
             }
         }
         return grid;
@@ -79,8 +174,18 @@ public class Game extends JPanel {
         final Graphics2D g2d = (Graphics2D) g;
         current.drawStats(g2d, roll);
         current.drawPath(g);
-        current.draw(g2d);
         drawTargets(g2d);
+        current.draw(g2d);
+        // Debugging distance map
+        /*
+        for (final Map.Entry<Node, Double> entry : distanceMap.entrySet()) {
+            final int posX = entry.getKey().x - 5;
+            final int posY = entry.getKey().y + 3;
+            g2d.setFont(new Font("Arial", Font.PLAIN, 8));
+            g2d.setColor(Color.BLUE);
+            g2d.drawString(entry.getValue().toString(), posX, posY);
+        }
+        */
     }
 
     private void drawTargets(final Graphics2D g2d) {
@@ -88,10 +193,12 @@ public class Game extends JPanel {
             for (Map.Entry<Node, DamageAndPath> entry : targets.entrySet()) {
                 final int posX = entry.getKey().x;
                 final int posY = entry.getKey().y;
-                if (entry.getValue().getDamage() > 0) {
-                    // TODO: Smaller font and centralize
+                final int damage = entry.getValue().getDamage();
+                if (damage > 0) {
+                    g2d.setFont(new Font("Arial", Font.PLAIN, 9));
                     g2d.setColor(Color.RED);
-                    g2d.drawString(Integer.toString(entry.getValue().getDamage()), posX - 4, posY + 4);
+                    final int x = posX - (damage >= 10 ? 5 : 2);
+                    g2d.drawString(Integer.toString(entry.getValue().getDamage()), x, posY + 3);
                 }
                 MapEditor.drawOval(g2d, posX, posY, 12, 12, true, false, Color.YELLOW, 1);
             }

@@ -56,7 +56,7 @@ public abstract class NodeUtil {
                     result.put(node, new DamageAndPath(0, findPath(node, distance, distanceMap)));
                     continue;
                 }
-                if (finalLap && distance > 0 && node.type == MapEditor.FINISH) {
+                if (finalLap && startNode.type != MapEditor.FINISH && node.type == MapEditor.FINISH) {
                     result.put(node, new DamageAndPath(0, findPath(node, distance, distanceMap)));
                     continue;
                 }
