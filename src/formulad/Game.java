@@ -28,7 +28,11 @@ public class Game extends JPanel {
     private final Map<Node, List<Node>> prevNodeMap = new HashMap<>();
     private Map<Node, Double> attributes = new HashMap<>();
     private BufferedImage backgroundImage;
+    private Player previous;
     private Player current;
+    private List<Player> waitingPlayers = new ArrayList<>();
+    private final List<Player> players = new ArrayList<>();
+    private final List<Player> deadPlayers = new ArrayList<>();
     private Integer roll;
     private static final Random r = new Random();
     private Map<Node, DamageAndPath> targets;
@@ -45,7 +49,11 @@ public class Game extends JPanel {
             }
         }
         List<Node> grid = findGrid();
-        current = new Player(grid.get(0), attributes.get(grid.get(0)), 1);
+        for (final Node node : grid) {
+            players.add(new Player(node, attributes.get(node), 1));
+        }
+        waitingPlayers.addAll(players);
+        current = waitingPlayers.remove(0);
     }
 
 	private List<Node> findGrid() {
@@ -173,9 +181,16 @@ public class Game extends JPanel {
         }
         final Graphics2D g2d = (Graphics2D) g;
         current.drawStats(g2d, roll);
-        current.drawPath(g);
+        if (previous != null) {
+            previous.drawPath(g);
+        }
         drawTargets(g2d);
-        current.draw(g2d);
+        for (final Player player : players) {
+            if (player == current) {
+                player.highlight(g2d);
+            }
+            player.draw(g2d);
+        }
         // Debugging distance map
         /*
         for (final Map.Entry<Node, Double> entry : distanceMap.entrySet()) {
@@ -220,7 +235,7 @@ public class Game extends JPanel {
     private void adjustRoll(final int delta) {
 	    if (roll != null) {
             if (current.adjustRoll(roll, delta)) {
-                targets = current.findTargetNodes(roll, false);
+                targets = current.findTargetNodes(roll, false, players);
                 repaint();
             }
         }
@@ -232,9 +247,13 @@ public class Game extends JPanel {
         }
         if (current.switchGear(newGear)) {
 	        roll = roll(newGear);
-	        targets = current.findTargetNodes(roll, true);
+	        targets = current.findTargetNodes(roll, true, players);
 	        if (targets == null) {
 	            current.stop();
+	            nextPlayer();
+	            players.remove(previous);
+	            deadPlayers.add(previous);
+	            previous = null;
 	            roll = null;
             }
             repaint();
@@ -248,9 +267,21 @@ public class Game extends JPanel {
                 current.move(targets.get(target));
                 roll = null;
                 targets = null;
+                nextPlayer();
                 repaint();
             }
         }
+    }
+
+    private void nextPlayer() {
+        if (waitingPlayers.isEmpty()) {
+            for (final Player player : players) {
+                // TODO: Reorder
+                waitingPlayers.add(player);
+            }
+        }
+        previous = current;
+        current = waitingPlayers.remove(0);
     }
 
     public static void main(final String[] args) {

@@ -6,9 +6,10 @@ import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Player {
     private Node node;
@@ -50,6 +51,10 @@ public class Player {
         MapEditor.drawOval(g2d, 20, 20, 20, 20, true, true, Color.BLACK, 1);
         g2d.setColor(Color.WHITE);
         g2d.drawString(Integer.toString(gear), 16, 24);
+    }
+
+    public void highlight(final Graphics2D g2d) {
+        MapEditor.drawOval(g2d, node.x, node.y, 12, 12, true, false, Color.GREEN, 1);
     }
 
     public void drawPath(final Graphics g) {
@@ -175,11 +180,12 @@ public class Player {
     }
 
     // returns null if finding target nodes would be impossible
-    public Map<Node, DamageAndPath> findTargetNodes(final int roll, final boolean checkDeath) {
+    public Map<Node, DamageAndPath> findTargetNodes(final int roll, final boolean checkDeath, final List<Player> players) {
         if (stopped) {
             return Collections.emptyMap();
         }
-        final Map<Node, DamageAndPath> result = NodeUtil.findNodes(node, roll + adjust, new HashSet<>(), true, curveStops, lapsToGo == 0);
+        final Set<Node> forbiddenNodes = players.stream().map(player -> player.node).collect(Collectors.toSet());
+        final Map<Node, DamageAndPath> result = NodeUtil.findNodes(node, roll + adjust, forbiddenNodes, true, curveStops, lapsToGo == 0);
         final Map<Node, DamageAndPath> targets = new HashMap<>();
         for (final Map.Entry<Node, DamageAndPath> entry : result.entrySet()) {
             if (entry.getValue().getDamage() < hitpoints + adjust) {
@@ -188,7 +194,7 @@ public class Player {
         }
         if (targets.isEmpty() && checkDeath) {
             final int maxAdjust = Math.min(0, 1 - hitpoints);
-            final Map<Node, DamageAndPath> deathCheck = NodeUtil.findNodes(node, roll + maxAdjust, new HashSet<>(), true, curveStops, lapsToGo == 0);
+            final Map<Node, DamageAndPath> deathCheck = NodeUtil.findNodes(node, roll + maxAdjust, forbiddenNodes, true, curveStops, lapsToGo == 0);
             boolean match = false;
             for (final Map.Entry<Node, DamageAndPath> entry : deathCheck.entrySet()) {
                 if (entry.getValue().getDamage() < hitpoints + maxAdjust) {
