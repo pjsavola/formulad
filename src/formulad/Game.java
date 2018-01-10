@@ -12,6 +12,7 @@ import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -48,7 +49,7 @@ public class Game extends JPanel {
                 prevNodeMap.computeIfAbsent(next, _node -> new ArrayList<>()).add(node);
             }
         }
-        List<Node> grid = findGrid();
+        List<Node> grid = findGrid().subList(0, 2);
         for (final Node node : grid) {
             players.add(new Player(node, attributes.get(node), 1));
         }
@@ -275,10 +276,8 @@ public class Game extends JPanel {
 
     private void nextPlayer() {
         if (waitingPlayers.isEmpty()) {
-            for (final Player player : players) {
-                // TODO: Reorder
-                waitingPlayers.add(player);
-            }
+            waitingPlayers.addAll(players);
+            Collections.sort(waitingPlayers, (p1, p2) -> p1.compareTo(p2, distanceMap));
         }
         previous = current;
         current = waitingPlayers.remove(0);

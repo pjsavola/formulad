@@ -30,6 +30,26 @@ public class Player {
         lapsToGo = laps;
     }
 
+    // 1. lowest number of laps to go
+    // 2. covered distance of current lap
+    // 3. higher gear
+    // 4. inside line in curve
+    public int compareTo(final Player player, final Map<Node, Double> distanceMap) {
+        if (lapsToGo == player.lapsToGo) {
+            final double d1 = distanceMap.get(node);
+            final double d2 = distanceMap.get(player.node);
+            if (d1 < d2) return 1;
+            else if (d2 < d1) return -1;
+            if (gear == player.gear) {
+                if (node.isCurve() && !player.node.isCurve()) return 1;
+                else if (!node.isCurve() && player.node.isCurve()) return -1;
+                return player.node.getDistanceToNextArea(!player.node.isCurve()) - node.getDistanceToNextArea(!node.isCurve());
+            }
+            return player.gear - gear;
+        }
+        return lapsToGo - player.lapsToGo;
+    }
+
     public void stop() {
         stopped = true;
     }
@@ -119,7 +139,7 @@ public class Player {
         if (stopped) {
             return false;
         }
-        if (newGear > 0 && newGear < gear - 1 && hitpoints > gear - 1 - newGear) {
+        if (newGear > 0 && newGear < gear - 1 && newGear > gear - 5 && hitpoints > gear - 1 - newGear) {
             // downwards more than 1
             hitpoints -= gear - 1 - newGear;
             gear = newGear;

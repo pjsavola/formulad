@@ -1,7 +1,11 @@
 package formulad;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class Node {
@@ -21,6 +25,52 @@ public class Node {
             nextNodes.add(node);
             node.nextNodes.remove(this); // prevent cycles of length 2
         }
+    }
+
+    public boolean isAdjacentOf(final Node node) {
+        return nextNodes.contains(node) || node.nextNodes.contains(this);
+    }
+
+    // NOTE: Currently returns false for curve nodes which are in front of another curve node with 2 exits,
+    // but only 1 path between the nodes. This does not matter if this method is used only for adjacency checks
+    // as then the node in front would be unreachaable.
+    public boolean isInFrontOf(final Node node) {
+        if (node.nextNodes.contains(this)) {
+            if (node.nextNodes.size() == 1) {
+                return true;
+            }
+            // If there's a path of length 2 to this node, this node must be in front of the given node.
+            for (final Node next : node.nextNodes) {
+                if (next != this) {
+                    for (final Node nextOfNext : next.nextNodes) {
+                        if (nextOfNext == this) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public int getDistanceToNextArea(final boolean curve) {
+        final List<Node> work = new ArrayList<>();
+        final Map<Node, Integer> visited = new HashMap<>();
+        work.add(this);
+        visited.put(this, 0);
+        while (!work.isEmpty()) {
+            final Node node = work.remove(0);
+            for (final Node next : node.nextNodes) {
+                if (next.isCurve() == curve) {
+                    return visited.get(node) + 1;
+                }
+                if (!visited.containsKey(next)) {
+                    work.add(next);
+                    visited.put(next, visited.get(node) + 1);
+                }
+            }
+        }
+        throw new RuntimeException("Next area not found!");
     }
 
     public boolean isCurve() {
