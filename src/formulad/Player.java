@@ -12,6 +12,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Player {
+    private static int nameIndex = 0;
+    private static final String[] defaultNames = { "Kimi Räikkönen", "Sebastian Vettel", "Lewis Hamilton", "Valtteri Bottas"};
+    private final String name;
     private Node node;
     private int hitpoints = 18;
     private int gear;
@@ -19,12 +22,13 @@ public class Player {
     private int curveStops;
     private double angle;
     private List<Node> route;
-    private int lapsToGo;
+    public int lapsToGo;
     private Color color1 = new Color(0x770000);
     private Color color2 = Color.RED;
     private boolean stopped;
 
     public Player(final Node node, final double angle, final int laps) {
+        name = defaultNames[nameIndex++];
         this.node = node;
         this.angle = angle;
         lapsToGo = laps;
@@ -51,6 +55,11 @@ public class Player {
     }
 
     public void stop() {
+        if (lapsToGo == 0) {
+            System.err.println(name + " finished the race!");
+        } else {
+            System.err.println(name + " dropped from the race!");
+        }
         stopped = true;
     }
 
@@ -191,12 +200,16 @@ public class Player {
             // movement ended in a curve
             curveStops++;
         }
-        hitpoints += adjust;
-        hitpoints -= dp.getDamage();
+        adjustHitpoints(dp.getDamage() - adjust);
         adjust = 0;
         if (lapsToGo < 0) {
             stop();
         }
+    }
+
+    private void adjustHitpoints(final int loss) {
+        System.err.println(name + " loses " + adjust + " hitpoints");
+        hitpoints -= adjust;
     }
 
     // returns null if finding target nodes would be impossible
@@ -227,5 +240,18 @@ public class Player {
             }
         }
         return targets;
+    }
+
+    public static void possiblyAddEngineDamage(final List<Player> players, final Game game) {
+        for (final Player player : players) {
+            if (player.gear == 5 || player.gear == 6) {
+                if (Game.r.nextInt(20) < 4) {
+                    player.adjustHitpoints(1);
+                    if (player.hitpoints <= 0) {
+                        game.dropPlayer(player);
+                    }
+                }
+            }
+        }
     }
 }

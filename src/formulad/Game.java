@@ -12,7 +12,6 @@ import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,9 +32,9 @@ public class Game extends JPanel {
     private Player current;
     private List<Player> waitingPlayers = new ArrayList<>();
     private final List<Player> players = new ArrayList<>();
-    private final List<Player> deadPlayers = new ArrayList<>();
+    private final List<Player> stoppedPlayers = new ArrayList<>();
     private Integer roll;
-    private static final Random r = new Random();
+    public static final Random r = new Random();
     private Map<Node, DamageAndPath> targets;
     private final Map<Node, Double> distanceMap = new HashMap<>();
 
@@ -233,6 +232,10 @@ public class Game extends JPanel {
         throw new RuntimeException("Invalid gear: " + gear);
     }
 
+    private static boolean rollDamage() {
+	    return r.nextInt(20) < 4;
+    }
+
     private void adjustRoll(final int delta) {
 	    if (roll != null) {
             if (current.adjustRoll(roll, delta)) {
@@ -250,14 +253,25 @@ public class Game extends JPanel {
 	        roll = roll(newGear);
 	        targets = current.findTargetNodes(roll, true, players);
 	        if (targets == null) {
-	            current.stop();
-	            nextPlayer();
-	            players.remove(previous);
-	            deadPlayers.add(previous);
-	            previous = null;
+	            dropPlayer(current);
+                if (roll == 20 || roll == 30) {
+                    Player.possiblyAddEngineDamage(players, this);
+                }
 	            roll = null;
             }
             repaint();
+        }
+    }
+
+    public void dropPlayer(final Player player) {
+	    player.stop();
+	    players.remove(player);
+        stoppedPlayers.add(player);
+        if (current == player) {
+            nextPlayer();
+        }
+        if (previous == player) {
+	        previous = null;
         }
     }
 
@@ -266,6 +280,9 @@ public class Game extends JPanel {
             final Node target = Node.getNode(nodes, x, y, MapEditor.DIAMETER);
             if (target != null && targets.containsKey(target)) {
                 current.move(targets.get(target));
+                if (roll == 20 || roll == 30) {
+                    Player.possiblyAddEngineDamage(players, this);
+                }
                 roll = null;
                 targets = null;
                 nextPlayer();
@@ -274,10 +291,28 @@ public class Game extends JPanel {
         }
     }
 
+    private List<Player> getStandings() {
+        final List<Player> results = new ArrayList<>(stoppedPlayers);
+        results.sort((p1, p2) -> {
+            if (p1.lapsToGo == 0 && p2.lapsToGo == 0) {
+                return stoppedPlayers.indexOf(p1) - stoppedPlayers.indexOf(p2);
+            }
+            int cmp = p1.compareTo(p2, distanceMap);
+            if (cmp == 0) {
+                return stoppedPlayers.indexOf(p1) - stoppedPlayers.indexOf(p2);
+            }
+            return cmp;
+        });
+        return results;
+    }
+
     private void nextPlayer() {
         if (waitingPlayers.isEmpty()) {
+            if (players.isEmpty()) {
+                throw new RuntimeException("DONE");
+            }
             waitingPlayers.addAll(players);
-            Collections.sort(waitingPlayers, (p1, p2) -> p1.compareTo(p2, distanceMap));
+            waitingPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap));
         }
         previous = current;
         current = waitingPlayers.remove(0);
@@ -317,6 +352,9 @@ public class Game extends JPanel {
                     break;
                 case '-':
                     p.adjustRoll(-1);
+                    break;
+                case 'q':
+                    f.setVisible(false);
                     break;
                 }
             }
