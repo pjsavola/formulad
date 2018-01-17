@@ -54,7 +54,14 @@ public class Player {
         return lapsToGo - player.lapsToGo;
     }
 
+    public boolean isStopped() {
+        return stopped;
+    }
+
     public void stop() {
+        if (stopped) {
+            throw new RuntimeException(name + " is stopped twice!");
+        }
         if (lapsToGo == 0) {
             System.err.println(name + " finished the race!");
         } else {
@@ -200,7 +207,12 @@ public class Player {
             // movement ended in a curve
             curveStops++;
         }
-        adjustHitpoints(dp.getDamage() - adjust);
+        if (dp.getDamage() - adjust != 0) {
+            adjustHitpoints(dp.getDamage() - adjust);
+        }
+        if (hitpoints <= 0) {
+            throw new RuntimeException("Illegal move: Too much damage");
+        }
         adjust = 0;
         if (lapsToGo < 0) {
             stop();
@@ -208,8 +220,11 @@ public class Player {
     }
 
     private void adjustHitpoints(final int loss) {
-        System.err.println(name + " loses " + adjust + " hitpoints");
-        hitpoints -= adjust;
+        if (stopped) {
+            return;
+        }
+        System.err.println(name + " loses " + loss + " hitpoints");
+        hitpoints -= loss;
     }
 
     // returns null if finding target nodes would be impossible
@@ -242,13 +257,32 @@ public class Player {
         return targets;
     }
 
-    public static void possiblyAddEngineDamage(final List<Player> players, final Game game) {
+    public static void possiblyAddEngineDamage(final List<Player> players) {
         for (final Player player : players) {
             if (player.gear == 5 || player.gear == 6) {
                 if (Game.r.nextInt(20) < 4) {
                     player.adjustHitpoints(1);
                     if (player.hitpoints <= 0) {
-                        game.dropPlayer(player);
+                        player.stop();
+                    }
+                }
+            }
+        }
+    }
+
+    public void collide(final List<Player> players) {
+        for (final Player player : players) {
+            if (player != this && node.isAdjacentOf(player.node) && !node.isInFrontOf(player.node)) {
+                if (Game.r.nextInt(20) < 4) {
+                    adjustHitpoints(1);
+                    if (hitpoints <= 0) {
+                        stop();
+                    }
+                }
+                if (Game.r.nextInt(20) < 4) {
+                    player.adjustHitpoints(1);
+                    if (player.hitpoints <= 0) {
+                        player.stop();
                     }
                 }
             }

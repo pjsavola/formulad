@@ -14,6 +14,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -253,25 +254,11 @@ public class Game extends JPanel {
 	        roll = roll(newGear);
 	        targets = current.findTargetNodes(roll, true, players);
 	        if (targets == null) {
-	            dropPlayer(current);
-                if (roll == 20 || roll == 30) {
-                    Player.possiblyAddEngineDamage(players, this);
-                }
+	            current.stop();
+	            nextPlayer();
 	            roll = null;
             }
             repaint();
-        }
-    }
-
-    public void dropPlayer(final Player player) {
-	    player.stop();
-	    players.remove(player);
-        stoppedPlayers.add(player);
-        if (current == player) {
-            nextPlayer();
-        }
-        if (previous == player) {
-	        previous = null;
         }
     }
 
@@ -280,8 +267,9 @@ public class Game extends JPanel {
             final Node target = Node.getNode(nodes, x, y, MapEditor.DIAMETER);
             if (target != null && targets.containsKey(target)) {
                 current.move(targets.get(target));
+                current.collide(players);
                 if (roll == 20 || roll == 30) {
-                    Player.possiblyAddEngineDamage(players, this);
+                    Player.possiblyAddEngineDamage(players);
                 }
                 roll = null;
                 targets = null;
@@ -307,6 +295,15 @@ public class Game extends JPanel {
     }
 
     private void nextPlayer() {
+	    // Drop stopped players
+	    final Iterator<Player> it = players.iterator();
+	    while (it.hasNext()) {
+	        final Player player = it.next();
+	        if (player.isStopped()) {
+	            stoppedPlayers.add(player);
+	            it.remove();
+            }
+        }
         if (waitingPlayers.isEmpty()) {
             if (players.isEmpty()) {
                 throw new RuntimeException("DONE");
