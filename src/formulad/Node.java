@@ -27,6 +27,32 @@ public class Node {
         }
     }
 
+    public boolean isCloseTo(final Node node, final Map<Node, List<Node>> prevNodeMap) {
+        boolean adjacent = isAdjacentOf(node);
+        if (adjacent) return !isInFrontOf(node);
+        // Nodes can still be close to each other if there's no link between them.
+        // One generic rule for this would be that if they have common parent or common child,
+        // then the nodes are close to each other, unless common parent is parent of the common child.
+        Node commonParent = null;
+        for (final Node previousNode : prevNodeMap.get(this)) {
+            if (prevNodeMap.get(node).contains(previousNode)) {
+                commonParent = previousNode;
+                break;
+            }
+        }
+        Node commonChild = null;
+        for (final Node nextNode : nextNodes) {
+            if (node.nextNodes.contains(nextNode)) {
+                commonChild = nextNode;
+                break;
+            }
+        }
+        if (commonParent != null && commonChild != null) {
+            return !commonParent.nextNodes.contains(commonChild);
+        }
+        return commonParent != null || commonChild != null;
+    }
+
     public boolean isAdjacentOf(final Node node) {
         return nextNodes.contains(node) || node.nextNodes.contains(this);
     }

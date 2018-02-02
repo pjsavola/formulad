@@ -270,9 +270,10 @@ public class Player {
         }
     }
 
-    public void collide(final List<Player> players) {
+    public void collide(final List<Player> players, Map<Node, List<Node>> prevNodeMap) {
         for (final Player player : players) {
-            if (player != this && node.isAdjacentOf(player.node) && !node.isInFrontOf(player.node)) {
+            if (player != this && node.isCloseTo(player.node, prevNodeMap)) {
+                System.err.println(name + " almost collides with " + player.name);
                 if (Game.r.nextInt(20) < 4) {
                     adjustHitpoints(1);
                     if (hitpoints <= 0) {

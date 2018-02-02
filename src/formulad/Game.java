@@ -267,7 +267,7 @@ public class Game extends JPanel {
             final Node target = Node.getNode(nodes, x, y, MapEditor.DIAMETER);
             if (target != null && targets.containsKey(target)) {
                 current.move(targets.get(target));
-                current.collide(players);
+                current.collide(players, prevNodeMap);
                 if (roll == 20 || roll == 30) {
                     Player.possiblyAddEngineDamage(players);
                 }
