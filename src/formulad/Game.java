@@ -49,7 +49,7 @@ public class Game extends JPanel {
                 prevNodeMap.computeIfAbsent(next, _node -> new ArrayList<>()).add(node);
             }
         }
-        List<Node> grid = findGrid().subList(0, 2);
+        List<Node> grid = findGrid().subList(0, 10);
         for (final Node node : grid) {
             players.add(new Player(node, attributes.get(node), 1));
         }
@@ -186,6 +186,19 @@ public class Game extends JPanel {
             previous.drawPath(g);
         }
         drawTargets(g2d);
+
+        // Draw info box
+        g.setColor(Color.GRAY);
+        g.fillRect(getWidth() - 200, 0, 199, 5 + 15 * players.size());
+        g.setColor(Color.BLACK);
+        g.drawRect(getWidth() - 200, 0, 199, 5 + 15 * players.size());
+        int i = 0;
+        for (Player player : players) {
+            player.draw(g2d, getWidth() - 185, i * 15 + 10, 0);
+            player.drawStats(g2d, getWidth() - 170, i * 15 + 15);
+            i++;
+        }
+
         for (final Player player : players) {
             if (player == current) {
                 player.highlight(g2d);
@@ -221,14 +234,15 @@ public class Game extends JPanel {
         }
     }
 
+    // TODO: Is the distribution equal?
     private static int roll(int gear) {
         switch (gear) {
-        case 1: return r.nextInt(2) + 1;
-        case 2: return r.nextInt(3) + 2;
-        case 3: return r.nextInt(5) + 4;
-        case 4: return r.nextInt(6) + 7;
-        case 5: return r.nextInt(10) + 11;
-        case 6: return r.nextInt(10) + 21;
+        case 1: return r.nextInt(2) + 1; // d4
+        case 2: return r.nextInt(3) + 2; // d6
+        case 3: return r.nextInt(5) + 4; // d8
+        case 4: return r.nextInt(6) + 7; // d12
+        case 5: return r.nextInt(10) + 11; // d20
+        case 6: return r.nextInt(10) + 21; // d20
         }
         throw new RuntimeException("Invalid gear: " + gear);
     }
@@ -262,6 +276,41 @@ public class Game extends JPanel {
         }
     }
 
+    private void moveWithAI() {
+	    current.sendPlayerData(players);
+	    if (roll == null) {
+	        int newGear = current.decideGear();
+	        if (current.switchGear(newGear)) {
+	            roll = roll(newGear);
+            } else {
+	            return; // invalid move
+            }
+        }
+        int oldRoll = roll;
+        Map<Node, DamageAndPath> targets = current.findTargetNodes(roll, true, players);
+	    AI.NodeOrAdjustment a = current.decideTarget(targets);
+        DamageAndPath damageAndPath = targets.get(a.node);
+	    while (damageAndPath == null) {
+	        if (a.adjust == 0) {
+	            roll = oldRoll;
+	            return; // death??
+            }
+            adjustRoll(a.adjust);
+            targets = current.findTargetNodes(roll, true, players);
+            a = current.decideTarget(targets);
+            damageAndPath = targets.get(a.node);
+        }
+        current.move(damageAndPath);
+        current.collide(players, prevNodeMap);
+        if (roll == 20 || roll == 30) {
+            // TODO: Fix adjustments
+            Player.possiblyAddEngineDamage(players);
+        }
+        roll = null;
+        nextPlayer();
+        repaint();
+    }
+
     private void selectNode(final int x, final int y) {
 	    if (roll != null) {
             final Node target = Node.getNode(nodes, x, y, MapEditor.DIAMETER);
@@ -269,6 +318,7 @@ public class Game extends JPanel {
                 current.move(targets.get(target));
                 current.collide(players, prevNodeMap);
                 if (roll == 20 || roll == 30) {
+                    // TODO: Fix adjustments
                     Player.possiblyAddEngineDamage(players);
                 }
                 roll = null;
@@ -349,6 +399,9 @@ public class Game extends JPanel {
                     break;
                 case '-':
                     p.adjustRoll(-1);
+                    break;
+                case 'a':
+                    p.moveWithAI();
                     break;
                 case 'q':
                     f.setVisible(false);

@@ -114,6 +114,7 @@ public class Node {
 
     @Override
     public boolean equals(final Object other) {
+        if (this == other) return true;
         if (other instanceof Node) {
             final Node node = (Node) other;
             return type == node.type && x == node.x && y == node.y;

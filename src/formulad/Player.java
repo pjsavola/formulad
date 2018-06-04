@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -11,9 +12,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Player {
+import com.sun.istack.internal.Nullable;
+
+public class Player implements AI {
     private static int nameIndex = 0;
-    private static final String[] defaultNames = { "Kimi Räikkönen", "Sebastian Vettel", "Lewis Hamilton", "Valtteri Bottas"};
+    private static final String[] defaultNames = { "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10" };
+    private static final Color[] defaultColors = {
+        Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, Color.PINK,
+        Color.CYAN, Color.ORANGE, Color.WHITE, Color.MAGENTA, Color.GRAY };
+    private static final Color[] defaultBorderColors = {
+        new Color(0x770000), new Color(0x000077), new Color(0x007700), new Color(0x777700), new Color(0x773333),
+        new Color(0x007777), new Color(0x993300), Color.GRAY, new Color(0x770077), Color.BLACK };
     private final String name;
     private Node node;
     private int hitpoints = 18;
@@ -23,11 +32,13 @@ public class Player {
     private double angle;
     private List<Node> route;
     public int lapsToGo;
-    private Color color1 = new Color(0x770000);
-    private Color color2 = Color.RED;
+    private final Color color1;
+    private final Color color2;
     private boolean stopped;
 
     public Player(final Node node, final double angle, final int laps) {
+        color1 = defaultBorderColors[nameIndex];
+        color2 = defaultColors[nameIndex];
         name = defaultNames[nameIndex++];
         this.node = node;
         this.angle = angle;
@@ -104,11 +115,15 @@ public class Player {
     }
 
     public void draw(final Graphics2D g) {
+        draw(g, node.x, node.y, angle);
+    }
+
+    public void draw(Graphics2D g, int x, int y, double angle) {
+        g.setColor(Color.BLACK);
         AffineTransform at = new AffineTransform();
-        at.translate(node.x, node.y);
+        at.translate(x, y);
         g.transform(at);
         g.rotate(angle);
-        g.setColor(Color.BLACK);
         g.fillRect(-7, -3, 1, 7);
         g.fillRect(-6, 0, 1, 1);
         g.fillRect(-4, -4, 3, 2);
@@ -137,7 +152,12 @@ public class Player {
         }
         // needed if something is drawn after this
         g.rotate(-angle);
-        g.translate(-node.x, -node.y);
+        g.translate(-x, -y);
+    }
+
+    public void drawStats(Graphics2D g, int x, int y) {
+        g.setColor(Color.BLACK);
+        g.drawString("HP: " + Integer.toString(hitpoints) + " G: " + Integer.toString(gear) + " S: " + Integer.toString(curveStops), x, y);
     }
 
     public boolean adjustRoll(final int roll, final int delta) {
@@ -232,7 +252,11 @@ public class Player {
         if (stopped) {
             return Collections.emptyMap();
         }
-        final Set<Node> forbiddenNodes = players.stream().map(player -> player.node).collect(Collectors.toSet());
+        final Set<Node> forbiddenNodes = players
+            .stream()
+            .filter(player -> !player.isStopped())
+            .map(player -> player.node)
+            .collect(Collectors.toSet());
         final Map<Node, DamageAndPath> result = NodeUtil.findNodes(node, roll + adjust, forbiddenNodes, true, curveStops, lapsToGo == 0);
         final Map<Node, DamageAndPath> targets = new HashMap<>();
         for (final Map.Entry<Node, DamageAndPath> entry : result.entrySet()) {
@@ -288,5 +312,43 @@ public class Player {
                 }
             }
         }
+    }
+
+    private List<Player> playerList;
+
+    @Override
+    public void sendPlayerData(List<Player> playerList) {
+        this.playerList = playerList;
+    }
+
+    @Override
+    public int decideGear() {
+        return Math.min(gear + 1, 6);
+    }
+
+    @Override
+    public AI.NodeOrAdjustment decideTarget(@Nullable Map<Node, DamageAndPath> targets) {
+        final List<Node> candidates = new ArrayList<>();
+        if (targets != null) {
+            int leastDamage = 50;
+            for (final Map.Entry<Node, DamageAndPath> target : targets.entrySet()) {
+                final int damage = target.getValue().getDamage();
+                if (damage < leastDamage) {
+                    candidates.clear();
+                    candidates.add(target.getKey());
+                    leastDamage = damage;
+                } else if (damage == leastDamage) {
+                    candidates.add(target.getKey());
+                }
+            }
+        }
+        if (candidates.isEmpty()) {
+            if (hitpoints + adjust - 1 > 0) {
+                return new AI.NodeOrAdjustment(null, -1);
+            } else {
+                return new AI.NodeOrAdjustment(null, 0);
+            }
+        }
+        return new AI.NodeOrAdjustment(candidates.get(Game.r.nextInt(candidates.size())), 0);
     }
 }
