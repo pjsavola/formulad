@@ -43,6 +43,7 @@ public class MapEditor extends JPanel {
     private static final Color ARC_END = new Color(0x990000);
     private static final Color LIGHT_RED = new Color(0xFF6600);
 
+    private int nextNodeId;
     private final List<Node> nodes = new ArrayList<>();
     private final Map<Node, Double> attributes = new HashMap<>();
     private Node selectedNode;
@@ -60,7 +61,7 @@ public class MapEditor extends JPanel {
                     final Node node = Node.getNode(nodes, e.getX(), e.getY(), DIAMETER);
                     if (node == null) {
                         selectedNode = null;
-                        nodes.add(new Node(e.getX(), e.getY(), stroke));
+                        nodes.add(new Node(nextNodeId++, e.getX(), e.getY(), stroke));
                     } else if (selectedNode == null) {
                         selectedNode = node;
                     } else if (selectedNode != node) {
@@ -183,6 +184,7 @@ public class MapEditor extends JPanel {
         if (result == JFileChooser.APPROVE_OPTION) {
             final File selectedFile = fileChooser.getSelectedFile();
             loadNodes(selectedFile, nodes, attributes);
+            nextNodeId += nodes.size();
             repaint();
         }
     }
@@ -209,7 +211,7 @@ public class MapEditor extends JPanel {
                     final int x = Integer.parseInt(parts[1]);
                     final int y = Integer.parseInt(parts[2]);
                     final int type = Integer.parseInt(parts[3]);
-                    idMap.put(id, new Node(x, y, type));
+                    idMap.put(id, new Node(id, x, y, type));
                 } else {
                     final int id = Integer.parseInt(parts[0]);
                     final double attribute = Double.parseDouble(parts[1]);

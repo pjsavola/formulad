@@ -5,10 +5,6 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
@@ -24,37 +20,117 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.WindowConstants;
 
-public class Game extends JPanel {
+import com.sun.istack.internal.Nullable;
+import formulad.ai.AI;
+import formulad.ai.DummyAI;
+import formulad.ai.ManualAI;
+
+public class Game extends JPanel implements Runnable {
+    // Node identifier equals to the index in this array
     private final List<Node> nodes = new ArrayList<>();
     private final Map<Node, List<Node>> prevNodeMap = new HashMap<>();
+    // Contains angles for start nodes and distance information for curves
     private Map<Node, Double> attributes = new HashMap<>();
     private BufferedImage backgroundImage;
-    private Player previous;
-    private Player current;
-    private List<Player> waitingPlayers = new ArrayList<>();
-    private final List<Player> players = new ArrayList<>();
-    private final List<Player> stoppedPlayers = new ArrayList<>();
+    private LocalPlayer previous;
+    private LocalPlayer current;
+    private List<LocalPlayer> waitingPlayers = new ArrayList<>();
+    private final List<LocalPlayer> players = new ArrayList<>();
+    private final List<LocalPlayer> stoppedPlayers = new ArrayList<>();
+    private final Map<Integer, AI> aiMap = new HashMap<>();
     private Integer roll;
     public static final Random r = new Random();
-    private Map<Node, DamageAndPath> targets;
     private final Map<Node, Double> distanceMap = new HashMap<>();
+    private boolean stopped;
+    @Nullable
+    private Map<Integer, Integer> highlightedNodeToDamage;
 
-	public Game() {
-        backgroundImage = ImageCache.getImage("sebring.jpg");
+    public Game(JFrame frame) {
+        backgroundImage = ImageCache.getImage("/Users/petrisavola/formulad/sebring.jpg");
         setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
-        final File file = new File("formulad.dat");
+        final File file = new File("/Users/petrisavola/formulad/formulad.dat");
         MapEditor.loadNodes(file, nodes, attributes);
         for (final Node node : nodes) {
             for (final Node next : node.nextNodes) {
                 prevNodeMap.computeIfAbsent(next, _node -> new ArrayList<>()).add(node);
             }
         }
+        int edgeCount = 0;
+        final int[][] nodeArray = new int[nodes.size()][2];
+        final int[][] edgeArray = new int[nodes.stream().mapToInt(node -> node.nextNodes.size()).sum()][2];
+        for (int i = 0; i < nodes.size(); i++) {
+            final Node node = nodes.get(i);
+            nodeArray[i][0] = i;
+            nodeArray[i][1] = node.type;
+            for (Node child : node.nextNodes) {
+                edgeArray[edgeCount][0] = node.id;
+                edgeArray[edgeCount][1] = child.id;
+                edgeCount++;
+            }
+        }
         List<Node> grid = findGrid().subList(0, 10);
-        for (final Node node : grid) {
-            players.add(new Player(node, attributes.get(node), 1));
+        for (int i = 0; i < grid.size(); i++) {
+            final AI ai = new ManualAI(new DummyAI(), frame, this);
+            final Node startNode = grid.get(i);
+            final LocalPlayer player = new LocalPlayer(i, ai.getName(), startNode, attributes.get(startNode), 1);
+            players.add(player);
+            // Clone the array so nothing bad happens if AI mutates it
+            ai.initialize(player.getId(), startNode.id, cloneArray(nodeArray), cloneArray(edgeArray));
+            aiMap.put(player.getId(), ai);
         }
         waitingPlayers.addAll(players);
         current = waitingPlayers.remove(0);
+    }
+
+    @Override
+    public void run() {
+        while (!stopped) {
+            // TODO: Measure time and timeout?
+            final AI ai = aiMap.get(current.getId());
+            final int selectedGear = ai.selectGear(getPlayerData());
+            if (!current.switchGear(selectedGear)) {
+                System.err.println("Invalid gear selection by player " + current.getId());
+            }
+            roll = current.roll();
+            final int[][] allTargets = current.findAllTargets(roll, players);
+            if (allTargets.length == 0) {
+                current.stop();
+            } else {
+                int selectedIndex = ai.selectTarget(cloneArray(allTargets));
+                if (selectedIndex < 0 || selectedIndex >= allTargets.length) {
+                    System.err.println("Invalid target selection by player " + current.getId());
+                    selectedIndex = 0;
+                }
+                current.move(allTargets[selectedIndex], selectedIndex);
+                current.collide(players, prevNodeMap);
+                if (roll == 20 || roll == 30) {
+                    LocalPlayer.possiblyAddEngineDamage(players);
+                }
+
+            }
+            roll = null;
+            nextPlayer();
+            repaint();
+        }
+        // TODO: Render standings!
+        System.err.println(stoppedPlayers);
+    }
+
+    private static int[][] cloneArray(int[][] src) {
+        int length = src.length;
+        int[][] target = new int[length][src[0].length];
+        for (int i = 0; i < length; i++) {
+            System.arraycopy(src[i], 0, target[i], 0, src[i].length);
+        }
+        return target;
+    }
+
+    private int[][] getPlayerData() {
+        final int[][] playerData = new int[players.size()][];
+        for (int i = 0; i < players.size(); i++) {
+            playerData[i] = players.get(i).getData();
+        }
+        return playerData;
     }
 
 	private List<Node> findGrid() {
@@ -175,38 +251,98 @@ public class Game extends JPanel {
         return grid;
     }
 
+    /**
+     * Sets nodes for highlighting, may be useful when rendering valid targets.
+     */
+    public void highlightNodes(@Nullable Map<Integer, Integer> nodeToDamage) {
+        this.highlightedNodeToDamage = nodeToDamage;
+        repaint();
+    }
+
+    /**
+     * Returns node identifier of the clicked node, or null if there are no nodes
+     * at the given coordinates.
+     */
+    @Nullable
+    public Integer getNodeId(int x, int y) {
+        final Node target = Node.getNode(nodes, x, y, MapEditor.DIAMETER);
+        return target == null ? null : target.id;
+    }
+
     @Override
     public void paintComponent(Graphics g) {
 	    if (backgroundImage != null) {
             g.drawImage(backgroundImage, 0, 0, null);
         }
         final Graphics2D g2d = (Graphics2D) g;
-        current.drawStats(g2d, roll);
-        if (previous != null) {
-            previous.drawPath(g);
-        }
+        drawPath(g2d);
         drawTargets(g2d);
+        drawInfoBox(g2d);
+        drawPlayers(g2d);
+        // drawDistances(g2d); // For debugging
+    }
 
-        // Draw info box
-        g.setColor(Color.GRAY);
-        g.fillRect(getWidth() - 200, 0, 199, 5 + 15 * players.size());
-        g.setColor(Color.BLACK);
-        g.drawRect(getWidth() - 200, 0, 199, 5 + 15 * players.size());
+    private void drawPath(Graphics2D g2d) {
+        g2d.setColor(Color.WHITE);
+        if (previous != null) {
+            previous.drawPath(g2d);
+        }
+    }
+
+    private void drawTargets(Graphics2D g2d) {
+        if (highlightedNodeToDamage != null) {
+            for (Map.Entry<Integer, Integer> entry : highlightedNodeToDamage.entrySet()) {
+                final int nodeId = entry.getKey();
+                if (nodeId < 0 || nodeId >= nodes.size()) continue;
+                final Node node = nodes.get(nodeId);
+                final int damage = entry.getValue();
+                if (damage > 0) {
+                    g2d.setFont(new Font("Arial", Font.PLAIN, 9));
+                    g2d.setColor(Color.RED);
+                    final int x = node.x - (damage >= 10 ? 5 : 2);
+                    g2d.drawString(Integer.toString(damage), x, node.y + 3);
+                }
+                MapEditor.drawOval(g2d, node.x, node.y, 12, 12, true, false, Color.YELLOW, 1);
+            }
+        }
+    }
+
+    private void drawInfoBox(Graphics2D g2d) {
+        int size = players.size() + stoppedPlayers.size();
+        g2d.setColor(Color.GRAY);
+        g2d.fillRect(getWidth() - 250, 0, 249, 5 + 15 * size);
+        g2d.setColor(Color.BLACK);
+        g2d.drawRect(getWidth() - 250, 0, 249, 5 + 15 * size);
         int i = 0;
-        for (Player player : players) {
-            player.draw(g2d, getWidth() - 185, i * 15 + 10, 0);
-            player.drawStats(g2d, getWidth() - 170, i * 15 + 15);
+        for (LocalPlayer player : players) {
+            player.draw(g2d, getWidth() - 235, i * 15 + 10, 0);
+            player.drawStats(g2d, getWidth() - 220, i * 15 + 15);
             i++;
         }
+        int pos = 0;
+        for (LocalPlayer player : stoppedPlayers) {
+            player.draw(g2d, getWidth() - 235, i * 15 + 10, 0);
+            player.drawStats(g2d, getWidth() - 220, i * 15 + 15);
+            if (player.lapsToGo < 0) {
+                g2d.drawString(Integer.toString(pos++) + ".", getWidth() - 260, i * 15 + 15);
+            } else {
+                g2d.drawLine(getWidth() - 235, i * 15 + 10, getWidth() - 15, i * 15 + 10);
+            }
+            i++;
+        }
+    }
 
-        for (final Player player : players) {
+    private void drawPlayers(Graphics2D g2d) {
+        for (final LocalPlayer player : players) {
             if (player == current) {
+                player.drawStats(g2d, roll);
                 player.highlight(g2d);
             }
             player.draw(g2d);
         }
-        // Debugging distance map
-        /*
+    }
+
+    private void drawDistances(Graphics2D g2d) {
         for (final Map.Entry<Node, Double> entry : distanceMap.entrySet()) {
             final int posX = entry.getKey().x - 5;
             final int posY = entry.getKey().y + 3;
@@ -214,149 +350,41 @@ public class Game extends JPanel {
             g2d.setColor(Color.BLUE);
             g2d.drawString(entry.getValue().toString(), posX, posY);
         }
-        */
     }
 
-    private void drawTargets(final Graphics2D g2d) {
-        if (targets != null) {
-            for (Map.Entry<Node, DamageAndPath> entry : targets.entrySet()) {
-                final int posX = entry.getKey().x;
-                final int posY = entry.getKey().y;
-                final int damage = entry.getValue().getDamage();
-                if (damage > 0) {
-                    g2d.setFont(new Font("Arial", Font.PLAIN, 9));
-                    g2d.setColor(Color.RED);
-                    final int x = posX - (damage >= 10 ? 5 : 2);
-                    g2d.drawString(Integer.toString(entry.getValue().getDamage()), x, posY + 3);
-                }
-                MapEditor.drawOval(g2d, posX, posY, 12, 12, true, false, Color.YELLOW, 1);
-            }
-        }
-    }
-
-    // TODO: Is the distribution equal?
-    private static int roll(int gear) {
-        switch (gear) {
-        case 1: return r.nextInt(2) + 1; // d4
-        case 2: return r.nextInt(3) + 2; // d6
-        case 3: return r.nextInt(5) + 4; // d8
-        case 4: return r.nextInt(6) + 7; // d12
-        case 5: return r.nextInt(10) + 11; // d20
-        case 6: return r.nextInt(10) + 21; // d20
-        }
-        throw new RuntimeException("Invalid gear: " + gear);
-    }
-
-    private static boolean rollDamage() {
-	    return r.nextInt(20) < 4;
-    }
-
-    private void adjustRoll(final int delta) {
-	    if (roll != null) {
-            if (current.adjustRoll(roll, delta)) {
-                targets = current.findTargetNodes(roll, false, players);
-                repaint();
-            }
-        }
-    }
-
-    private void switchGear(final int newGear) {
-	    if (roll != null) {
-	        return;
-        }
-        if (current.switchGear(newGear)) {
-	        roll = roll(newGear);
-	        targets = current.findTargetNodes(roll, true, players);
-	        if (targets == null) {
-	            current.stop();
-	            nextPlayer();
-	            roll = null;
-            }
-            repaint();
-        }
-    }
-
-    private void moveWithAI() {
-	    current.sendPlayerData(players);
-	    if (roll == null) {
-	        int newGear = current.decideGear();
-	        if (current.switchGear(newGear)) {
-	            roll = roll(newGear);
-            } else {
-	            return; // invalid move
-            }
-        }
-        int oldRoll = roll;
-        Map<Node, DamageAndPath> targets = current.findTargetNodes(roll, true, players);
-	    AI.NodeOrAdjustment a = current.decideTarget(targets);
-        DamageAndPath damageAndPath = targets.get(a.node);
-	    while (damageAndPath == null) {
-	        if (a.adjust == 0) {
-	            roll = oldRoll;
-	            return; // death??
-            }
-            adjustRoll(a.adjust);
-            targets = current.findTargetNodes(roll, true, players);
-            a = current.decideTarget(targets);
-            damageAndPath = targets.get(a.node);
-        }
-        current.move(damageAndPath);
-        current.collide(players, prevNodeMap);
-        if (roll == 20 || roll == 30) {
-            // TODO: Fix adjustments
-            Player.possiblyAddEngineDamage(players);
-        }
-        roll = null;
-        nextPlayer();
-        repaint();
-    }
-
-    private void selectNode(final int x, final int y) {
-	    if (roll != null) {
-            final Node target = Node.getNode(nodes, x, y, MapEditor.DIAMETER);
-            if (target != null && targets.containsKey(target)) {
-                current.move(targets.get(target));
-                current.collide(players, prevNodeMap);
-                if (roll == 20 || roll == 30) {
-                    // TODO: Fix adjustments
-                    Player.possiblyAddEngineDamage(players);
-                }
-                roll = null;
-                targets = null;
-                nextPlayer();
-                repaint();
-            }
-        }
-    }
-
-    private List<Player> getStandings() {
-        final List<Player> results = new ArrayList<>(stoppedPlayers);
-        results.sort((p1, p2) -> {
-            if (p1.lapsToGo == 0 && p2.lapsToGo == 0) {
-                return stoppedPlayers.indexOf(p1) - stoppedPlayers.indexOf(p2);
+    private void addStoppedPlayer(LocalPlayer player) {
+        stoppedPlayers.add(player);
+        stoppedPlayers.sort((p1, p2) -> {
+            if (p1.lapsToGo < 0 && p2.lapsToGo < 0) {
+                final int index1 = stoppedPlayers.indexOf(p1);
+                final int index2 = stoppedPlayers.indexOf(p2);
+                return index1 > index2 ? 1 : -1;
             }
             int cmp = p1.compareTo(p2, distanceMap);
             if (cmp == 0) {
-                return stoppedPlayers.indexOf(p1) - stoppedPlayers.indexOf(p2);
+                final int index1 = stoppedPlayers.indexOf(p1);
+                final int index2 = stoppedPlayers.indexOf(p2);
+                return index1 > index2 ? 1 : -1;
             }
             return cmp;
         });
-        return results;
     }
 
     private void nextPlayer() {
 	    // Drop stopped players
-	    final Iterator<Player> it = players.iterator();
+	    final Iterator<LocalPlayer> it = players.iterator();
 	    while (it.hasNext()) {
-	        final Player player = it.next();
+	        final LocalPlayer player = it.next();
 	        if (player.isStopped()) {
-	            stoppedPlayers.add(player);
+	            addStoppedPlayer(player);
 	            it.remove();
             }
         }
         if (waitingPlayers.isEmpty()) {
             if (players.isEmpty()) {
-                throw new RuntimeException("DONE");
+                // This will make the Game thread stop
+                stopped = true;
+                return;
             }
             waitingPlayers.addAll(players);
             waitingPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap));
@@ -367,72 +395,12 @@ public class Game extends JPanel {
 
     public static void main(final String[] args) {
         final JFrame f = new JFrame();
-        final Game p = new Game();
-        f.setContentPane(p);
+        final Game game = new Game(f);
+        f.setContentPane(game);
         f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         f.pack();
         f.setLocation(0, 0);
-        f.addKeyListener(new KeyListener() {
-            @Override
-            public void keyTyped(KeyEvent e) {
-                switch (e.getKeyChar()) {
-                case '1':
-                    p.switchGear(1);
-                    break;
-                case '2':
-                    p.switchGear(2);
-                    break;
-                case '3':
-                    p.switchGear(3);
-                    break;
-                case '4':
-                    p.switchGear(4);
-                    break;
-                case '5':
-                    p.switchGear(5);
-                    break;
-                case '6':
-                    p.switchGear(6);
-                    break;
-                case '+':
-                    p.adjustRoll(1);
-                    break;
-                case '-':
-                    p.adjustRoll(-1);
-                    break;
-                case 'a':
-                    p.moveWithAI();
-                    break;
-                case 'q':
-                    f.setVisible(false);
-                    break;
-                }
-            }
-            @Override
-            public void keyPressed(KeyEvent e) {
-            }
-            @Override
-            public void keyReleased(KeyEvent e) {
-            }
-        });
-        p.addMouseListener(new MouseListener() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                p.selectNode(e.getX(), e.getY());
-            }
-            @Override
-            public void mousePressed(MouseEvent e) {
-            }
-            @Override
-            public void mouseReleased(MouseEvent e) {
-            }
-            @Override
-            public void mouseEntered(MouseEvent e) {
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
-            }
-        });
+        new Thread(game).start();
         f.setVisible(true);
     }
 }

@@ -5,7 +5,6 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,20 +13,19 @@ import java.util.stream.Collectors;
 
 import com.sun.istack.internal.Nullable;
 
-public class Player implements AI {
-    private static int nameIndex = 0;
-    private static final String[] defaultNames = { "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10" };
+public class LocalPlayer {
+    private static int colorIndex = 0;
     private static final Color[] defaultColors = {
         Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, Color.PINK,
         Color.CYAN, Color.ORANGE, Color.WHITE, Color.MAGENTA, Color.GRAY };
     private static final Color[] defaultBorderColors = {
         new Color(0x770000), new Color(0x000077), new Color(0x007700), new Color(0x777700), new Color(0x773333),
         new Color(0x007777), new Color(0x993300), Color.GRAY, new Color(0x770077), Color.BLACK };
+    private final int playerId;
     private final String name;
     private Node node;
     private int hitpoints = 18;
     private int gear;
-    private int adjust;
     private int curveStops;
     private double angle;
     private List<Node> route;
@@ -35,21 +33,27 @@ public class Player implements AI {
     private final Color color1;
     private final Color color2;
     private boolean stopped;
+    private final List<List<Node>> paths = new ArrayList<>();
 
-    public Player(final Node node, final double angle, final int laps) {
-        color1 = defaultBorderColors[nameIndex];
-        color2 = defaultColors[nameIndex];
-        name = defaultNames[nameIndex++];
+    public LocalPlayer(int playerId, String name, Node node, double initialAngle, int laps) {
+        this.playerId = playerId;
+        this.name = name;
+        color1 = defaultBorderColors[colorIndex];
+        color2 = defaultColors[colorIndex++];
         this.node = node;
-        this.angle = angle;
+        this.angle = initialAngle;
         lapsToGo = laps;
+    }
+
+    public int getId() {
+        return playerId;
     }
 
     // 1. lowest number of laps to go
     // 2. covered distance of current lap
     // 3. higher gear
     // 4. inside line in curve
-    public int compareTo(final Player player, final Map<Node, Double> distanceMap) {
+    public int compareTo(LocalPlayer player, Map<Node, Double> distanceMap) {
         if (lapsToGo == player.lapsToGo) {
             final double d1 = distanceMap.get(node);
             final double d2 = distanceMap.get(player.node);
@@ -73,28 +77,29 @@ public class Player implements AI {
         if (stopped) {
             throw new RuntimeException(name + " is stopped twice!");
         }
-        if (lapsToGo == 0) {
+        if (lapsToGo < 0) {
             System.err.println(name + " finished the race!");
         } else {
             System.err.println(name + " dropped from the race!");
         }
         stopped = true;
+        route = null;
     }
 
-    public void drawStats(final Graphics2D g2d, final Integer roll) {
+    public void drawStats(Graphics2D g2d, @Nullable Integer roll) {
         // TODO: Clean up
         if (roll != null) {
             g2d.setColor(Color.GREEN);
-            final int width = (roll + adjust >= 10) ? 25 : 20;
-            final int x = (roll + adjust >= 10) ? 43 : 46;
+            final int width = roll >= 10 ? 25 : 20;
+            final int x = (roll >= 10) ? 43 : 46;
             MapEditor.drawOval(g2d, 50, 20, width, 20, true, true, Color.BLACK, 1);
-            g2d.drawString(Integer.toString(roll + adjust), x, 24);
+            g2d.drawString(Integer.toString(roll), x, 24);
         }
         g2d.setColor(Color.RED);
-        final int width = (hitpoints + adjust >= 10) ? 25 : 20;
-        final int x = (hitpoints + adjust >= 10) ? 13 : 16;
+        final int width = hitpoints >= 10 ? 25 : 20;
+        final int x = hitpoints >= 10 ? 13 : 16;
         MapEditor.drawOval(g2d, 20, 50, width, 20, true, true, Color.BLACK, 1);
-        g2d.drawString(Integer.toString(hitpoints + adjust), x, 54);
+        g2d.drawString(Integer.toString(hitpoints), x, 54);
         MapEditor.drawOval(g2d, 20, 20, 20, 20, true, true, Color.BLACK, 1);
         g2d.setColor(Color.WHITE);
         g2d.drawString(Integer.toString(gear), 16, 24);
@@ -157,38 +162,53 @@ public class Player implements AI {
 
     public void drawStats(Graphics2D g, int x, int y) {
         g.setColor(Color.BLACK);
-        g.drawString("HP: " + Integer.toString(hitpoints) + " G: " + Integer.toString(gear) + " S: " + Integer.toString(curveStops), x, y);
-    }
-
-    public boolean adjustRoll(final int roll, final int delta) {
-        if (stopped) {
-            return false;
-        }
-        final int newAdjust = adjust + delta;
-        if (roll + newAdjust >= 0 && newAdjust <= 0 && hitpoints + newAdjust > 0) {
-            adjust = newAdjust;
-        }
-        return adjust == newAdjust;
+        g.drawString(name + " HP: " + Integer.toString(hitpoints) + " G: " + Integer.toString(gear) + " S: " + Integer.toString(curveStops), x, y);
     }
 
     public boolean switchGear(final int newGear) {
-        if (stopped) {
-            return false;
-        }
-        if (newGear > 0 && newGear < gear - 1 && newGear > gear - 5 && hitpoints > gear - 1 - newGear) {
-            // downwards more than 1
-            hitpoints -= gear - 1 - newGear;
+        if (newGear < 1 || newGear > 6) return false;
+
+        if (Math.abs(newGear - gear) <= 1) {
             gear = newGear;
-        } else if (Math.abs(newGear - gear) <= 1) {
-            gear = newGear;
+            return true;
         }
-        return gear == newGear;
+
+        // downwards more than 1
+        final int damage = gear - newGear - 1;
+        if (damage > 0 && damage < 4 && hitpoints > damage) {
+            adjustHitpoints(damage);
+            gear = newGear;
+            return true;
+        }
+        return false;
     }
 
-    public void move(final DamageAndPath dp) {
-        if (stopped) {
-            return;
+    // TODO: Is the distribution equal?
+    public int roll() {
+        switch (gear) {
+            case 1: return 2;
+            case 2: return 4;
+            case 3: return 8;
+            case 4: return 12;
+            case 5: return 20;
+            case 6: return 30;
         }
+        switch (gear) {
+            case 1: return Game.r.nextInt(2) + 1; // d4
+            case 2: return Game.r.nextInt(3) + 2; // d6
+            case 3: return Game.r.nextInt(5) + 4; // d8
+            case 4: return Game.r.nextInt(6) + 7; // d12
+            case 5: return Game.r.nextInt(10) + 11; // d20
+            case 6: return Game.r.nextInt(10) + 21; // d20
+        }
+        throw new RuntimeException("Invalid gear: " + gear);
+    }
+
+    public void move(int[] target, int pathIndex) {
+        move(new DamageAndPath(target[1] + target[2], paths.get(pathIndex)));
+    }
+
+    private void move(DamageAndPath dp) {
         final List<Node> route = dp.getPath();
         if (route == null || route.isEmpty()) {
             throw new RuntimeException("Invalid route: " + route);
@@ -227,62 +247,63 @@ public class Player implements AI {
             // movement ended in a curve
             curveStops++;
         }
-        if (dp.getDamage() - adjust != 0) {
-            adjustHitpoints(dp.getDamage() - adjust);
+        if (dp.getDamage() != 0) {
+            adjustHitpoints(dp.getDamage());
         }
         if (hitpoints <= 0) {
             throw new RuntimeException("Illegal move: Too much damage");
         }
-        adjust = 0;
         if (lapsToGo < 0) {
             stop();
         }
     }
 
-    private void adjustHitpoints(final int loss) {
-        if (stopped) {
-            return;
-        }
+    private void adjustHitpoints(int loss) {
         System.err.println(name + " loses " + loss + " hitpoints");
         hitpoints -= loss;
     }
 
-    // returns null if finding target nodes would be impossible
-    public Map<Node, DamageAndPath> findTargetNodes(final int roll, final boolean checkDeath, final List<Player> players) {
-        if (stopped) {
-            return Collections.emptyMap();
-        }
+    public int[][] findAllTargets(int roll, List<LocalPlayer> players) {
+        int braking = 0;
+        paths.clear();
+        final List<int[]> result = new ArrayList<>();
         final Set<Node> forbiddenNodes = players
             .stream()
-            .filter(player -> !player.isStopped())
             .map(player -> player.node)
             .collect(Collectors.toSet());
-        final Map<Node, DamageAndPath> result = NodeUtil.findNodes(node, roll + adjust, forbiddenNodes, true, curveStops, lapsToGo == 0);
-        final Map<Node, DamageAndPath> targets = new HashMap<>();
-        for (final Map.Entry<Node, DamageAndPath> entry : result.entrySet()) {
-            if (entry.getValue().getDamage() < hitpoints + adjust) {
-                targets.put(entry.getKey(), entry.getValue());
-            }
-        }
-        if (targets.isEmpty() && checkDeath) {
-            final int maxAdjust = Math.min(0, 1 - hitpoints);
-            final Map<Node, DamageAndPath> deathCheck = NodeUtil.findNodes(node, roll + maxAdjust, forbiddenNodes, true, curveStops, lapsToGo == 0);
-            boolean match = false;
-            for (final Map.Entry<Node, DamageAndPath> entry : deathCheck.entrySet()) {
-                if (entry.getValue().getDamage() < hitpoints + maxAdjust) {
-                    match = true;
-                    break;
+        while (braking < hitpoints) {
+            final Map<Node, DamageAndPath> targets = findTargetNodes(roll - braking, forbiddenNodes);
+            for (Map.Entry<Node, DamageAndPath> e : targets.entrySet()) {
+                if (e.getValue().getDamage() + braking < hitpoints) {
+                    result.add(new int[]{e.getKey().id, e.getValue().getDamage(), braking});
+                    paths.add(e.getValue().getPath());
                 }
             }
-            if (!match) {
-                return null;
+            if (braking == roll) {
+                break;
+            }
+            braking++;
+        }
+        final int[][] targets = new int[result.size()][];
+        for (int i = 0; i < result.size(); i++) {
+            targets[i] = result.get(i);
+        }
+        return targets;
+    }
+
+    private Map<Node, DamageAndPath> findTargetNodes(final int roll, final Set<Node> forbiddenNodes) {
+        final Map<Node, DamageAndPath> result = NodeUtil.findNodes(node, roll, forbiddenNodes, true, curveStops, lapsToGo == 0);
+        final Map<Node, DamageAndPath> targets = new HashMap<>();
+        for (final Map.Entry<Node, DamageAndPath> entry : result.entrySet()) {
+            if (entry.getValue().getDamage() < hitpoints) {
+                targets.put(entry.getKey(), entry.getValue());
             }
         }
         return targets;
     }
 
-    public static void possiblyAddEngineDamage(final List<Player> players) {
-        for (final Player player : players) {
+    public static void possiblyAddEngineDamage(final List<LocalPlayer> players) {
+        for (final LocalPlayer player : players) {
             if (player.gear == 5 || player.gear == 6) {
                 if (Game.r.nextInt(20) < 4) {
                     player.adjustHitpoints(1);
@@ -294,8 +315,8 @@ public class Player implements AI {
         }
     }
 
-    public void collide(final List<Player> players, Map<Node, List<Node>> prevNodeMap) {
-        for (final Player player : players) {
+    public void collide(final List<LocalPlayer> players, Map<Node, List<Node>> prevNodeMap) {
+        for (final LocalPlayer player : players) {
             if (player != this && node.isCloseTo(player.node, prevNodeMap)) {
                 System.err.println(name + " almost collides with " + player.name);
                 if (Game.r.nextInt(20) < 4) {
@@ -314,41 +335,7 @@ public class Player implements AI {
         }
     }
 
-    private List<Player> playerList;
-
-    @Override
-    public void sendPlayerData(List<Player> playerList) {
-        this.playerList = playerList;
-    }
-
-    @Override
-    public int decideGear() {
-        return Math.min(gear + 1, 6);
-    }
-
-    @Override
-    public AI.NodeOrAdjustment decideTarget(@Nullable Map<Node, DamageAndPath> targets) {
-        final List<Node> candidates = new ArrayList<>();
-        if (targets != null) {
-            int leastDamage = 50;
-            for (final Map.Entry<Node, DamageAndPath> target : targets.entrySet()) {
-                final int damage = target.getValue().getDamage();
-                if (damage < leastDamage) {
-                    candidates.clear();
-                    candidates.add(target.getKey());
-                    leastDamage = damage;
-                } else if (damage == leastDamage) {
-                    candidates.add(target.getKey());
-                }
-            }
-        }
-        if (candidates.isEmpty()) {
-            if (hitpoints + adjust - 1 > 0) {
-                return new AI.NodeOrAdjustment(null, -1);
-            } else {
-                return new AI.NodeOrAdjustment(null, 0);
-            }
-        }
-        return new AI.NodeOrAdjustment(candidates.get(Game.r.nextInt(candidates.size())), 0);
+    public int[] getData() {
+        return new int[] { playerId, node.id, hitpoints, gear, curveStops };
     }
 }

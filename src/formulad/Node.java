@@ -9,12 +9,14 @@ import java.util.Map;
 import java.util.Set;
 
 public class Node {
+    public final int id;
     public final int x;
     public final int y;
     public final int type;
     public final Set<Node> nextNodes = new HashSet<>();
 
-    public Node(final int x, final int y, final int type) {
+    public Node(final int id, final int x, final int y, final int type) {
+        this.id = id;
         this.x = x;
         this.y = y;
         this.type = type;
@@ -117,16 +119,13 @@ public class Node {
         if (this == other) return true;
         if (other instanceof Node) {
             final Node node = (Node) other;
-            return type == node.type && x == node.x && y == node.y;
+            return id == node.id;
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        int result = type;
-        result = 37 * result + x;
-        result = 37 * result + y;
-        return result;
+        return id;
     }
 }
