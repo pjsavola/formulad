@@ -8,6 +8,7 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -15,6 +16,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -32,9 +38,9 @@ public class Game extends JPanel implements Runnable {
     // Contains angles for start nodes and distance information for curves
     private Map<Node, Double> attributes = new HashMap<>();
     private BufferedImage backgroundImage;
-    private LocalPlayer previous;
     private LocalPlayer current;
     private List<LocalPlayer> waitingPlayers = new ArrayList<>();
+    private final LocalPlayer[] allPlayers;
     private final List<LocalPlayer> players = new ArrayList<>();
     private final List<LocalPlayer> stoppedPlayers = new ArrayList<>();
     private final Map<Integer, AI> aiMap = new HashMap<>();
@@ -44,11 +50,13 @@ public class Game extends JPanel implements Runnable {
     private boolean stopped;
     @Nullable
     private Map<Integer, Integer> highlightedNodeToDamage;
+    private boolean enableTimeout;
+    private boolean highlightCurrentPlayer;
 
     public Game(JFrame frame) {
-        backgroundImage = ImageCache.getImage("/Users/petrisavola/formulad/sebring.jpg");
+        backgroundImage = ImageCache.getImage("sebring.jpg");
         setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
-        final File file = new File("/Users/petrisavola/formulad/formulad.dat");
+        final File file = new File("sebring.dat");
         MapEditor.loadNodes(file, nodes, attributes);
         for (final Node node : nodes) {
             for (final Node next : node.nextNodes) {
@@ -69,11 +77,14 @@ public class Game extends JPanel implements Runnable {
             }
         }
         List<Node> grid = findGrid().subList(0, 10);
+        allPlayers = new LocalPlayer[grid.size()];
         for (int i = 0; i < grid.size(); i++) {
-            final AI ai = new ManualAI(new DummyAI(), frame, this);
+            final AI ai = i == 0 ? new ManualAI(new DummyAI(), frame, this) : new DummyAI();
+            final String name = ai.getName() + i;
             final Node startNode = grid.get(i);
-            final LocalPlayer player = new LocalPlayer(i, ai.getName(), startNode, attributes.get(startNode), 1);
+            final LocalPlayer player = new LocalPlayer(i, name, startNode, attributes.get(startNode), 1, this);
             players.add(player);
+            allPlayers[i] = player;
             // Clone the array so nothing bad happens if AI mutates it
             ai.initialize(player.getId(), startNode.id, cloneArray(nodeArray), cloneArray(edgeArray));
             aiMap.put(player.getId(), ai);
@@ -82,21 +93,46 @@ public class Game extends JPanel implements Runnable {
         current = waitingPlayers.remove(0);
     }
 
+    public int runAI(Supplier<Integer> supplier, int timeout) {
+        final CompletableFuture<Integer> future = CompletableFuture.supplyAsync(supplier);
+        try {
+            if (enableTimeout) {
+                return future.get(timeout, TimeUnit.MILLISECONDS);
+            } else {
+                return future.get();
+            }
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            System.err.println("Timeout by AI");
+        } catch (InterruptedException e) {
+            future.cancel(true);
+            System.err.println("Interrupted");
+        } catch (ExecutionException e) {
+            System.err.println("ExecutionException");
+        }
+        return -1;
+    }
+
     @Override
     public void run() {
         while (!stopped) {
-            // TODO: Measure time and timeout?
+            highlightCurrentPlayer = true;
             final AI ai = aiMap.get(current.getId());
-            final int selectedGear = ai.selectGear(getPlayerData());
+            final int selectedGear = runAI(() -> ai.selectGear(getPlayerData()), 5000);
             if (!current.switchGear(selectedGear)) {
                 System.err.println("Invalid gear selection by player " + current.getId());
+                nextPlayer();
+                repaint();
+                continue;
             }
             roll = current.roll();
             final int[][] allTargets = current.findAllTargets(roll, players);
             if (allTargets.length == 0) {
                 current.stop();
+                highlightCurrentPlayer = false;
             } else {
-                int selectedIndex = ai.selectTarget(cloneArray(allTargets));
+                int selectedIndex = runAI(() -> ai.selectTarget(allTargets), 10000);
+                highlightCurrentPlayer = false;
                 if (selectedIndex < 0 || selectedIndex >= allTargets.length) {
                     System.err.println("Invalid target selection by player " + current.getId());
                     selectedIndex = 0;
@@ -106,7 +142,6 @@ public class Game extends JPanel implements Runnable {
                 if (roll == 20 || roll == 30) {
                     LocalPlayer.possiblyAddEngineDamage(players);
                 }
-
             }
             roll = null;
             nextPlayer();
@@ -275,18 +310,12 @@ public class Game extends JPanel implements Runnable {
             g.drawImage(backgroundImage, 0, 0, null);
         }
         final Graphics2D g2d = (Graphics2D) g;
-        drawPath(g2d);
+	    // Circle for dice rolls
+        MapEditor.drawOval(g2d, 40, 40, 50, 50, true, true, Color.BLACK, 1);
         drawTargets(g2d);
         drawInfoBox(g2d);
         drawPlayers(g2d);
         // drawDistances(g2d); // For debugging
-    }
-
-    private void drawPath(Graphics2D g2d) {
-        g2d.setColor(Color.WHITE);
-        if (previous != null) {
-            previous.drawPath(g2d);
-        }
     }
 
     private void drawTargets(Graphics2D g2d) {
@@ -308,37 +337,36 @@ public class Game extends JPanel implements Runnable {
     }
 
     private void drawInfoBox(Graphics2D g2d) {
-        int size = players.size() + stoppedPlayers.size();
         g2d.setColor(Color.GRAY);
-        g2d.fillRect(getWidth() - 250, 0, 249, 5 + 15 * size);
+        g2d.fillRect(getWidth() - 250, 0, 249, 5 + 15 * allPlayers.length);
         g2d.setColor(Color.BLACK);
-        g2d.drawRect(getWidth() - 250, 0, 249, 5 + 15 * size);
+        g2d.drawRect(getWidth() - 250, 0, 249, 5 + 15 * allPlayers.length);
         int i = 0;
-        for (LocalPlayer player : players) {
-            player.draw(g2d, getWidth() - 235, i * 15 + 10, 0);
-            player.drawStats(g2d, getWidth() - 220, i * 15 + 15);
-            i++;
-        }
-        int pos = 0;
-        for (LocalPlayer player : stoppedPlayers) {
-            player.draw(g2d, getWidth() - 235, i * 15 + 10, 0);
-            player.drawStats(g2d, getWidth() - 220, i * 15 + 15);
-            if (player.lapsToGo < 0) {
-                g2d.drawString(Integer.toString(pos++) + ".", getWidth() - 260, i * 15 + 15);
-            } else {
-                g2d.drawLine(getWidth() - 235, i * 15 + 10, getWidth() - 15, i * 15 + 10);
+        synchronized (allPlayers) {
+            for (LocalPlayer player : allPlayers) {
+                if (player == current) {
+                    // Turn marker
+                    g2d.setColor(Color.RED);
+                    g2d.fillPolygon(new int[] { getWidth() - 252, getWidth() - 257, getWidth() - 257 }, new int[] { i * 15 + 10, i * 15 + 7, i * 15 + 13 }, 3);
+                }
+                player.draw(g2d, getWidth() - 235, i * 15 + 10, 0);
+                player.drawStats(g2d, getWidth() - 220, i * 15 + 15);
+                i++;
             }
-            i++;
         }
     }
 
     private void drawPlayers(Graphics2D g2d) {
-        for (final LocalPlayer player : players) {
-            if (player == current) {
-                player.drawStats(g2d, roll);
-                player.highlight(g2d);
+        synchronized (allPlayers) {
+            for (LocalPlayer player : allPlayers) {
+                if (player == current) {
+                    player.drawRoll(g2d, roll);
+                    if (highlightCurrentPlayer) {
+                        player.highlight(g2d);
+                    }
+                }
+                player.draw(g2d);
             }
-            player.draw(g2d);
         }
     }
 
@@ -352,44 +380,59 @@ public class Game extends JPanel implements Runnable {
         }
     }
 
-    private void addStoppedPlayer(LocalPlayer player) {
-        stoppedPlayers.add(player);
-        stoppedPlayers.sort((p1, p2) -> {
-            if (p1.lapsToGo < 0 && p2.lapsToGo < 0) {
-                final int index1 = stoppedPlayers.indexOf(p1);
-                final int index2 = stoppedPlayers.indexOf(p2);
-                return index1 > index2 ? 1 : -1;
-            }
-            int cmp = p1.compareTo(p2, distanceMap);
-            if (cmp == 0) {
-                final int index1 = stoppedPlayers.indexOf(p1);
-                final int index2 = stoppedPlayers.indexOf(p2);
-                return index1 > index2 ? 1 : -1;
-            }
-            return cmp;
-        });
-    }
-
     private void nextPlayer() {
 	    // Drop stopped players
 	    final Iterator<LocalPlayer> it = players.iterator();
 	    while (it.hasNext()) {
 	        final LocalPlayer player = it.next();
 	        if (player.isStopped()) {
-	            addStoppedPlayer(player);
+	            stoppedPlayers.add(player);
 	            it.remove();
             }
         }
         if (waitingPlayers.isEmpty()) {
             if (players.isEmpty()) {
                 // This will make the Game thread stop
+                stoppedPlayers.sort((p1, p2) -> {
+                    if (p1.lapsToGo < 0 && p2.lapsToGo < 0) {
+                        final int index1 = stoppedPlayers.indexOf(p1);
+                        final int index2 = stoppedPlayers.indexOf(p2);
+                        return index1 > index2 ? 1 : -1;
+                    }
+                    int cmp = p1.compareTo(p2, distanceMap);
+                    if (cmp == 0) {
+                        final int index1 = stoppedPlayers.indexOf(p1);
+                        final int index2 = stoppedPlayers.indexOf(p2);
+                        return index1 > index2 ? 1 : -1;
+                    }
+                    return cmp;
+                });
                 stopped = true;
                 return;
             }
             waitingPlayers.addAll(players);
             waitingPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap));
+            synchronized (allPlayers) {
+                Arrays.sort(allPlayers, (p1, p2) -> {
+                    if (p1.lapsToGo < 0 && p2.lapsToGo < 0) {
+                        final int index1 = stoppedPlayers.indexOf(p1);
+                        final int index2 = stoppedPlayers.indexOf(p2);
+                        if (index1 == -1) return 1;
+                        if (index2 == -1) return -1;
+                        return index1 > index2 ? 1 : -1;
+                    }
+                    int cmp = p1.compareTo(p2, distanceMap);
+                    if (cmp == 0) {
+                        final int index1 = stoppedPlayers.indexOf(p1);
+                        final int index2 = stoppedPlayers.indexOf(p2);
+                        if (index1 == -1) return 1;
+                        if (index2 == -1) return -1;
+                        return index1 > index2 ? 1 : -1;
+                    }
+                    return cmp;
+                });
+            }
         }
-        previous = current;
         current = waitingPlayers.remove(0);
     }
 

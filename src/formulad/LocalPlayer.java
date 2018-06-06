@@ -1,7 +1,7 @@
 package formulad;
 
 import java.awt.Color;
-import java.awt.Graphics;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import javax.swing.JPanel;
 
 import com.sun.istack.internal.Nullable;
 
@@ -28,14 +30,17 @@ public class LocalPlayer {
     private int gear;
     private int curveStops;
     private double angle;
-    private List<Node> route;
     public int lapsToGo;
     private final Color color1;
     private final Color color2;
     private boolean stopped;
     private final List<List<Node>> paths = new ArrayList<>();
+    private final JPanel panel; // for repaint requests needed for animations
+    private boolean modifyingHitpoints;
+    private boolean modifyingGear;
+    public static final int animationSpeed = 200;
 
-    public LocalPlayer(int playerId, String name, Node node, double initialAngle, int laps) {
+    public LocalPlayer(int playerId, String name, Node node, double initialAngle, int laps, JPanel panel) {
         this.playerId = playerId;
         this.name = name;
         color1 = defaultBorderColors[colorIndex];
@@ -43,6 +48,7 @@ public class LocalPlayer {
         this.node = node;
         this.angle = initialAngle;
         lapsToGo = laps;
+        this.panel = panel;
     }
 
     public int getId() {
@@ -80,47 +86,52 @@ public class LocalPlayer {
         if (lapsToGo < 0) {
             System.err.println(name + " finished the race!");
         } else {
+            adjustHitpoints(hitpoints);
             System.err.println(name + " dropped from the race!");
         }
         stopped = true;
-        route = null;
     }
 
-    public void drawStats(Graphics2D g2d, @Nullable Integer roll) {
-        // TODO: Clean up
+    public void drawRoll(Graphics2D g2d, @Nullable Integer roll) {
         if (roll != null) {
-            g2d.setColor(Color.GREEN);
-            final int width = roll >= 10 ? 25 : 20;
-            final int x = (roll >= 10) ? 43 : 46;
-            MapEditor.drawOval(g2d, 50, 20, width, 20, true, true, Color.BLACK, 1);
-            g2d.drawString(Integer.toString(roll), x, 24);
+            final Color color;
+            switch (gear) {
+                case 1:
+                    color = Color.YELLOW;
+                    break;
+                case 2:
+                    color = Color.ORANGE;
+                    break;
+                case 3:
+                    color = Color.RED;
+                    break;
+                case 4:
+                    color = Color.GREEN;
+                    break;
+                case 5:
+                    color = Color.MAGENTA;
+                    break;
+                case 6:
+                    color = Color.BLUE;
+                    break;
+                default:
+                    throw new RuntimeException("Invalid gear " + gear);
+            }
+            g2d.setColor(color);
+            g2d.setFont(new Font("Arial", Font.PLAIN, 20));
+            final int x = (roll >= 10) ? 30 : 36;
+            g2d.drawString(Integer.toString(roll), x, 48);
         }
-        g2d.setColor(Color.RED);
-        final int width = hitpoints >= 10 ? 25 : 20;
-        final int x = hitpoints >= 10 ? 13 : 16;
-        MapEditor.drawOval(g2d, 20, 50, width, 20, true, true, Color.BLACK, 1);
-        g2d.drawString(Integer.toString(hitpoints), x, 54);
-        MapEditor.drawOval(g2d, 20, 20, 20, 20, true, true, Color.BLACK, 1);
-        g2d.setColor(Color.WHITE);
-        g2d.drawString(Integer.toString(gear), 16, 24);
     }
 
     public void highlight(final Graphics2D g2d) {
-        MapEditor.drawOval(g2d, node.x, node.y, 12, 12, true, false, Color.GREEN, 1);
-    }
-
-    public void drawPath(final Graphics g) {
-        if (route != null) {
-            for (int i = 0; i < route.size() - 1; i++) {
-                final Node n1 = route.get(i);
-                final Node n2 = route.get(i + 1);
-                g.drawLine(n1.x, n1.y, n2.x, n2.y);
-            }
-        }
+        MapEditor.drawOval(g2d, node.x, node.y, 14, 14, true, false, Color.GREEN, 1);
     }
 
     public void draw(final Graphics2D g) {
-        draw(g, node.x, node.y, angle);
+        if (!stopped) {
+            draw(g, node.x, node.y, angle);
+        }
     }
 
     public void draw(Graphics2D g, int x, int y, double angle) {
@@ -146,15 +157,6 @@ public class LocalPlayer {
         g.fillRect(1, 0, 5, 1);
         g.setColor(color1);
         g.fillRect(-3, 0, 3, 1);
-        if (stopped) {
-            if (lapsToGo < 0) {
-                g.setColor(Color.GREEN);
-            } else {
-                g.setColor(Color.BLACK);
-            }
-            g.drawLine(-7, -4, 6, 4);
-            g.drawLine(-7, 4, 6, -4);
-        }
         // needed if something is drawn after this
         g.rotate(-angle);
         g.translate(-x, -y);
@@ -162,14 +164,40 @@ public class LocalPlayer {
 
     public void drawStats(Graphics2D g, int x, int y) {
         g.setColor(Color.BLACK);
-        g.drawString(name + " HP: " + Integer.toString(hitpoints) + " G: " + Integer.toString(gear) + " S: " + Integer.toString(curveStops), x, y);
+        g.setFont(new Font("Arial", Font.PLAIN, 12));
+        g.drawString(name, x, y);
+        if (stopped) {
+            g.drawString(lapsToGo < 0 ? "Finished" : "DNF", x + 110, y);
+        } else {
+            if (modifyingHitpoints) {
+                g.setColor(Color.RED);
+            }
+            g.drawString("HP: " + Integer.toString(hitpoints), x + 110, y);
+            g.setColor(Color.BLACK);
+            if (modifyingGear) {
+                g.setColor(Color.BLUE);
+            }
+            g.drawString("G: " + Integer.toString(gear), x + 160, y);
+            g.setColor(Color.BLACK);
+            g.drawString("S: " + Integer.toString(curveStops), x + 190, y);
+        }
     }
 
-    public boolean switchGear(final int newGear) {
+    public boolean switchGear(int newGear) {
         if (newGear < 1 || newGear > 6) return false;
 
+        if (newGear == gear) return true;
+
         if (Math.abs(newGear - gear) <= 1) {
+            modifyingGear = true;
             gear = newGear;
+            panel.repaint();
+            try {
+                Thread.sleep(animationSpeed);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            modifyingGear = false;
             return true;
         }
 
@@ -177,7 +205,17 @@ public class LocalPlayer {
         final int damage = gear - newGear - 1;
         if (damage > 0 && damage < 4 && hitpoints > damage) {
             adjustHitpoints(damage);
-            gear = newGear;
+            modifyingGear = true;
+            while (gear > newGear) {
+                gear--;
+                panel.repaint();
+                try {
+                    Thread.sleep(animationSpeed);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            modifyingGear = false;
             return true;
         }
         return false;
@@ -185,14 +223,6 @@ public class LocalPlayer {
 
     // TODO: Is the distribution equal?
     public int roll() {
-        switch (gear) {
-            case 1: return 2;
-            case 2: return 4;
-            case 3: return 8;
-            case 4: return 12;
-            case 5: return 20;
-            case 6: return 30;
-        }
         switch (gear) {
             case 1: return Game.r.nextInt(2) + 1; // d4
             case 2: return Game.r.nextInt(3) + 2; // d6
@@ -217,11 +247,6 @@ public class LocalPlayer {
             throw new RuntimeException("Invalid starting point for route: " + route);
         }
         int size = route.size();
-        if (size > 1) {
-            final Node n1 = route.get(size - 2);
-            final Node n2 = route.get(size - 1);
-            angle = Math.atan2(n2.y - n1.y, n2.x - n1.x);
-        }
         if (node != null && node.type != MapEditor.FINISH) {
             for (final Node node : route) {
                 if (node.type == MapEditor.FINISH) {
@@ -230,8 +255,19 @@ public class LocalPlayer {
                 }
             }
         }
-        this.route = route;
-        node = route.get(size - 1);
+        // Animation of the movement
+        for (int i = 0; i < size - 1; i++) {
+            final Node n1 = route.get(i);
+            final Node n2 = route.get(i + 1);
+            angle = Math.atan2(n2.y - n1.y, n2.x - n1.x);
+            node = n2;
+            panel.repaint();
+            try {
+                Thread.sleep(animationSpeed);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
         boolean onlyCurves = true;
         for (final Node node : route) {
             if (!node.isCurve()) {
@@ -260,7 +296,19 @@ public class LocalPlayer {
 
     private void adjustHitpoints(int loss) {
         System.err.println(name + " loses " + loss + " hitpoints");
-        hitpoints -= loss;
+        modifyingHitpoints = true;
+        // Show animation
+        int counter = loss;
+        while (counter-- > 0) {
+            hitpoints--;
+            panel.repaint();
+            try {
+                Thread.sleep(animationSpeed);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        modifyingHitpoints = false;
     }
 
     public int[][] findAllTargets(int roll, List<LocalPlayer> players) {
