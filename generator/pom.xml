@@ -1,0 +1,79 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>fi.relex</groupId>
+    <artifactId>formulad-generator</artifactId>
+    <version>${common-version}</version>
+
+    <name>formulad-generator</name>
+    <description>Coordinating server for FormulaD</description>
+
+    <properties>
+        <quickcheck.version>0.8</quickcheck.version>
+        <used.java.version>1.8</used.java.version>
+        <uberjar.name>formulad</uberjar.name>
+        <resources.dir>resources</resources.dir>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <specification.file>${resources.dir}/formula.yaml</specification.file>
+        <api.project>../api</api.project>
+        <api.general.path>${api.project}</api.general.path>
+        <api.sources.path>${api.general.path}/java</api.sources.path>
+        <api.resources.path>${api.general.path}/resources</api.resources.path>
+        <api.main.package>${groupId}.model</api.main.package>
+        <generated-sources-path>${project.build.directory}/generated-sources</generated-sources-path>
+        <generated-sources-java-path>swagger</generated-sources-java-path>
+        <swagger.codegen.version>2.3.1</swagger.codegen.version>
+    </properties>
+
+    <build>
+    </build>
+
+
+    <profiles>
+        <profile>
+            <id>api</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>io.swagger</groupId>
+                        <artifactId>swagger-codegen-maven-plugin</artifactId>
+                        <version>${swagger.codegen.version}</version>
+                        <executions>
+                            <execution>
+                                <id>generate-html</id>
+                                <goals>
+                                    <goal>generate</goal>
+                                </goals>
+                                <configuration>
+                                    <inputSpec>${project.basedir}/src/main/resources/formula.yaml</inputSpec>
+                                    <language>html2</language>
+                                    <output>${api.general.path}</output>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>generate-java</id>
+                                <goals>
+                                    <goal>generate</goal>
+                                </goals>
+                                <configuration>
+                                    <inputSpec>${project.basedir}/src/main/resources/formula.yaml</inputSpec>
+                                    <language>java</language>
+                                    <output>${api.general.path}</output>
+                                    <apiPackage>${api.main.package}.handler</apiPackage>
+                                    <modelPackage>${api.main.package}.model</modelPackage>
+                                    <invokerPackage>${api.main.package}.invoker</invokerPackage>
+                                    <groupId>fi.relex</groupId>
+                                    <artifactId>formulad-api</artifactId>
+                                    <artifactVersion>0.1</artifactVersion>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+
+</project>
