@@ -112,8 +112,14 @@ public class ManualAI implements AI {
             brakingMap.computeIfAbsent(brakingDamage, _key -> new HashMap<>()).put(nodeId, brakingDamage + overshootDamage);
             indexMap.computeIfAbsent(brakingDamage, _key -> new HashMap<>()).put(nodeId, i);
         }
-        game.highlightNodes(brakingMap.get(0));
-        final MutableInt braking = new MutableInt(0);
+        // Automatically use brakes if there are no valid moves without
+        int minBraking = 0;
+        while (!brakingMap.containsKey(minBraking)) {
+            ++minBraking;
+        }
+        final int finalMinBraking = minBraking;
+        game.highlightNodes(brakingMap.get(finalMinBraking));
+        final MutableInt braking = new MutableInt(finalMinBraking);
         final KeyListener keyListener = new KeyListener() {
             @Override
             public void keyTyped(KeyEvent e) {
@@ -125,7 +131,7 @@ public class ManualAI implements AI {
             public void keyReleased(KeyEvent e) {
                 final char c = e.getKeyChar();
                 final int b = braking.getValue();
-                if (c == '.' && b > 0) {
+                if (c == '.' && b > finalMinBraking) {
                     braking.setValue(b - 1);
                     game.highlightNodes(brakingMap.get(b - 1));
                 } else if (c == ',' && b + 1 < hitpoints && brakingMap.containsKey(b + 1)) {
