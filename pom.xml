@@ -2,7 +2,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>fi.relex</groupId>
+    <groupId>fi.bogus</groupId>
     <artifactId>formulad</artifactId>
     <version>${common-version}</version>
     <packaging>pom</packaging>
@@ -19,9 +19,7 @@
     </properties>
 
     <modules>
-        <module>api</module>
         <module>server</module>
-        <module>generator</module>
     </modules>
 
     <build>

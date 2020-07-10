@@ -1,14 +1,13 @@
 package formulad;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Point;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,27 +30,21 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javax.annotation.Nullable;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.WindowConstants;
+import javax.swing.*;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
-import formulad.ai.AI;
-import formulad.ai.AIUtil;
-import formulad.ai.Node;
+import formulad.ai.*;
 
-import fi.relex.model.handler.DefaultApi;
-import fi.relex.model.model.GameState;
-import fi.relex.model.model.Gear;
-import fi.relex.model.model.Moves;
-import fi.relex.model.model.NameAtStart;
-import fi.relex.model.model.SelectedIndex;
-import fi.relex.model.model.Track;
+import formulad.model.GameState;
+import formulad.model.Gear;
+import formulad.model.Moves;
+import formulad.model.NameAtStart;
+import formulad.model.SelectedIndex;
+import formulad.model.Track;
 
 public class FormulaD extends JPanel implements Runnable {
-    private final DefaultApi api = new DefaultApi();
     private final JFrame frame;
     // Node identifier equals to the index in this array
     private final List<Node> nodes = new ArrayList<>();
@@ -77,6 +70,7 @@ public class FormulaD extends JPanel implements Runnable {
     private final int gearTimeoutInMillis;
     private final int moveTimeoutInMillis;
     private boolean highlightCurrentPlayer;
+    private static volatile Server server;
     public static final Logger log = Logger.getLogger(FormulaD.class.getName());
     static {
         try {
@@ -109,7 +103,7 @@ public class FormulaD extends JPanel implements Runnable {
         initTimeoutInMillis = params.initTimeoutInMillis;
         gearTimeoutInMillis = params.gearTimeoutInMillis;
         moveTimeoutInMillis = params.moveTimeoutInMillis;
-        int playerCount = params.manualAIs.size() + params.manualRemoteAIs.size() + params.remoteAIs.size() + params.localAIs.size() + params.simpleAIs;
+        int playerCount = params.manualAIs.size() + server.clients.size() + params.localAIs.size() + params.simpleAIs;
         final List<Node> grid = findGrid(attributes).subList(0, playerCount);
         final List<Integer> startingOrder = IntStream.range(0, playerCount).boxed().collect(Collectors.toList());
         Collections.shuffle(startingOrder, rng);
@@ -132,7 +126,7 @@ public class FormulaD extends JPanel implements Runnable {
             }
         }
         // Timeout makes sense only if there are no manually controlled players.
-        enableTimeout = params.manualAIs.isEmpty() && params.manualRemoteAIs.isEmpty();
+        enableTimeout = params.manualAIs.isEmpty();
         // Create automatically controlled AI players
         for (String path : params.localAIs) {
             try {
@@ -150,15 +144,16 @@ public class FormulaD extends JPanel implements Runnable {
             }
         }
         // Create remotely controlled AI players
-        for (String url : params.remoteAIs) {
-            createAiPlayer(new RemoteAI(url), grid, startingOrder, attributes, params.leeway);
+        for (RemoteAI client : server.clients) {
+            createAiPlayer(client, grid, startingOrder, attributes, params.leeway);
         }
         // Create remotely and manually controlled AI players
+        /*
         for (String url : params.manualRemoteAIs) {
             final AI remoteAI = new RemoteAI(url);
             final AI manualAI = new ManualAI(remoteAI, frame, this);
             createAiPlayer(manualAI, grid, startingOrder, attributes, params.leeway);
-        }
+        }*/
         // Create computer players
         int count = params.simpleAIs;
         while (count-- > 0) {
@@ -283,6 +278,7 @@ public class FormulaD extends JPanel implements Runnable {
         }
         // TODO: Press any key to continue?
         frame.setVisible(false);
+        server.close();
         System.exit(0);
     }
 
@@ -526,14 +522,14 @@ public class FormulaD extends JPanel implements Runnable {
         @Parameter(names = "--manual_ai", description = "Path to manually controlled local AI, can be given multiple times. Keys: '1'-'6': gears, 'a': let AI make move, '.': Brake less, ',': Brake more")
         private List<String> manualAIs = new ArrayList<>();
 
-        @Parameter(names = "--manual_remote_ai", description = "Path to manually controlled remote AI, can be given multiple times. Keys: '1'-'6': gears, 'a': let AI make move, '.': Brake less, ',': Brake more")
-        private List<String> manualRemoteAIs = new ArrayList<>();
+        //@Parameter(names = "--manual_remote_ai", description = "Path to manually controlled remote AI, can be given multiple times. Keys: '1'-'6': gears, 'a': let AI make move, '.': Brake less, ',': Brake more")
+        //private List<String> manualRemoteAIs = new ArrayList<>();
 
         @Parameter(names = "--local_ai", description = "Path to local AI, can be given multiple times")
         private List<String> localAIs = new ArrayList<>();
 
-        @Parameter(names = "--remote_ai", description = "URL of AI, can be given multiple times")
-        private List<String> remoteAIs = new ArrayList<>();
+        //@Parameter(names = "--remote_ai", description = "URL of AI, can be given multiple times")
+        //private List<String> remoteAIs = new ArrayList<>();
 
         @Parameter(names = "--simple_ais", description = "Number of pre-built AIs to include", arity = 1)
         private int simpleAIs = 0;
@@ -560,7 +556,96 @@ public class FormulaD extends JPanel implements Runnable {
         private Long seed = null;
     }
 
+    private static void getClients(JFrame f) {
+
+        final JPanel p = new JPanel(new GridLayout(3, 0));
+        final JButton singlePlayerButton = new JButton("Single Player");
+        singlePlayerButton.addActionListener(e -> {
+            // TODO
+        });
+        final JButton hostMultiplayerButton = new JButton("Host Multiplayer");
+        hostMultiplayerButton.addActionListener(e -> {
+            String result = (String) JOptionPane.showInputDialog(f, "Select port", "Select port", JOptionPane.PLAIN_MESSAGE,  null, null, "1277");
+            try {
+                JLabel label = new JLabel("Connected Clients: 0");
+                final int port = Integer.parseInt(result);
+                server = new Server(port, label);
+                p.removeAll();
+                p.add(label);
+                JButton button = new JButton("Start");
+                button.addActionListener(event -> {
+                    server.ready();
+                });
+                p.add(button);
+                f.pack();
+                server.start();
+            } catch (NumberFormatException exception) {
+                System.out.println("Invalid port: " + result);
+            } catch (IOException exception) {
+                System.out.println("Unable to create server");
+                exception.printStackTrace();
+            }
+        });
+        final JButton joinMultiplayerButton = new JButton("Join Multiplayer");
+        joinMultiplayerButton.addActionListener(e -> {
+            String result = (String) JOptionPane.showInputDialog(f, "IP Address", "IP Address", JOptionPane.PLAIN_MESSAGE,  null, null, null);
+            String[] addressAndPort = result.split(":");
+            try {
+                if (addressAndPort.length == 2) {
+                    final int port = Integer.parseInt(addressAndPort[1]);
+                    AI ai = new GreatAI();
+                    Socket socket = new Socket(addressAndPort[0], port);
+                    ObjectOutputStream oos = null;
+                    ObjectInputStream ois = null;
+                    oos = new ObjectOutputStream(socket.getOutputStream());
+                    ois = new ObjectInputStream(socket.getInputStream());
+                    while (socket.isConnected()) {
+                        try {
+                            Object request = ois.readObject();
+                            if (request instanceof Track) {
+                                oos.writeObject(ai.startGame((Track) request));
+                            } else if (request instanceof GameState) {
+                                oos.writeObject(ai.selectGear((GameState) request));
+                            } else if (request instanceof Moves) {
+                                oos.writeObject(ai.selectMove((Moves) request));
+                            }
+                        } catch (EOFException exception) {
+                            // This is ok, no response yet
+                        }
+                    }
+                    ois.close();
+                    oos.close();
+                }
+                else {
+                    System.out.println("Please specify server IP and port (e.g. 123.456.7.8:1277)");
+                }
+            } catch (NumberFormatException exception) {
+                System.out.println("Invalid port: " + addressAndPort[1]);
+            } catch (IOException exception) {
+                System.out.println("Unable to connect to server " + result);
+                exception.printStackTrace();
+            } catch (ClassNotFoundException exception) {
+                System.out.println("Failure when reading input stream");
+                exception.printStackTrace();
+            }
+        });
+        p.add(singlePlayerButton);
+        p.add(hostMultiplayerButton);
+        p.add(joinMultiplayerButton);
+        f.setContentPane(p);
+        f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        f.pack();
+        f.setLocation(0, 0);
+        f.setVisible(true);
+        while (server == null || !server.isReady()) {
+
+        }
+    }
+
     public static void main(String[] args) {
+        final JFrame f = new JFrame();
+        getClients(f);
+
         final Params params = new Params();
         final JCommander commander = new JCommander(params);
         try {
@@ -574,14 +659,13 @@ public class FormulaD extends JPanel implements Runnable {
             commander.usage();
             System.exit(2);
         }
-        final int playerCount = params.manualAIs.size() + params.manualRemoteAIs.size() + params.remoteAIs.size() + params.localAIs.size() + params.simpleAIs;
+        final int playerCount = params.manualAIs.size() + server.clients.size() + params.localAIs.size() + params.simpleAIs;
         if (playerCount < 1 || playerCount > 10) {
             System.out.printf("Please provide 1-10 players%n");
             commander.usage();
             System.exit(3);
         }
         LocalPlayer.animationDelayInMillis = params.animationDelayInMillis;
-        final JFrame f = new JFrame();
         final FormulaD game = new FormulaD(params, f);
         f.setContentPane(game);
         f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);

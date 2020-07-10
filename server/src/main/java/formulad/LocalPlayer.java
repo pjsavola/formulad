@@ -20,10 +20,11 @@ import javax.swing.JPanel;
 import formulad.ai.Gear;
 import formulad.ai.Node;
 
-import fi.relex.model.model.GameId;
-import fi.relex.model.model.Moves;
-import fi.relex.model.model.PlayerState;
-import fi.relex.model.model.ValidMove;
+import formulad.model.GameId;
+import formulad.model.Moves;
+import formulad.model.PlayerState;
+import formulad.model.TypeEnum;
+import formulad.model.ValidMove;
 
 public final class LocalPlayer {
     private static int colorIndex = 0;
@@ -388,7 +389,7 @@ public final class LocalPlayer {
                 if (damage < hitpoints) {
                     validMoves.add(new ValidMove()
                         .nodeId(e.getKey().getId())
-                        .type(ValidMove.TypeEnum.valueOf(e.getKey().getType().name()))
+                        .type(TypeEnum.valueOf(e.getKey().getType().name()))
                         .overshoot(e.getValue().getDamage())
                         .braking(braking)
                     );
@@ -485,7 +486,7 @@ public final class LocalPlayer {
     public void populate(PlayerState playerState) {
         playerState.setPlayerId(playerId);
         playerState.setNodeId(node.getId());
-        playerState.setType(PlayerState.TypeEnum.valueOf(node.getType().name()));
+        playerState.setType(TypeEnum.valueOf(node.getType().name()));
         playerState.setHitpoints(hitpoints);
         playerState.setGear(gear);
         playerState.setStops(curveStops);

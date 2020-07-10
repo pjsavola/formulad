@@ -6,10 +6,12 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="formulad-api" />
-        <module name="formulad-generator" />
         <module name="formulad-server" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="formulad-api" target="1.7" />
+      <module name="formulad-generator" target="1.5" />
+    </bytecodeTargetLevel>
   </component>
 </project>

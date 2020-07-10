@@ -8,16 +8,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import fi.relex.model.model.Edge;
-import fi.relex.model.model.GameState;
-import fi.relex.model.model.PlayerState;
+import formulad.model.Edge;
+import formulad.model.GameState;
+import formulad.model.PlayerState;
 
 public abstract class AIUtil {
 
     /**
      * Builds map from node identifier to node from server input.
      */
-    public static Map<Integer, Node> buildNodeMap(List<fi.relex.model.model.Node> nodes, List<Edge> edges) {
+    public static Map<Integer, Node> buildNodeMap(List<formulad.model.Node> nodes, List<Edge> edges) {
         final Map<Integer, Node> nodeMap = new HashMap<>();
         nodes.forEach(node -> {
             final Node oldNode = nodeMap.put(node.getNodeId(), new Node(node));

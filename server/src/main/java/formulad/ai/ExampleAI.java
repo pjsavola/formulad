@@ -5,13 +5,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import fi.relex.model.model.GameState;
-import fi.relex.model.model.Moves;
-import fi.relex.model.model.NameAtStart;
-import fi.relex.model.model.PlayerState;
-import fi.relex.model.model.SelectedIndex;
-import fi.relex.model.model.Track;
-import fi.relex.model.model.ValidMove;
+import formulad.model.GameState;
+import formulad.model.Moves;
+import formulad.model.NameAtStart;
+import formulad.model.PlayerState;
+import formulad.model.SelectedIndex;
+import formulad.model.Track;
+import formulad.model.ValidMove;
 
 public class ExampleAI implements AI {
 
@@ -30,7 +30,7 @@ public class ExampleAI implements AI {
     }
 
     @Override
-    public fi.relex.model.model.Gear selectGear(GameState gameState) {
+    public formulad.model.Gear selectGear(GameState gameState) {
         playerMap = AIUtil.buildPlayerMap(gameState);
         player = playerMap.get(playerId);
         location = nodeMap.get(player.getNodeId());
@@ -38,7 +38,7 @@ public class ExampleAI implements AI {
         // TODO: Implement better AI
         int newGear = player.getGear() + 1;
         if (newGear > 4) newGear = 4;
-        return new fi.relex.model.model.Gear().gear(newGear);
+        return new formulad.model.Gear().gear(newGear);
     }
 
     @Override

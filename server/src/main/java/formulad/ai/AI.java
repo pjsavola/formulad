@@ -1,11 +1,11 @@
 package formulad.ai;
 
-import fi.relex.model.model.GameState;
-import fi.relex.model.model.Gear;
-import fi.relex.model.model.Moves;
-import fi.relex.model.model.NameAtStart;
-import fi.relex.model.model.SelectedIndex;
-import fi.relex.model.model.Track;
+import formulad.model.GameState;
+import formulad.model.Gear;
+import formulad.model.Moves;
+import formulad.model.NameAtStart;
+import formulad.model.SelectedIndex;
+import formulad.model.Track;
 
 public interface AI {
 

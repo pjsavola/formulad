@@ -26,7 +26,7 @@ public final class Node {
         this.type = type;
     }
 
-    public Node(fi.relex.model.model.Node node) {
+    public Node(formulad.model.Node node) {
         this.id = node.getNodeId();
         this.type = Type.valueOf(node.getType().name());
     }
