@@ -10,6 +10,7 @@ import java.util.Map;
 import javax.swing.JFrame;
 
 import formulad.FormulaD;
+import formulad.Screen;
 import formulad.ai.AI;
 import formulad.ai.AIUtil;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -30,11 +31,11 @@ public class ManualAI implements AI {
     private int gear;
     private final AI ai;
     private final JFrame frame;
-    private final FormulaD game;
+    private final Screen game;
     private boolean automaticMove;
     private static final int listenerDelay = 50;
 
-    public ManualAI(AI ai, JFrame frame, FormulaD game) {
+    public ManualAI(AI ai, JFrame frame, Screen game) {
         this.ai = ai;
         this.frame = frame;
         this.game = game;

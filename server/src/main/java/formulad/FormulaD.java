@@ -1,12 +1,8 @@
 package formulad;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,14 +33,11 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import formulad.ai.*;
 
-import formulad.model.GameState;
+import formulad.ai.Node;
+import formulad.model.*;
 import formulad.model.Gear;
-import formulad.model.Moves;
-import formulad.model.NameAtStart;
-import formulad.model.SelectedIndex;
-import formulad.model.Track;
 
-public class FormulaD extends JPanel implements Runnable {
+public class FormulaD extends Screen implements Runnable {
     private final JFrame frame;
     // Node identifier equals to the index in this array
     private final List<Node> nodes = new ArrayList<>();
@@ -65,12 +58,12 @@ public class FormulaD extends JPanel implements Runnable {
     private static final String gameId = "Sebring";
     @Nullable
     private Map<Integer, Integer> highlightedNodeToDamage;
-    private final boolean enableTimeout;
+    private boolean enableTimeout;
     private final int initTimeoutInMillis;
     private final int gearTimeoutInMillis;
     private final int moveTimeoutInMillis;
     private boolean highlightCurrentPlayer;
-    private static volatile Server server;
+    private final Lobby lobby;
     public static final Logger log = Logger.getLogger(FormulaD.class.getName());
     static {
         try {
@@ -84,7 +77,8 @@ public class FormulaD extends JPanel implements Runnable {
         }
     }
 
-    public FormulaD(Params params, JFrame frame) {
+    public FormulaD(Params params, Lobby lobby, JFrame frame) {
+        this.lobby = lobby;
         this.frame = frame;
         backgroundImage = ImageCache.getImage("/sebring.jpg");
         setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
@@ -103,11 +97,19 @@ public class FormulaD extends JPanel implements Runnable {
         initTimeoutInMillis = params.initTimeoutInMillis;
         gearTimeoutInMillis = params.gearTimeoutInMillis;
         moveTimeoutInMillis = params.moveTimeoutInMillis;
-        int playerCount = params.manualAIs.size() + server.clients.size() + params.localAIs.size() + params.simpleAIs;
+        allPlayers = new ArrayList<>();
+        createGrid(params, attributes);
+        waitingPlayers.addAll(players);
+        waitingPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
+        current = waitingPlayers.remove(0);
+    }
+
+    private void createGrid(Params params, Map<Node, Double> attributes) {
+        int playerCount = params.manualAIs.size() + lobby.clients.size() + params.localAIs.size() + params.simpleAIs;
         final List<Node> grid = findGrid(attributes).subList(0, playerCount);
         final List<Integer> startingOrder = IntStream.range(0, playerCount).boxed().collect(Collectors.toList());
         Collections.shuffle(startingOrder, rng);
-        allPlayers = new ArrayList<>();
+
         // Create manually controlled AI players
         for (String path : params.manualAIs) {
             try {
@@ -126,7 +128,7 @@ public class FormulaD extends JPanel implements Runnable {
             }
         }
         // Timeout makes sense only if there are no manually controlled players.
-        enableTimeout = params.manualAIs.isEmpty();
+        enableTimeout = false; //params.manualAIs.isEmpty();
         // Create automatically controlled AI players
         for (String path : params.localAIs) {
             try {
@@ -144,7 +146,7 @@ public class FormulaD extends JPanel implements Runnable {
             }
         }
         // Create remotely controlled AI players
-        for (RemoteAI client : server.clients) {
+        for (RemoteAI client : lobby.clients) {
             createAiPlayer(client, grid, startingOrder, attributes, params.leeway);
         }
         // Create remotely and manually controlled AI players
@@ -160,9 +162,6 @@ public class FormulaD extends JPanel implements Runnable {
             final AI ai = new GreatAI();
             createAiPlayer(ai, grid, startingOrder, attributes, params.leeway);
         }
-        waitingPlayers.addAll(players);
-        waitingPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
-        current = waitingPlayers.remove(0);
     }
 
     private void createAiPlayer(AI ai, List<Node> grid, List<Integer> startingOrder, Map<Node, Double> attributes, int leeway) {
@@ -278,7 +277,7 @@ public class FormulaD extends JPanel implements Runnable {
         }
         // TODO: Press any key to continue?
         frame.setVisible(false);
-        server.close();
+        lobby.close();
         System.exit(0);
     }
 
@@ -556,8 +555,8 @@ public class FormulaD extends JPanel implements Runnable {
         private Long seed = null;
     }
 
-    private static void getClients(JFrame f) {
-
+    private static void showMenu(JFrame f, Params params) {
+        final int playerCount = params.manualAIs.size() + params.localAIs.size() + params.simpleAIs;
         final JPanel p = new JPanel(new GridLayout(3, 0));
         final JButton singlePlayerButton = new JButton("Single Player");
         singlePlayerButton.addActionListener(e -> {
@@ -569,20 +568,24 @@ public class FormulaD extends JPanel implements Runnable {
             try {
                 JLabel label = new JLabel("Connected Clients: 0");
                 final int port = Integer.parseInt(result);
-                server = new Server(port, label);
+                final Lobby lobby = new Lobby(port, playerCount, label);
                 p.removeAll();
                 p.add(label);
                 JButton button = new JButton("Start");
                 button.addActionListener(event -> {
-                    server.ready();
+                    lobby.interrupt();
+                    final FormulaD server = new FormulaD(params, lobby, f);
+                    f.setContentPane(server);
+                    f.pack();
+                    new Thread(server).start();
                 });
                 p.add(button);
                 f.pack();
-                server.start();
+                lobby.start();
             } catch (NumberFormatException exception) {
                 System.out.println("Invalid port: " + result);
             } catch (IOException exception) {
-                System.out.println("Unable to create server");
+                System.out.println("Unable to create lobby");
                 exception.printStackTrace();
             }
         });
@@ -593,39 +596,19 @@ public class FormulaD extends JPanel implements Runnable {
             try {
                 if (addressAndPort.length == 2) {
                     final int port = Integer.parseInt(addressAndPort[1]);
-                    AI ai = new GreatAI();
                     Socket socket = new Socket(addressAndPort[0], port);
-                    ObjectOutputStream oos = null;
-                    ObjectInputStream ois = null;
-                    oos = new ObjectOutputStream(socket.getOutputStream());
-                    ois = new ObjectInputStream(socket.getInputStream());
-                    while (socket.isConnected()) {
-                        try {
-                            Object request = ois.readObject();
-                            if (request instanceof Track) {
-                                oos.writeObject(ai.startGame((Track) request));
-                            } else if (request instanceof GameState) {
-                                oos.writeObject(ai.selectGear((GameState) request));
-                            } else if (request instanceof Moves) {
-                                oos.writeObject(ai.selectMove((Moves) request));
-                            }
-                        } catch (EOFException exception) {
-                            // This is ok, no response yet
-                        }
-                    }
-                    ois.close();
-                    oos.close();
+                    final Client client = new Client(f, socket);
+                    f.setContentPane(client);
+                    f.pack();
+                    new Thread(client).start();
                 }
                 else {
-                    System.out.println("Please specify server IP and port (e.g. 123.456.7.8:1277)");
+                    System.out.println("Please specify lobby IP and port (e.g. 123.456.7.8:1277)");
                 }
             } catch (NumberFormatException exception) {
                 System.out.println("Invalid port: " + addressAndPort[1]);
             } catch (IOException exception) {
-                System.out.println("Unable to connect to server " + result);
-                exception.printStackTrace();
-            } catch (ClassNotFoundException exception) {
-                System.out.println("Failure when reading input stream");
+                System.out.println("Unable to connect to lobby " + result);
                 exception.printStackTrace();
             }
         });
@@ -637,15 +620,10 @@ public class FormulaD extends JPanel implements Runnable {
         f.pack();
         f.setLocation(0, 0);
         f.setVisible(true);
-        while (server == null || !server.isReady()) {
-
-        }
     }
 
     public static void main(String[] args) {
         final JFrame f = new JFrame();
-        getClients(f);
-
         final Params params = new Params();
         final JCommander commander = new JCommander(params);
         try {
@@ -659,19 +637,13 @@ public class FormulaD extends JPanel implements Runnable {
             commander.usage();
             System.exit(2);
         }
-        final int playerCount = params.manualAIs.size() + server.clients.size() + params.localAIs.size() + params.simpleAIs;
+        final int playerCount = params.manualAIs.size() + params.localAIs.size() + params.simpleAIs;
         if (playerCount < 1 || playerCount > 10) {
             System.out.printf("Please provide 1-10 players%n");
             commander.usage();
             System.exit(3);
         }
         LocalPlayer.animationDelayInMillis = params.animationDelayInMillis;
-        final FormulaD game = new FormulaD(params, f);
-        f.setContentPane(game);
-        f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        f.pack();
-        f.setLocation(0, 0);
-        new Thread(game).start();
-        f.setVisible(true);
+        showMenu(f, params);
     }
 }

@@ -10,21 +10,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
-public class Server extends Thread {
+public class Lobby extends Thread {
 
     private final ServerSocket serverSocket;
+    private final int playerCount;
     private final JLabel label;
     private boolean ready;
     final List<RemoteAI> clients = new ArrayList<>();
-    public Server(int port, JLabel label) throws IOException {
+    public Lobby(int port, int playerCount, JLabel label) throws IOException {
         serverSocket = new ServerSocket(port);
+        this.playerCount = playerCount;
         this.label = label;
     }
 
     @Override
     public void run() {
         try {
-            while (!ready) {
+            while (playerCount + clients.size() < 10) {
                 System.out.println("Waiting for clients");
                 final Socket socket = serverSocket.accept();
                 System.out.println("Client connected: " + socket.getInetAddress().toString());
@@ -33,16 +35,8 @@ public class Server extends Thread {
                 label.repaint();
             }
         } catch (IOException e) {
-            FormulaD.log.log(Level.SEVERE, "Server IOException", e);
+            FormulaD.log.log(Level.SEVERE, "Lobby IOException", e);
         }
-    }
-
-    public void ready() {
-        ready = true;
-    }
-
-    public boolean isReady() {
-        return ready;
     }
 
     public void close() {
@@ -52,7 +46,7 @@ public class Server extends Thread {
         try {
             serverSocket.close();
         } catch (IOException e) {
-            FormulaD.log.log(Level.SEVERE, "Server IOException", e);
+            FormulaD.log.log(Level.SEVERE, "Lobby IOException", e);
         }
     }
 }
