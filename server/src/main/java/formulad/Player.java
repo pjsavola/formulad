@@ -28,7 +28,6 @@ public final class Player {
     private int gear;
     private int curveStops;
     private double angle;
-    private int lapsToGo;
     private final Color color1;
     private final Color color2;
     private boolean stopped;
@@ -38,13 +37,12 @@ public final class Player {
     private boolean modifyingHitpoints;
     private boolean modifyingGear;
 
-    public Player(String playerId, Node node, double initialAngle, int laps, JPanel panel) {
+    public Player(String playerId, Node node, double initialAngle, JPanel panel) {
         this.playerId = playerId;
         color1 = defaultBorderColors[colorIndex];
         color2 = defaultColors[colorIndex++];
         this.node = node;
         this.angle = initialAngle;
-        lapsToGo = laps;
         this.panel = panel;
     }
 
@@ -144,7 +142,7 @@ public final class Player {
         g.setFont(new Font("Arial", Font.PLAIN, 12));
         g.drawString(name, x, y);
         if (stopped) {
-            g.drawString(lapsToGo < 0 ? "Finished" : "DNF", x + 110, y);
+            g.drawString(hitpoints > 0 ? "Finished" : "DNF", x + 110, y);
         } else {
             if (modifyingHitpoints) {
                 g.setColor(Color.RED);

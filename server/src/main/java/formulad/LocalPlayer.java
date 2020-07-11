@@ -278,28 +278,6 @@ public final class LocalPlayer {
         move(paths.get(index), coordinates);
     }
 
-    public void move(Node n, Map<Node, Point> coordinates) {
-        if (route.isEmpty()) {
-            route.add(node);
-        }
-        final Point p1 = coordinates.get(node);
-        final Point p2 = coordinates.get(n);
-        angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-        node = n;
-        route.add(n);
-        panel.repaint();
-    }
-
-    public void setGear(int gear) {
-        this.gear = gear;
-        panel.repaint();
-    }
-
-    public void setHitpoints(int hitpoints) {
-        this.hitpoints = hitpoints;
-        panel.repaint();
-    }
-
     private void move(DamageAndPath dp, Map<Node, Point> coordinates) {
         final List<Node> route = dp.getPath();
         if (route == null || route.isEmpty()) {
@@ -453,6 +431,9 @@ public final class LocalPlayer {
 
     public void collide(List<LocalPlayer> players, Map<Node, List<Node>> prevNodeMap, Random rng) {
         for (LocalPlayer player : players) {
+            if (player.isStopped()) {
+                continue;
+            }
             if (player != this && node.isCloseTo(player.node, prevNodeMap)) {
                 FormulaD.log.info(getNameAndId() + " is close to " + player.getNameAndId() + " and may collide");
                 if (rng.nextInt(20) < 4) {
