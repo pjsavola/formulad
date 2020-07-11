@@ -1,12 +1,8 @@
 package formulad;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.ParameterException;
 import formulad.ai.*;
 import formulad.ai.Node;
 import formulad.model.*;
-import formulad.model.Gear;
 
 import javax.annotation.Nullable;
 import javax.swing.*;
@@ -16,17 +12,6 @@ import java.io.*;
 import java.net.Socket;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
-import java.util.logging.FileHandler;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class Client extends Screen implements Runnable {
     private final JFrame frame;
@@ -40,17 +25,17 @@ public class Client extends Screen implements Runnable {
     private static final String gameId = "Sebring";
     @Nullable
     private Map<Integer, Integer> highlightedNodeToDamage;
-    private boolean highlightCurrentPlayer;
+    private String highlightedPlayer;
 
     private PlayerId playerId;
     private GameState gameState;
     private Moves moves;
-    private LocalPlayer player;
     private List<LocalPlayer> allPlayers = new ArrayList<>();
     private final Socket socket;
     private final ObjectOutputStream oos;
     private final ObjectInputStream ois;
     private final AI ai;
+    private String movingPlayer;
 
     public Client(JFrame frame, Socket socket) throws IOException {
         this.frame = frame;
@@ -67,9 +52,8 @@ public class Client extends Screen implements Runnable {
         this.socket = socket;
         oos = new ObjectOutputStream(socket.getOutputStream());
         ois = new ObjectInputStream(socket.getInputStream());
-        ai = new GreatAI();
-        //final AI backupAI = new GreatAI();
-        //ai = new ManualAI(backupAI, frame, this);
+        final AI backupAI = new GreatAI();
+        ai = new ManualAI(backupAI, frame, this);
     }
 
     @Override
@@ -77,13 +61,32 @@ public class Client extends Screen implements Runnable {
         try {
             while (socket.isConnected()) {
                 try {
+                    highlightedPlayer = null;
                     Object request = ois.readObject();
-                    if (request instanceof Track) {
-                        oos.writeObject(ai.startGame((Track) request));
+                    if (request instanceof MovementNotification) {
+                        final MovementNotification movement = (MovementNotification) request;
+                        carMoved(movement);
+                    } else if (request instanceof RollNotification) {
+                        final RollNotification roll = (RollNotification) request;
+                        diceRolled(roll);
+                    } else if (request instanceof DamageNotifiaction) {
+                        final DamageNotifiaction damage = (DamageNotifiaction) request;
+                        carDamaged(damage);
+                    } else if (request instanceof Track) {
+                        final Track track = (Track) request;
+                        updateTrack(track);
+                        oos.writeObject(ai.startGame(track));
                     } else if (request instanceof GameState) {
-                        oos.writeObject(ai.selectGear((GameState) request));
+                        final GameState gameState = (GameState) request;
+                        updateGameState(gameState);
+                        roll = null;
+                        highlightedPlayer = playerId.getPlayerId();
+                        oos.writeObject(ai.selectGear(gameState));
                     } else if (request instanceof Moves) {
-                        oos.writeObject(ai.selectMove((Moves) request));
+                        final Moves moves = (Moves) request;
+                        updateMoves(moves);
+                        highlightedPlayer = playerId.getPlayerId();
+                        oos.writeObject(ai.selectMove(moves));
                     }
                 } catch (EOFException e) {
                     // This is ok, no response yet
@@ -97,25 +100,60 @@ public class Client extends Screen implements Runnable {
         }
     }
 
-    void updatePlayerId(PlayerId playerId) {
-        this.playerId = playerId;
+    void updateTrack(Track track) {
+        this.playerId = track.getPlayer();
     }
 
     void updateGameState(GameState gameState) {
         if (this.gameState == null) {
             for (PlayerState playerState : gameState.getPlayers()) {
                 final LocalPlayer player = new LocalPlayer(playerState.getPlayerId(), nodes.get(playerState.getNodeId()), 0, 1, this, playerState.getLeeway());
+                player.setName("Opponent");
                 if (playerId.getPlayerId().equals(playerState.getPlayerId())) {
-                    this.player = player;
+                    this.playerId = playerId;
+                    player.setName("You");
                 }
                 allPlayers.add(player);
             }
         }
         this.gameState = gameState;
+        repaint();
     }
 
     void updateMoves(Moves moves) {
         this.moves = moves;
+    }
+
+    void carMoved(MovementNotification nontification) {
+        for (LocalPlayer player : allPlayers) {
+            if (player.getId().equals(nontification.getPlayerId())) {
+                player.move(nodes.get(nontification.getNodeId()), coordinates);
+            }
+        }
+    }
+
+    void diceRolled(RollNotification notification) {
+        if (!notification.getPlayerId().equals(movingPlayer)) {
+            movingPlayer = notification.getPlayerId();
+            for (LocalPlayer player : allPlayers) {
+                player.clearRoute();
+            }
+        }
+        roll = notification.getRoll();
+        for (LocalPlayer player : allPlayers) {
+            if (player.getId().equals(notification.getPlayerId())) {
+                player.setGear(notification.getGear());
+                player.clearRoute();
+            }
+        }
+    }
+
+    void carDamaged(DamageNotifiaction notification) {
+        for (LocalPlayer player : allPlayers) {
+            if (player.getId().equals(notification.getPlayerId())) {
+                player.setHitpoints(notification.getDamage());
+            }
+        }
     }
 
     /**
@@ -175,7 +213,7 @@ public class Client extends Screen implements Runnable {
         g2d.drawRect(getWidth() - 250, 0, 249, 5 + 15 * allPlayers.size());
         int i = 0;
         for (LocalPlayer player : allPlayers) {
-            if (this.player == player) {
+            if ((highlightedPlayer == null && player.getId().equals(movingPlayer)) || player.getId().equals(highlightedPlayer)) {
                 // Turn marker
                 g2d.setColor(Color.RED);
                 g2d.fillPolygon(new int[] { getWidth() - 252, getWidth() - 257, getWidth() - 257 }, new int[] { i * 15 + 10, i * 15 + 7, i * 15 + 13 }, 3);
@@ -187,16 +225,14 @@ public class Client extends Screen implements Runnable {
     }
 
     private void drawPlayers(Graphics2D g2d) {
-        if (gameState != null) {
-            for (LocalPlayer player : allPlayers) {
-                if (this.player == player) {
-                    player.drawRoll(g2d, roll);
-                    if (highlightCurrentPlayer) {
-                        player.highlight(g2d, coordinates);
-                    }
-                }
-                player.draw(g2d, coordinates);
+        for (LocalPlayer player : allPlayers) {
+            if (player.getId().equals(highlightedPlayer)) {
+                player.highlight(g2d, coordinates);
             }
+            if (player.getId().equals(movingPlayer)) {
+                player.drawRoll(g2d, roll);
+            }
+            player.draw(g2d, coordinates);
         }
     }
 }

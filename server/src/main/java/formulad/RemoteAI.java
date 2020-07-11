@@ -9,12 +9,7 @@ import java.util.logging.Level;
 
 import formulad.ai.AI;
 
-import formulad.model.GameState;
-import formulad.model.Gear;
-import formulad.model.Moves;
-import formulad.model.NameAtStart;
-import formulad.model.SelectedIndex;
-import formulad.model.Track;
+import formulad.model.*;
 
 public class RemoteAI implements AI {
 
@@ -108,5 +103,15 @@ public class RemoteAI implements AI {
             }
         }
         return null;
+    }
+
+    public void notify(Object notification) {
+        if (oos != null) {
+            try {
+                oos.writeObject(notification);
+            } catch (IOException e) {
+                FormulaD.log.log(Level.WARNING, "Error when notifying client", e);
+            }
+        }
     }
 }

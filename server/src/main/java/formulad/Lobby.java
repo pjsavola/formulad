@@ -2,8 +2,6 @@ package formulad;
 
 import javax.swing.*;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -36,6 +34,12 @@ public class Lobby extends Thread {
             }
         } catch (IOException e) {
             FormulaD.log.log(Level.SEVERE, "Lobby IOException", e);
+        }
+    }
+
+    public void notifyClients(Object notification) {
+        for (RemoteAI client : clients) {
+            client.notify(notification);
         }
     }
 

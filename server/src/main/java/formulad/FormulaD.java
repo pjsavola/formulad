@@ -63,7 +63,7 @@ public class FormulaD extends Screen implements Runnable {
     private final int gearTimeoutInMillis;
     private final int moveTimeoutInMillis;
     private boolean highlightCurrentPlayer;
-    private final Lobby lobby;
+    final Lobby lobby;
     public static final Logger log = Logger.getLogger(FormulaD.class.getName());
     static {
         try {
@@ -591,7 +591,7 @@ public class FormulaD extends Screen implements Runnable {
         });
         final JButton joinMultiplayerButton = new JButton("Join Multiplayer");
         joinMultiplayerButton.addActionListener(e -> {
-            String result = (String) JOptionPane.showInputDialog(f, "IP Address", "IP Address", JOptionPane.PLAIN_MESSAGE,  null, null, null);
+            String result = (String) JOptionPane.showInputDialog(f, "IP Address", "IP Address", JOptionPane.PLAIN_MESSAGE,  null, null, "localhost:1277");
             String[] addressAndPort = result.split(":");
             try {
                 if (addressAndPort.length == 2) {

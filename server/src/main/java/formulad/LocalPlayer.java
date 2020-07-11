@@ -20,11 +20,7 @@ import javax.swing.JPanel;
 import formulad.ai.Gear;
 import formulad.ai.Node;
 
-import formulad.model.GameId;
-import formulad.model.Moves;
-import formulad.model.PlayerState;
-import formulad.model.TypeEnum;
-import formulad.model.ValidMove;
+import formulad.model.*;
 
 public final class LocalPlayer {
     private static int colorIndex = 0;
@@ -273,11 +269,35 @@ public final class LocalPlayer {
     public int roll(Random rng) {
         if (gear == 0) return 0;
         final int[] distribution = Gear.getDistribution(gear);
-        return distribution[rng.nextInt(distribution.length)];
+        final int roll = distribution[rng.nextInt(distribution.length)];
+        ((FormulaD) panel).lobby.notifyClients(new RollNotification().playerId(playerId).gear(gear).roll(roll));
+        return roll;
     }
 
     public void move(int index, Map<Node, Point> coordinates) {
         move(paths.get(index), coordinates);
+    }
+
+    public void move(Node n, Map<Node, Point> coordinates) {
+        if (route.isEmpty()) {
+            route.add(node);
+        }
+        final Point p1 = coordinates.get(node);
+        final Point p2 = coordinates.get(n);
+        angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+        node = n;
+        route.add(n);
+        panel.repaint();
+    }
+
+    public void setGear(int gear) {
+        this.gear = gear;
+        panel.repaint();
+    }
+
+    public void setHitpoints(int hitpoints) {
+        this.hitpoints = hitpoints;
+        panel.repaint();
     }
 
     private void move(DamageAndPath dp, Map<Node, Point> coordinates) {
@@ -309,6 +329,7 @@ public final class LocalPlayer {
             final Point p2 = coordinates.get(n2);
             angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
             this.route.add(n2);
+            ((FormulaD) panel).lobby.notifyClients(new MovementNotification().playerId(playerId).nodeId(n2.getId()));
             node = n2;
             panel.repaint();
             try {
@@ -364,6 +385,7 @@ public final class LocalPlayer {
         int counter = loss;
         while (counter-- > 0) {
             hitpoints--;
+            ((FormulaD) panel).lobby.notifyClients(new DamageNotifiaction().playerId(playerId).damage(hitpoints));
             panel.repaint();
             try {
                 Thread.sleep(animationDelayInMillis);
