@@ -385,7 +385,7 @@ public final class LocalPlayer {
         int counter = loss;
         while (counter-- > 0) {
             hitpoints--;
-            ((FormulaD) panel).lobby.notifyClients(new DamageNotifiaction().playerId(playerId).damage(hitpoints));
+            ((FormulaD) panel).lobby.notifyClients(new HitpointNotification().playerId(playerId).hitpoints(hitpoints));
             panel.repaint();
             try {
                 Thread.sleep(animationDelayInMillis);

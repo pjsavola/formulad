@@ -14,7 +14,6 @@ import java.util.*;
 import java.util.List;
 
 public class Client extends Screen implements Runnable {
-    private final JFrame frame;
     // Node identifier equals to the index in this array
     private final List<Node> nodes = new ArrayList<>();
     private Map<Node, Point> coordinates = new HashMap<>();
@@ -25,20 +24,19 @@ public class Client extends Screen implements Runnable {
     private static final String gameId = "Sebring";
     @Nullable
     private Map<Integer, Integer> highlightedNodeToDamage;
-    private String highlightedPlayer;
 
     private PlayerId playerId;
     private GameState gameState;
     private Moves moves;
-    private List<LocalPlayer> allPlayers = new ArrayList<>();
+    private Map<String, Player> playerMap = new HashMap<>();
     private final Socket socket;
     private final ObjectOutputStream oos;
     private final ObjectInputStream ois;
     private final AI ai;
-    private String movingPlayer;
+    private Player current;
+    private Player controlledPlayer;
 
     public Client(JFrame frame, Socket socket) throws IOException {
-        this.frame = frame;
         backgroundImage = ImageCache.getImage("/sebring.jpg");
         setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
         // Contains angles for start nodes and distance information for curves
@@ -51,7 +49,7 @@ public class Client extends Screen implements Runnable {
 
         this.socket = socket;
         oos = new ObjectOutputStream(socket.getOutputStream());
-        ois = new ObjectInputStream(socket.getInputStream());
+        ois = new ObjectInputStream(socket.getInputStream()); // This may block if connection cannot be established!
         final AI backupAI = new GreatAI();
         ai = new ManualAI(backupAI, frame, this);
     }
@@ -61,7 +59,6 @@ public class Client extends Screen implements Runnable {
         try {
             while (socket.isConnected()) {
                 try {
-                    highlightedPlayer = null;
                     Object request = ois.readObject();
                     if (request instanceof MovementNotification) {
                         final MovementNotification movement = (MovementNotification) request;
@@ -69,8 +66,8 @@ public class Client extends Screen implements Runnable {
                     } else if (request instanceof RollNotification) {
                         final RollNotification roll = (RollNotification) request;
                         diceRolled(roll);
-                    } else if (request instanceof DamageNotifiaction) {
-                        final DamageNotifiaction damage = (DamageNotifiaction) request;
+                    } else if (request instanceof HitpointNotification) {
+                        final HitpointNotification damage = (HitpointNotification) request;
                         carDamaged(damage);
                     } else if (request instanceof Track) {
                         final Track track = (Track) request;
@@ -80,12 +77,11 @@ public class Client extends Screen implements Runnable {
                         final GameState gameState = (GameState) request;
                         updateGameState(gameState);
                         roll = null;
-                        highlightedPlayer = playerId.getPlayerId();
+                        setCurrent(controlledPlayer);
                         oos.writeObject(ai.selectGear(gameState));
                     } else if (request instanceof Moves) {
                         final Moves moves = (Moves) request;
                         updateMoves(moves);
-                        highlightedPlayer = playerId.getPlayerId();
                         oos.writeObject(ai.selectMove(moves));
                     }
                 } catch (EOFException e) {
@@ -107,13 +103,14 @@ public class Client extends Screen implements Runnable {
     void updateGameState(GameState gameState) {
         if (this.gameState == null) {
             for (PlayerState playerState : gameState.getPlayers()) {
-                final LocalPlayer player = new LocalPlayer(playerState.getPlayerId(), nodes.get(playerState.getNodeId()), 0, 1, this, playerState.getLeeway());
+                final Player player = new Player(playerState.getPlayerId(), nodes.get(playerState.getNodeId()), 0, 1, this);
                 player.setName("Opponent");
                 if (playerId.getPlayerId().equals(playerState.getPlayerId())) {
                     this.playerId = playerId;
                     player.setName("You");
+                    controlledPlayer = player;
                 }
-                allPlayers.add(player);
+                playerMap.put(playerState.getPlayerId(), player);
             }
         }
         this.gameState = gameState;
@@ -124,35 +121,36 @@ public class Client extends Screen implements Runnable {
         this.moves = moves;
     }
 
-    void carMoved(MovementNotification nontification) {
-        for (LocalPlayer player : allPlayers) {
-            if (player.getId().equals(nontification.getPlayerId())) {
-                player.move(nodes.get(nontification.getNodeId()), coordinates);
-            }
+    void carMoved(MovementNotification notification) {
+        final Player player = playerMap.get(notification.getPlayerId());
+        if (player != null) {
+            player.move(nodes.get(notification.getNodeId()), coordinates);
         }
     }
 
     void diceRolled(RollNotification notification) {
-        if (!notification.getPlayerId().equals(movingPlayer)) {
-            movingPlayer = notification.getPlayerId();
-            for (LocalPlayer player : allPlayers) {
-                player.clearRoute();
-            }
-        }
-        roll = notification.getRoll();
-        for (LocalPlayer player : allPlayers) {
-            if (player.getId().equals(notification.getPlayerId())) {
-                player.setGear(notification.getGear());
-                player.clearRoute();
-            }
+        final Player player = playerMap.get(notification.getPlayerId());
+        if (player != null) {
+            setCurrent(player);
+            roll = notification.getRoll();
+            player.setGear(notification.getGear());
         }
     }
 
-    void carDamaged(DamageNotifiaction notification) {
-        for (LocalPlayer player : allPlayers) {
-            if (player.getId().equals(notification.getPlayerId())) {
-                player.setHitpoints(notification.getDamage());
+    void carDamaged(HitpointNotification notification) {
+        final Player player = playerMap.get(notification.getPlayerId());
+        if (player != null) {
+            player.setHitpoints(notification.getHitpoints());
+        }
+    }
+
+    void setCurrent(Player player) {
+        if (current != player) {
+            if (current != null) {
+                current.clearRoute();
             }
+            current = player;
+            repaint();
         }
     }
 
@@ -208,12 +206,12 @@ public class Client extends Screen implements Runnable {
 
     private void drawInfoBox(Graphics2D g2d) {
         g2d.setColor(Color.GRAY);
-        g2d.fillRect(getWidth() - 250, 0, 249, 5 + 15 * allPlayers.size());
+        g2d.fillRect(getWidth() - 250, 0, 249, 5 + 15 * playerMap.size());
         g2d.setColor(Color.BLACK);
-        g2d.drawRect(getWidth() - 250, 0, 249, 5 + 15 * allPlayers.size());
+        g2d.drawRect(getWidth() - 250, 0, 249, 5 + 15 * playerMap.size());
         int i = 0;
-        for (LocalPlayer player : allPlayers) {
-            if ((highlightedPlayer == null && player.getId().equals(movingPlayer)) || player.getId().equals(highlightedPlayer)) {
+        for (Player player : playerMap.values()) {
+            if (current != null && current == player) {
                 // Turn marker
                 g2d.setColor(Color.RED);
                 g2d.fillPolygon(new int[] { getWidth() - 252, getWidth() - 257, getWidth() - 257 }, new int[] { i * 15 + 10, i * 15 + 7, i * 15 + 13 }, 3);
@@ -225,14 +223,13 @@ public class Client extends Screen implements Runnable {
     }
 
     private void drawPlayers(Graphics2D g2d) {
-        for (LocalPlayer player : allPlayers) {
-            if (player.getId().equals(highlightedPlayer)) {
-                player.highlight(g2d, coordinates);
+        if (current != null) {
+            if (roll != null) {
+                current.drawRoll(g2d, roll);
+            } else if (current == controlledPlayer) {
+                current.highlight(g2d, coordinates);
             }
-            if (player.getId().equals(movingPlayer)) {
-                player.drawRoll(g2d, roll);
-            }
-            player.draw(g2d, coordinates);
         }
+        playerMap.values().forEach(player -> player.draw(g2d, coordinates));
     }
 }

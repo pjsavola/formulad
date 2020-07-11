@@ -608,7 +608,8 @@ public class FormulaD extends Screen implements Runnable {
             } catch (NumberFormatException exception) {
                 System.out.println("Invalid port: " + addressAndPort[1]);
             } catch (IOException exception) {
-                System.out.println("Unable to connect to lobby " + result);
+                // TODO: maybe add error popup here?
+                System.out.println("Unable to connect to server " + result);
                 exception.printStackTrace();
             }
         });
