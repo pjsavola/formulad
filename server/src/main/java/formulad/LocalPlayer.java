@@ -270,7 +270,7 @@ public final class LocalPlayer {
         if (gear == 0) return 0;
         final int[] distribution = Gear.getDistribution(gear);
         final int roll = distribution[rng.nextInt(distribution.length)];
-        ((FormulaD) panel).lobby.notifyClients(new RollNotification().playerId(playerId).gear(gear).roll(roll));
+        ((FormulaD) panel).lobby.notifyClients(new RollNotification(playerId, gear, roll));
         return roll;
     }
 
@@ -286,6 +286,7 @@ public final class LocalPlayer {
         if (node != null && route.get(0) != node) {
             throw new RuntimeException("Invalid starting point for route: " + route);
         }
+        final int oldLapsToGo = lapsToGo;
         int size = route.size();
         if (node != null && node.getType() != Node.Type.FINISH) {
             for (Node node : route) {
@@ -307,7 +308,7 @@ public final class LocalPlayer {
             final Point p2 = coordinates.get(n2);
             angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
             this.route.add(n2);
-            ((FormulaD) panel).lobby.notifyClients(new MovementNotification().playerId(playerId).nodeId(n2.getId()));
+            ((FormulaD) panel).lobby.notifyClients(new MovementNotification(playerId, n2.getId()));
             node = n2;
             panel.repaint();
             try {
@@ -323,6 +324,7 @@ public final class LocalPlayer {
                 break;
             }
         }
+        final int oldCurveStops = curveStops;
         if (!onlyCurves) {
             // path contained non-curve nodes
             curveStops = 0;
@@ -340,6 +342,12 @@ public final class LocalPlayer {
         }
         if (lapsToGo < 0) {
             stop();
+        }
+        if (curveStops != oldCurveStops) {
+            ((FormulaD) panel).lobby.notifyClients(new CurveStopNotification(playerId, curveStops));
+        }
+        if (lapsToGo != oldLapsToGo) {
+            ((FormulaD) panel).lobby.notifyClients(new LapChangeNotification(playerId, lapsToGo));
         }
     }
 
@@ -363,7 +371,7 @@ public final class LocalPlayer {
         int counter = loss;
         while (counter-- > 0) {
             hitpoints--;
-            ((FormulaD) panel).lobby.notifyClients(new HitpointNotification().playerId(playerId).hitpoints(hitpoints));
+            ((FormulaD) panel).lobby.notifyClients(new HitpointNotification(playerId, hitpoints));
             panel.repaint();
             try {
                 Thread.sleep(animationDelayInMillis);

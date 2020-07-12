@@ -511,6 +511,7 @@ public class FormulaD extends Screen implements Runnable {
             // Sort info box contents to match with current standings and turn order
             synchronized (allPlayers) {
                 allPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
+                lobby.notifyClients(new Standings(allPlayers));
             }
         }
         previous = current;

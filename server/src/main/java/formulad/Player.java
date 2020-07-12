@@ -35,7 +35,7 @@ public final class Player {
     private final List<Node> route = new ArrayList<>();
     private static final Color transparentWhite = new Color(1.0f, 1.0f, 1.0f, 0.3f);
     private boolean modifyingHitpoints;
-    private boolean modifyingGear;
+    private int lapsToGo;
 
     public Player(String playerId, Node node, double initialAngle, JPanel panel) {
         this.playerId = playerId;
@@ -64,33 +64,32 @@ public final class Player {
 
     public void drawRoll(Graphics2D g2d, @Nullable Integer roll) {
         if (roll != null && gear != 0) {
-            final Color color;
-            switch (gear) {
-                case 1:
-                    color = Color.YELLOW;
-                    break;
-                case 2:
-                    color = Color.ORANGE;
-                    break;
-                case 3:
-                    color = Color.RED;
-                    break;
-                case 4:
-                    color = Color.GREEN;
-                    break;
-                case 5:
-                    color = Color.MAGENTA;
-                    break;
-                case 6:
-                    color = Color.BLUE;
-                    break;
-                default:
-                    throw new RuntimeException("Invalid gear " + gear);
-            }
+            final Color color = getGearColor(gear);
             g2d.setColor(color);
             g2d.setFont(new Font("Arial", Font.PLAIN, 20));
             final int x = (roll >= 10) ? 30 : 36;
             g2d.drawString(Integer.toString(roll), x, 48);
+        }
+    }
+
+    private Color getGearColor(int gear) {
+        switch (gear) {
+            case 0:
+                return Color.BLACK;
+            case 1:
+                return Color.YELLOW;
+            case 2:
+                return Color.ORANGE;
+            case 3:
+                return Color.RED;
+            case 4:
+                return Color.GREEN;
+            case 5:
+                return Color.MAGENTA;
+            case 6:
+                return Color.BLUE;
+            default:
+                throw new RuntimeException("Invalid gear " + gear);
         }
     }
 
@@ -149,9 +148,7 @@ public final class Player {
             }
             g.drawString("HP: " + Integer.toString(hitpoints), x + 110, y);
             g.setColor(Color.BLACK);
-            if (modifyingGear) {
-                g.setColor(Color.BLUE);
-            }
+            g.setColor(getGearColor(gear));
             g.drawString("G: " + Integer.toString(gear), x + 160, y);
             g.setColor(Color.BLACK);
             g.drawString("S: " + Integer.toString(curveStops), x + 190, y);
@@ -171,22 +168,39 @@ public final class Player {
     }
 
     public void setGear(int gear) {
-        modifyingGear = false;
         modifyingHitpoints = false;
         if (gear != this.gear) {
-            modifyingGear = true;
+            this.gear = gear;
+            panel.repaint();
         }
-        this.gear = gear;
-        panel.repaint();
     }
 
     public void setHitpoints(int hitpoints) {
-        this.hitpoints = hitpoints;
-        modifyingHitpoints = true;
-        if (hitpoints <= 0) {
-            stopped = true;
+        if (hitpoints != this.hitpoints) {
+            this.hitpoints = hitpoints;
+            modifyingHitpoints = true;
+            if (hitpoints <= 0) {
+                stopped = true;
+            }
+            panel.repaint();
         }
-        panel.repaint();
+    }
+
+    public void setLapsRemaining(int lapsToGo) {
+        if (lapsToGo != this.lapsToGo) {
+            this.lapsToGo = lapsToGo;
+            if (lapsToGo < 0) {
+                stopped = true;
+            }
+            panel.repaint();
+        }
+    }
+
+    public void setCurveStops(int curveStops) {
+        if (curveStops != this.curveStops) {
+            this.curveStops = curveStops;
+            panel.repaint();
+        }
     }
 
     public void clearRoute() {

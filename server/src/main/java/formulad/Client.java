@@ -29,6 +29,7 @@ public class Client extends Screen implements Runnable {
     private GameState gameState;
     private Moves moves;
     private Map<String, Player> playerMap = new HashMap<>();
+    private final List<Player> standings = new ArrayList<>();
     private final Socket socket;
     private final ObjectOutputStream oos;
     private final ObjectInputStream ois;
@@ -60,15 +61,18 @@ public class Client extends Screen implements Runnable {
             while (socket.isConnected()) {
                 try {
                     Object request = ois.readObject();
-                    if (request instanceof MovementNotification) {
-                        final MovementNotification movement = (MovementNotification) request;
-                        carMoved(movement);
-                    } else if (request instanceof RollNotification) {
-                        final RollNotification roll = (RollNotification) request;
-                        diceRolled(roll);
-                    } else if (request instanceof HitpointNotification) {
-                        final HitpointNotification damage = (HitpointNotification) request;
-                        carDamaged(damage);
+                    if (request instanceof Notification) {
+                        ((Notification) request).notify(this);
+                    } else if (request instanceof Standings) {
+                        final Standings standings = (Standings) request;
+                        this.standings.clear();
+                        for (String id : standings.getPlayerIds()) {
+                            final Player player = playerMap.get(id);
+                            if (player != null) {
+                                this.standings.add(player);
+                            }
+                        }
+                        standings.getPlayerIds();
                     } else if (request instanceof Track) {
                         final Track track = (Track) request;
                         updateTrack(track);
@@ -103,7 +107,7 @@ public class Client extends Screen implements Runnable {
     void updateGameState(GameState gameState) {
         if (this.gameState == null) {
             for (PlayerState playerState : gameState.getPlayers()) {
-                final Player player = new Player(playerState.getPlayerId(), nodes.get(playerState.getNodeId()), 0, 1, this);
+                final Player player = new Player(playerState.getPlayerId(), nodes.get(playerState.getNodeId()), 0,this);
                 player.setName("Opponent");
                 if (playerId.getPlayerId().equals(playerState.getPlayerId())) {
                     this.playerId = playerId;
@@ -121,14 +125,14 @@ public class Client extends Screen implements Runnable {
         this.moves = moves;
     }
 
-    void carMoved(MovementNotification notification) {
+    public void notify(MovementNotification notification) {
         final Player player = playerMap.get(notification.getPlayerId());
         if (player != null) {
             player.move(nodes.get(notification.getNodeId()), coordinates);
         }
     }
 
-    void diceRolled(RollNotification notification) {
+    public void notify(RollNotification notification) {
         final Player player = playerMap.get(notification.getPlayerId());
         if (player != null) {
             setCurrent(player);
@@ -137,10 +141,24 @@ public class Client extends Screen implements Runnable {
         }
     }
 
-    void carDamaged(HitpointNotification notification) {
+    public void notify(HitpointNotification notification) {
         final Player player = playerMap.get(notification.getPlayerId());
         if (player != null) {
             player.setHitpoints(notification.getHitpoints());
+        }
+    }
+
+    public void notify(LapChangeNotification notification) {
+        final Player player = playerMap.get(notification.getPlayerId());
+        if (player != null) {
+            player.setLapsRemaining(notification.getLapsRemaining());
+        }
+    }
+
+    public void notify(CurveStopNotification notification) {
+        final Player player = playerMap.get(notification.getPlayerId());
+        if (player != null) {
+            player.setCurveStops(notification.getCurveStops());
         }
     }
 
@@ -210,7 +228,7 @@ public class Client extends Screen implements Runnable {
         g2d.setColor(Color.BLACK);
         g2d.drawRect(getWidth() - 250, 0, 249, 5 + 15 * playerMap.size());
         int i = 0;
-        for (Player player : playerMap.values()) {
+        for (Player player : standings) {
             if (current != null && current == player) {
                 // Turn marker
                 g2d.setColor(Color.RED);
@@ -230,6 +248,6 @@ public class Client extends Screen implements Runnable {
                 current.highlight(g2d, coordinates);
             }
         }
-        playerMap.values().forEach(player -> player.draw(g2d, coordinates));
+        standings.forEach(player -> player.draw(g2d, coordinates));
     }
 }

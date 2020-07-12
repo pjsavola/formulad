@@ -1,26 +1,23 @@
 package formulad.model;
 
+import formulad.Client;
+
 import java.io.Serializable;
 
-public class HitpointNotification implements Serializable {
-    public String playerId;
-    public int hitpoints;
+public class HitpointNotification extends Notification implements Serializable {
+    private final int hitpoints;
 
-    public HitpointNotification playerId(String playerId) {
-        this.playerId = playerId;
-        return this;
-    }
-
-    public HitpointNotification hitpoints(int hitpoints) {
+    public HitpointNotification(String playerId, int hitpoints) {
+        super(playerId);
         this.hitpoints = hitpoints;
-        return this;
-    }
-
-    public String getPlayerId() {
-        return playerId;
     }
 
     public int getHitpoints() {
         return hitpoints;
+    }
+
+    @Override
+    public void notify(Client client) {
+        client.notify(this);
     }
 }

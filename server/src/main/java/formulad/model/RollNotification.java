@@ -1,29 +1,17 @@
 package formulad.model;
 
+import formulad.Client;
+
 import java.io.Serializable;
 
-public class RollNotification implements Serializable {
-    private String playerId;
-    private int gear;
-    private int roll;
+public class RollNotification extends Notification implements Serializable {
+    private final int gear;
+    private final int roll;
 
-    public RollNotification playerId(String playerId) {
-        this.playerId = playerId;
-        return this;
-    }
-
-    public RollNotification gear(int gear) {
+    public RollNotification(String playerId, int gear, int roll) {
+        super(playerId);
         this.gear = gear;
-        return this;
-    }
-
-    public RollNotification roll(int roll) {
         this.roll = roll;
-        return this;
-    }
-
-    public String getPlayerId() {
-        return playerId;
     }
 
     public int getGear() {
@@ -32,5 +20,10 @@ public class RollNotification implements Serializable {
 
     public int getRoll() {
         return roll;
+    }
+
+    @Override
+    public void notify(Client client) {
+        client.notify(this);
     }
 }

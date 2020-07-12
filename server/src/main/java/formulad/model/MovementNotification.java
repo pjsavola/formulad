@@ -1,26 +1,23 @@
 package formulad.model;
 
+import formulad.Client;
+
 import java.io.Serializable;
 
-public class MovementNotification implements Serializable {
-    public String playerId;
-    public int nodeId;
+public class MovementNotification extends Notification implements Serializable {
+    private final int nodeId;
 
-    public MovementNotification playerId(String playerId) {
-        this.playerId = playerId;
-        return this;
-    }
-
-    public MovementNotification nodeId(int nodeId) {
+    public MovementNotification(String playerId, int nodeId) {
+        super(playerId);
         this.nodeId = nodeId;
-        return this;
-    }
-
-    public String getPlayerId() {
-        return playerId;
     }
 
     public int getNodeId() {
         return nodeId;
+    }
+
+    @Override
+    public void notify(Client client) {
+        client.notify(this);
     }
 }
