@@ -99,6 +99,7 @@ public class FormulaD extends Screen implements Runnable {
         moveTimeoutInMillis = params.moveTimeoutInMillis;
         allPlayers = new ArrayList<>();
         createGrid(params, attributes);
+        lobby.notifyClients(new Standings(allPlayers));
         waitingPlayers.addAll(players);
         waitingPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
         current = waitingPlayers.remove(0);
@@ -186,6 +187,7 @@ public class FormulaD extends Screen implements Runnable {
         players.add(player);
         allPlayers.add(player);
         aiMap.put(player, ai);
+        lobby.notifyClients(new CreatedPlayerNotification(current.getId(), name, startNode.getId(), 18, 1));
     }
 
     private <T> T getAiInput(Supplier<T> supplier, int timeout) {

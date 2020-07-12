@@ -26,8 +26,6 @@ public class Client extends Screen implements Runnable {
     private Map<Integer, Integer> highlightedNodeToDamage;
 
     private PlayerId playerId;
-    private GameState gameState;
-    private Moves moves;
     private Map<String, Player> playerMap = new HashMap<>();
     private final List<Player> standings = new ArrayList<>();
     private final Socket socket;
@@ -36,12 +34,12 @@ public class Client extends Screen implements Runnable {
     private final AI ai;
     private Player current;
     private Player controlledPlayer;
+    private final Map<Node, Double> attributes = new HashMap<>();
 
     public Client(JFrame frame, Socket socket) throws IOException {
         backgroundImage = ImageCache.getImage("/sebring.jpg");
         setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
         // Contains angles for start nodes and distance information for curves
-        final Map<Node, Double> attributes = new HashMap<>();
         try (InputStream is = Client.class.getResourceAsStream("/sebring.dat")) {
             MapEditor.loadNodes(is, nodes, attributes, coordinates);
         } catch (IOException e) {
@@ -75,17 +73,15 @@ public class Client extends Screen implements Runnable {
                         standings.getPlayerIds();
                     } else if (request instanceof Track) {
                         final Track track = (Track) request;
-                        updateTrack(track);
+                        this.playerId = track.getPlayer();
                         oos.writeObject(ai.startGame(track));
                     } else if (request instanceof GameState) {
                         final GameState gameState = (GameState) request;
-                        updateGameState(gameState);
                         roll = null;
                         setCurrent(controlledPlayer);
                         oos.writeObject(ai.selectGear(gameState));
                     } else if (request instanceof Moves) {
                         final Moves moves = (Moves) request;
-                        updateMoves(moves);
                         oos.writeObject(ai.selectMove(moves));
                     }
                 } catch (EOFException e) {
@@ -98,31 +94,6 @@ public class Client extends Screen implements Runnable {
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
-    }
-
-    void updateTrack(Track track) {
-        this.playerId = track.getPlayer();
-    }
-
-    void updateGameState(GameState gameState) {
-        if (this.gameState == null) {
-            for (PlayerState playerState : gameState.getPlayers()) {
-                final Player player = new Player(playerState.getPlayerId(), nodes.get(playerState.getNodeId()), 0,this);
-                player.setName("Opponent");
-                if (playerId.getPlayerId().equals(playerState.getPlayerId())) {
-                    this.playerId = playerId;
-                    player.setName("You");
-                    controlledPlayer = player;
-                }
-                playerMap.put(playerState.getPlayerId(), player);
-            }
-        }
-        this.gameState = gameState;
-        repaint();
-    }
-
-    void updateMoves(Moves moves) {
-        this.moves = moves;
     }
 
     public void notify(MovementNotification notification) {
@@ -160,6 +131,19 @@ public class Client extends Screen implements Runnable {
         if (player != null) {
             player.setCurveStops(notification.getCurveStops());
         }
+    }
+
+    public void notify(CreatedPlayerNotification notification) {
+        final Node startNode = nodes.get(notification.getNodeId());
+        final Player player = new Player(notification.getPlayerId(), startNode, attributes.get(startNode), this);
+        player.setName(notification.getName());
+        player.setHitpoints(notification.getHitpoints());
+        player.setLapsRemaining(notification.getLapsRemaining());
+        if (playerId.getPlayerId().equals(notification.getPlayerId())) {
+            controlledPlayer = player;
+        }
+        playerMap.put(notification.getPlayerId(), player);
+        repaint();
     }
 
     void setCurrent(Player player) {
