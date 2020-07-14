@@ -63,6 +63,7 @@ public class FormulaD extends Screen implements Runnable {
     private final int gearTimeoutInMillis;
     private final int moveTimeoutInMillis;
     private boolean highlightCurrentPlayer;
+    private final Set<LocalPlayer> disconnectedPlayers = new HashSet<>();
     final Lobby lobby;
     public static final Logger log = Logger.getLogger(FormulaD.class.getName());
     static {
@@ -99,9 +100,9 @@ public class FormulaD extends Screen implements Runnable {
         moveTimeoutInMillis = params.moveTimeoutInMillis;
         allPlayers = new ArrayList<>();
         createGrid(params, attributes);
-        lobby.notifyClients(new Standings(allPlayers));
         waitingPlayers.addAll(players);
         waitingPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
+        lobby.notifyClients(new Standings(waitingPlayers));
         current = waitingPlayers.remove(0);
     }
 
@@ -129,7 +130,7 @@ public class FormulaD extends Screen implements Runnable {
             }
         }
         // Timeout makes sense only if there are no manually controlled players.
-        enableTimeout = false; //params.manualAIs.isEmpty();
+        enableTimeout = true;
         // Create automatically controlled AI players
         for (String path : params.localAIs) {
             try {
@@ -218,6 +219,13 @@ public class FormulaD extends Screen implements Runnable {
         current.recordTimeUsed(timeSpent, exception);
         if (enableTimeout && timeSpent > timeout) {
             current.reduceLeeway(timeSpent - timeout);
+        }
+        final AI ai = aiMap.get(current);
+        if (ai instanceof RemoteAI) {
+            final RemoteAI client = (RemoteAI) ai;
+            if (!client.isConnected() && disconnectedPlayers.add(current)) {
+                current.setName(current.getName() + " (DC)");
+            }
         }
         return result;
     }
@@ -568,7 +576,7 @@ public class FormulaD extends Screen implements Runnable {
         private int moveTimeoutInMillis = 3000;
 
         @Parameter(names = "--leeway", description = "Total player specific leeway for exceeding timeouts (ms)", arity = 1)
-        private int leeway = 10000;
+        private int leeway = 3600000;
 
         @Parameter(names = "--rng_seed", description = "Specify seed used for RNG, uses random seed by default", arity = 1)
         private Long seed = null;
@@ -592,7 +600,6 @@ public class FormulaD extends Screen implements Runnable {
                 p.add(label);
                 JButton button = new JButton("Start");
                 button.addActionListener(event -> {
-                    lobby.interrupt();
                     final FormulaD server = new FormulaD(params, lobby, f);
                     f.setContentPane(server);
                     f.pack();
@@ -602,10 +609,11 @@ public class FormulaD extends Screen implements Runnable {
                 f.pack();
                 lobby.start();
             } catch (NumberFormatException exception) {
-                System.out.println("Invalid port: " + result);
+                JOptionPane.showConfirmDialog(p, "Invalid port: '" + result + "'", "Error", JOptionPane.DEFAULT_OPTION);
             } catch (IOException exception) {
-                System.out.println("Unable to create lobby");
-                exception.printStackTrace();
+                JOptionPane.showConfirmDialog(p, "Unable to start server with port " + result, "Error", JOptionPane.DEFAULT_OPTION);
+            } catch (IllegalArgumentException exception) {
+                JOptionPane.showConfirmDialog(p, "Illegal port: " + result, "Error", JOptionPane.DEFAULT_OPTION);
             }
         });
         final JButton joinMultiplayerButton = new JButton("Join Multiplayer");

@@ -4,10 +4,10 @@ import formulad.Client;
 
 import java.io.Serializable;
 
-public abstract class Notification implements Serializable {
+public class Notification implements Serializable {
     private String playerId;
 
-    Notification(String playerId) {
+    public Notification(String playerId) {
         this.playerId = playerId;
     }
 
@@ -15,5 +15,6 @@ public abstract class Notification implements Serializable {
         return playerId;
     }
 
-    public abstract void notify(Client client);
+    public void notify(Client client) {
+    }
 }

@@ -9,13 +9,17 @@ import java.util.logging.Level;
 
 import formulad.ai.AI;
 
+import formulad.ai.GreatAI;
 import formulad.model.*;
+import sun.tools.java.ClassNotFound;
 
 public class RemoteAI implements AI {
 
     private final Socket socket;
     private ObjectInputStream ois;
     private ObjectOutputStream oos;
+    private AI fallback;
+    private Track track;
 
     public RemoteAI(Socket clientSocket) {
         this.socket = clientSocket;
@@ -24,18 +28,21 @@ public class RemoteAI implements AI {
             oos = new ObjectOutputStream(socket.getOutputStream());
         } catch (IOException e) {
             FormulaD.log.log(Level.SEVERE, "Error when initializing Client " + socket.getInetAddress().toString(), e);
+            close();
         }
     }
 
-    private Object getResponse() {
+    boolean isConnected() {
+        return ois != null && oos != null;
+    }
+
+    private Object getResponse() throws IOException, ClassNotFoundException {
         try {
             return ois.readObject();
         } catch (EOFException e) {
-            // this is ok, no response yet
-        } catch (IOException e) {
-            FormulaD.log.log(Level.SEVERE, "IOException from Client " + socket.getInetAddress().toString(), e);
-        } catch (ClassNotFoundException e) {
-            FormulaD.log.log(Level.SEVERE, "ClassNotFoundException from Client " + socket.getInetAddress().toString(), e);
+            // this might be ok if there's no response yet
+            // test whether connection still exists by writing empty notification
+            oos.writeObject(new Notification(""));
         }
         return null;
     }
@@ -52,10 +59,13 @@ public class RemoteAI implements AI {
         } catch (IOException e) {
             FormulaD.log.log(Level.SEVERE, "Error when terminating Client " + socket.getInetAddress().toString(), e);
         }
+        ois = null;
+        oos = null;
     }
 
     @Override
     public NameAtStart startGame(Track track) {
+        this.track = track; // fallback AI might need this
         if (oos != null && ois != null) {
             try {
                 oos.writeObject(track);
@@ -64,9 +74,14 @@ public class RemoteAI implements AI {
                     response = getResponse();
                 } while (!(response instanceof NameAtStart));
                 return (NameAtStart) response;
-            } catch (IOException e) {
-                FormulaD.log.log(Level.SEVERE, "Error in remote AI", e);
+            } catch (IOException | ClassNotFoundException e) {
+                close();
+                fallback = new GreatAI();
+                FormulaD.log.log(Level.SEVERE, "Lost connection to client, using fallback AI instead", e);
             }
+        }
+        if (fallback != null) {
+            return fallback.startGame(track);
         }
         return null;
     }
@@ -81,9 +96,15 @@ public class RemoteAI implements AI {
                     response = getResponse();
                 } while (!(response instanceof Gear));
                 return (Gear) response;
-            } catch (IOException e) {
-                FormulaD.log.log(Level.SEVERE, "Error in remote AI", e);
+            } catch (IOException | ClassNotFoundException e) {
+                close();
+                fallback = new GreatAI();
+                fallback.startGame(track);
+                FormulaD.log.log(Level.SEVERE, "Lost connection to client, using fallback AI instead", e);
             }
+        }
+        if (fallback != null) {
+            return fallback.selectGear(gameState);
         }
         return null;
     }
@@ -98,9 +119,15 @@ public class RemoteAI implements AI {
                     response = getResponse();
                 } while (!(response instanceof SelectedIndex));
                 return (SelectedIndex) response;
-            } catch (IOException e) {
-                FormulaD.log.log(Level.SEVERE, "Error in remote AI", e);
+            } catch (IOException | ClassNotFoundException e) {
+                close();
+                fallback = new GreatAI();
+                fallback.startGame(track);
+                FormulaD.log.log(Level.SEVERE, "Lost connection to client, using fallback AI instead", e);
             }
+        }
+        if (fallback != null) {
+            return fallback.selectMove(allMoves);
         }
         return null;
     }

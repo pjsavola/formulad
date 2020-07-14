@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -23,17 +24,17 @@ public class Lobby extends Thread {
 
     @Override
     public void run() {
-        try {
-            while (playerCount + clients.size() < 10) {
-                System.out.println("Waiting for clients");
+        while (playerCount + clients.size() < 10) {
+            System.out.println("Waiting for clients");
+            try {
                 final Socket socket = serverSocket.accept();
                 System.out.println("Client connected: " + socket.getInetAddress().toString());
                 clients.add(new RemoteAI(socket));
                 label.setText("Connected clients: " + clients.size());
                 label.repaint();
+            } catch (IOException e) {
+                FormulaD.log.log(Level.SEVERE, "Server IOException", e);
             }
-        } catch (IOException e) {
-            FormulaD.log.log(Level.SEVERE, "Lobby IOException", e);
         }
     }
 
