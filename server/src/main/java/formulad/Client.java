@@ -12,29 +12,29 @@ import java.io.*;
 import java.net.Socket;
 import java.util.*;
 import java.util.List;
+import java.util.logging.Level;
 
 public class Client extends Screen implements Runnable {
     // Node identifier equals to the index in this array
     private final List<Node> nodes = new ArrayList<>();
-    private Map<Node, Point> coordinates = new HashMap<>();
     private BufferedImage backgroundImage;
     private Integer roll;
-    private final Map<Node, Double> distanceMap = new HashMap<>();
-    private boolean stopped;
     private static final String gameId = "Sebring";
     @Nullable
     private Map<Integer, Integer> highlightedNodeToDamage;
 
-    private PlayerId playerId;
-    private Map<String, Player> playerMap = new HashMap<>();
-    private final List<Player> standings = new ArrayList<>();
     private final Socket socket;
     private final ObjectOutputStream oos;
     private final ObjectInputStream ois;
     private final AI ai;
     private Player current;
     private Player controlledPlayer;
+    private String controlledPlayerId;
+    private final Map<Node, Point> coordinates = new HashMap<>();
     private final Map<Node, Double> attributes = new HashMap<>();
+    private final Map<String, Player> playerMap = new HashMap<>();
+    private final List<Player> standings = new ArrayList<>();
+    private PlayerStats[] finalStandings;
 
     public Client(JFrame frame, Socket socket) throws IOException {
         backgroundImage = ImageCache.getImage("/sebring.jpg");
@@ -63,36 +63,53 @@ public class Client extends Screen implements Runnable {
                         ((Notification) request).notify(this);
                     } else if (request instanceof Standings) {
                         final Standings standings = (Standings) request;
-                        this.standings.clear();
-                        for (String id : standings.getPlayerIds()) {
-                            final Player player = playerMap.get(id);
-                            if (player != null) {
-                                this.standings.add(player);
+                        synchronized (this.standings) {
+                            this.standings.clear();
+                            for (String id : standings.getPlayerIds()) {
+                                final Player player = playerMap.get(id);
+                                if (player != null) {
+                                    this.standings.add(player);
+                                }
                             }
                         }
-                        standings.getPlayerIds();
-                    } else if (request instanceof Track) {
-                        final Track track = (Track) request;
-                        this.playerId = track.getPlayer();
-                        oos.writeObject(ai.startGame(track));
-                    } else if (request instanceof GameState) {
-                        final GameState gameState = (GameState) request;
-                        roll = null;
-                        setCurrent(controlledPlayer);
-                        oos.writeObject(ai.selectGear(gameState));
-                    } else if (request instanceof Moves) {
-                        final Moves moves = (Moves) request;
-                        oos.writeObject(ai.selectMove(moves));
+                    } else if (request instanceof FinalStandings) {
+                        final FinalStandings standings = (FinalStandings) request;
+                        finalStandings = standings.getStats();
+                        repaint();
+                        break;
+                    } else {
+                        try {
+                            if (request instanceof Track) {
+                                final Track track = (Track) request;
+                                controlledPlayerId = track.getPlayer().getPlayerId();
+                                oos.writeObject(ai.startGame(track));
+                            } else if (request instanceof GameState) {
+                                final GameState gameState = (GameState) request;
+                                roll = null;
+                                setCurrent(controlledPlayer);
+                                oos.writeObject(ai.selectGear(gameState));
+                            } else if (request instanceof Moves) {
+                                final Moves moves = (Moves) request;
+                                oos.writeObject(ai.selectMove(moves));
+                            }
+                        } catch (IOException e) {
+                            FormulaD.log.log(Level.SEVERE, "Error when sending response to server", e);
+                        }
                     }
                 } catch (EOFException e) {
-                    // This is ok, no response yet
+                    // This is ok, no objects to read
+                } catch (IOException | ClassNotFoundException e) {
+                    FormulaD.log.log(Level.SEVERE, "Error when reading object input from server", e);
                 }
+            }
+            if (finalStandings == null) {
+                JOptionPane.showConfirmDialog(this, "Connection to server lost", "Error", JOptionPane.DEFAULT_OPTION);
             }
             ois.close();
             oos.close();
             socket.close();
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            FormulaD.log.log(Level.WARNING, "Error when closing server connection", e);
         }
     }
 
@@ -139,14 +156,16 @@ public class Client extends Screen implements Runnable {
         player.setName(notification.getName());
         player.setHitpoints(notification.getHitpoints());
         player.setLapsRemaining(notification.getLapsRemaining());
-        if (playerId.getPlayerId().equals(notification.getPlayerId())) {
+        if (notification.getPlayerId().equals(controlledPlayerId)) {
             controlledPlayer = player;
         }
-        playerMap.put(notification.getPlayerId(), player);
+        synchronized (playerMap) {
+            playerMap.put(notification.getPlayerId(), player);
+        }
         repaint();
     }
 
-    void setCurrent(Player player) {
+    private void setCurrent(Player player) {
         if (current != player) {
             if (current != null) {
                 current.clearRoute();
@@ -185,6 +204,45 @@ public class Client extends Screen implements Runnable {
         drawTargets(g2d);
         drawInfoBox(g2d);
         drawPlayers(g2d);
+
+        if (finalStandings != null) {
+            final int height = 5 + 15 * (finalStandings.length + 1);
+            final int x = getWidth() / 2 - 200;
+            final int y = getHeight() / 2 - height / 2;
+            g.setColor(Color.BLACK);
+            g.setFont(new Font("Arial", Font.BOLD, 20));
+            final int titleWidth = g.getFontMetrics().stringWidth("STANDINGS");
+            g.drawString("STANDINGS", x + 200 - titleWidth / 2, y - 20);
+            g2d.setColor(Color.GRAY);
+            g2d.fillRect(x, y, 400, height);
+            g2d.setColor(Color.BLACK);
+            g2d.drawRect(x, y, 400, height);
+            g.setColor(Color.BLACK);
+            g.setFont(new Font("Arial", Font.BOLD, 12));
+            g.drawString("Name", x + 30, y + 15);
+            g.drawString("HP", x + 140, y + 15);
+            g.drawString("Turns", x + 190, y + 15);
+            g.drawString("Grid", x + 230, y + 15);
+            g.drawString("Time", x + 270, y + 15);
+            g.setFont(new Font("Arial", Font.PLAIN, 12));
+            for (int i = 0; i < finalStandings.length; ++i) {
+                final PlayerStats stats = finalStandings[i];
+                synchronized (playerMap) {
+                    final Player player = playerMap.get(stats.playerId);
+                    final String name = player.getName();
+                    player.draw(g2d, x + 15, y + (i + 1) * 15 + 10, 0);
+                    g.setColor(Color.BLACK);
+                    g.drawString(name, x + 30, y + (i + 1) * 15 + 15);
+                    final String hp = stats.hitpoints > 0 ? Integer.toString(stats.hitpoints) : "DNF";
+                    g.drawString(hp, x + 140, y + (i + 1) * 15 + 15);
+                    g.drawString(Integer.toString(stats.turns), x + 190, y + (i + 1) * 15 + 15);
+                    g.drawString(Integer.toString(stats.gridPosition), x + 230, y + (i + 1) * 15 + 15);
+                    final long timeUsed = stats.timeUsed / 100;
+                    final double timeUsedSecs = timeUsed / 10.0;
+                    g.drawString(Double.toString(timeUsedSecs), x + 270, y + (i + 1) * 15 + 15);
+                }
+            }
+        }
     }
 
     private void drawTargets(Graphics2D g2d) {
@@ -207,20 +265,26 @@ public class Client extends Screen implements Runnable {
     }
 
     private void drawInfoBox(Graphics2D g2d) {
+        int playerCount;
+        synchronized (playerMap) {
+            playerCount = playerMap.size();
+        }
         g2d.setColor(Color.GRAY);
-        g2d.fillRect(getWidth() - 250, 0, 249, 5 + 15 * playerMap.size());
+        g2d.fillRect(getWidth() - 250, 0, 249, 5 + 15 * playerCount);
         g2d.setColor(Color.BLACK);
-        g2d.drawRect(getWidth() - 250, 0, 249, 5 + 15 * playerMap.size());
+        g2d.drawRect(getWidth() - 250, 0, 249, 5 + 15 * playerCount);
         int i = 0;
-        for (Player player : standings) {
-            if (current != null && current == player) {
-                // Turn marker
-                g2d.setColor(Color.RED);
-                g2d.fillPolygon(new int[] { getWidth() - 252, getWidth() - 257, getWidth() - 257 }, new int[] { i * 15 + 10, i * 15 + 7, i * 15 + 13 }, 3);
+        synchronized (standings) {
+            for (Player player : standings) {
+                if (current != null && current == player) {
+                    // Turn marker
+                    g2d.setColor(Color.RED);
+                    g2d.fillPolygon(new int[] { getWidth() - 252, getWidth() - 257, getWidth() - 257 }, new int[] { i * 15 + 10, i * 15 + 7, i * 15 + 13 }, 3);
+                }
+                player.draw(g2d, getWidth() - 235, i * 15 + 10, 0);
+                player.drawStats(g2d, getWidth() - 220, i * 15 + 15);
+                i++;
             }
-            player.draw(g2d, getWidth() - 235, i * 15 + 10, 0);
-            player.drawStats(g2d, getWidth() - 220, i * 15 + 15);
-            i++;
         }
     }
 
@@ -232,6 +296,8 @@ public class Client extends Screen implements Runnable {
                 current.highlight(g2d, coordinates);
             }
         }
-        standings.forEach(player -> player.draw(g2d, coordinates));
+        synchronized (playerMap) {
+            playerMap.values().forEach(player -> player.draw(g2d, coordinates));
+        }
     }
 }

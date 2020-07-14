@@ -52,6 +52,7 @@ public final class LocalPlayer {
     private final List<Node> route = new ArrayList<>();
     private static final Color transparentWhite = new Color(1.0f, 1.0f, 1.0f, 0.3f);
     private int leeway;
+    private int gridPosition;
 
     public LocalPlayer(String playerId, Node node, double initialAngle, int laps, JPanel panel, int leeway) {
         this.playerId = playerId;
@@ -74,6 +75,14 @@ public final class LocalPlayer {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public int getGridPosition() {
+        return gridPosition;
+    }
+
+    public void setGridPosition(int gridPosition) {
+        this.gridPosition = gridPosition;
     }
 
     // 1. lowest number of laps to go
@@ -471,13 +480,19 @@ public final class LocalPlayer {
         }
     }
 
-    public String getStatistics(Map<Node, Double> distanceMap) {
-        final String stats = "Turns: " + turns + " Time: " + timeUsed + " Exceptions: " + exceptions;
-        if (lapsToGo < 0) {
-            return stats + " Hitpoints: " + hitpoints + " -- FINISHED!";
-        } else {
-            return stats + " -- Distance: " + distanceMap.get(node);
+    public PlayerStats getStatistics(int position, Map<Node, Double> distanceMap) {
+        final PlayerStats stats = new PlayerStats();
+        stats.playerId = playerId;
+        stats.position = position;
+        stats.turns = turns;
+        stats.timeUsed = timeUsed;
+        stats.exceptions = exceptions;
+        stats.hitpoints = hitpoints;
+        if (hitpoints <= 0) {
+            stats.distance = distanceMap.get(node);
         }
+        stats.gridPosition = gridPosition;
+        return stats;
     }
 
     @Override

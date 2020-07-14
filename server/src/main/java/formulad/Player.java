@@ -58,6 +58,10 @@ public final class Player {
         this.name = name;
     }
 
+    public String getName() {
+        return name;
+    }
+
     public boolean isStopped() {
         return stopped;
     }

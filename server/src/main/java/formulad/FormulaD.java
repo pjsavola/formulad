@@ -186,6 +186,7 @@ public class FormulaD extends Screen implements Runnable {
         player.setName(name);
         players.add(player);
         allPlayers.add(player);
+        player.setGridPosition(allPlayers.size());
         aiMap.put(player, ai);
         lobby.notifyClients(new CreatedPlayerNotification(current.getId(), name, startNode.getId(), 18, 1));
     }
@@ -269,14 +270,29 @@ public class FormulaD extends Screen implements Runnable {
             roll = null;
             nextPlayer();
             repaint();
+            if (false) {
+                final List<PlayerStats> stats = new ArrayList<>();
+                for (int i = 0; i < allPlayers.size(); i++) {
+                    final LocalPlayer player = allPlayers.get(i);
+                    System.out.print((i + 1) + ". " + player.getNameAndId() + "   ");
+                    final PlayerStats playerStats = player.getStatistics(i + 1, distanceMap);
+                    stats.add(playerStats);
+                    System.out.println(playerStats);
+                }
+                lobby.notifyClients(new FinalStandings(stats));
+            }
         }
+        final List<PlayerStats> stats = new ArrayList<>();
         System.out.println("Results of Sebring circuit:");
         System.out.println();
         for (int i = 0; i < stoppedPlayers.size(); i++) {
             final LocalPlayer player = stoppedPlayers.get(i);
             System.out.print((i + 1) + ". " + player.getNameAndId() + "   ");
-            System.out.println(player.getStatistics(distanceMap));
+            final PlayerStats playerStats = player.getStatistics(i + 1, distanceMap);
+            stats.add(playerStats);
+            System.out.println(playerStats);
         }
+        lobby.notifyClients(new FinalStandings(stats));
         // TODO: Press any key to continue?
         frame.setVisible(false);
         lobby.close();
