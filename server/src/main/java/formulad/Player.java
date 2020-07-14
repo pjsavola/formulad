@@ -113,9 +113,14 @@ public final class Player {
     }
 
     public void draw(Graphics2D g, int x, int y, double angle) {
+        draw(g, x, y, angle, color1, color2, 1.0);
+    }
+
+    public static void draw(Graphics2D g, int x, int y, double angle, Color color1, Color color2, double scale) {
         g.setColor(Color.BLACK);
         AffineTransform at = new AffineTransform();
         at.translate(x, y);
+        at.scale(scale, scale);
         g.transform(at);
         g.rotate(angle);
         g.fillRect(-7, -3, 1, 7);

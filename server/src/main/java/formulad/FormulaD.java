@@ -27,6 +27,7 @@ import java.util.stream.IntStream;
 
 import javax.annotation.Nullable;
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -36,6 +37,7 @@ import formulad.ai.*;
 import formulad.ai.Node;
 import formulad.model.*;
 import formulad.model.Gear;
+import io.swagger.annotations.OAuth2Definition;
 
 public class FormulaD extends Screen implements Runnable {
     private final JFrame frame;
@@ -584,7 +586,31 @@ public class FormulaD extends Screen implements Runnable {
 
     private static void showMenu(JFrame f, Params params) {
         final int playerCount = params.manualAIs.size() + params.localAIs.size() + params.simpleAIs;
-        final JPanel p = new JPanel(new GridLayout(3, 0));
+        final JPanel p = new JPanel();
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+        final JPanel title = new JPanel();
+        final JLabel titleText = new JLabel("FORMULA D ONLINE");
+        titleText.setFont(new Font("Arial", Font.BOLD, 32));
+        title.add(titleText);
+        final JPanel contents = new JPanel(new GridLayout(0, 2));
+        p.add(title);
+        p.add(contents);
+        p.setBorder(new EmptyBorder(10, 10, 10, 10));
+        final JPanel buttonPanel = new JPanel(new GridLayout(4, 0));
+        final JPanel profilePanel = new JPanel() {
+            @Override
+            public void paintComponent(Graphics g) {
+                g.setFont(new Font("Arial", Font.BOLD, 16));
+                g.drawString("Active profile", 50, 30);
+                g.setFont(new Font("Arial", Font.PLAIN, 16));
+                g.drawString("Xevoc", 50, 50);
+                Player.draw((Graphics2D) g, 70, 70, 0, Color.RED, Color.BLUE, 2.5);
+            }
+        };
+        buttonPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        contents.add(buttonPanel);
+        contents.add(profilePanel);
+
         final JButton singlePlayerButton = new JButton("Single Player");
         singlePlayerButton.addActionListener(e -> {
             // TODO
@@ -592,6 +618,9 @@ public class FormulaD extends Screen implements Runnable {
         final JButton hostMultiplayerButton = new JButton("Host Multiplayer");
         hostMultiplayerButton.addActionListener(e -> {
             String result = (String) JOptionPane.showInputDialog(f, "Select port", "Select port", JOptionPane.PLAIN_MESSAGE,  null, null, "1277");
+            if (result == null) {
+                return;
+            }
             try {
                 JLabel label = new JLabel("Connected Clients: 0");
                 final int port = Integer.parseInt(result);
@@ -619,6 +648,9 @@ public class FormulaD extends Screen implements Runnable {
         final JButton joinMultiplayerButton = new JButton("Join Multiplayer");
         joinMultiplayerButton.addActionListener(e -> {
             String result = (String) JOptionPane.showInputDialog(p, "IP address and port", "IP address and port", JOptionPane.PLAIN_MESSAGE,  null, null, "localhost:1277");
+            if (result == null) {
+                return;
+            }
             String[] addressAndPort = result.split(":");
             try {
                 if (addressAndPort.length == 2) {
@@ -638,13 +670,21 @@ public class FormulaD extends Screen implements Runnable {
                 JOptionPane.showConfirmDialog(p, "Unable to connect to server " + result, "Error", JOptionPane.DEFAULT_OPTION);
             }
         });
-        p.add(singlePlayerButton);
-        p.add(hostMultiplayerButton);
-        p.add(joinMultiplayerButton);
+        singlePlayerButton.setFont(new Font("Arial", Font.BOLD, 20));
+        hostMultiplayerButton.setFont(new Font("Arial", Font.BOLD, 20));
+        joinMultiplayerButton.setFont(new Font("Arial", Font.BOLD, 20));
+        singlePlayerButton.setPreferredSize(new Dimension(80, 40));
+        hostMultiplayerButton.setPreferredSize(new Dimension(80, 40));
+        joinMultiplayerButton.setPreferredSize(new Dimension(80, 40));
+        buttonPanel.add(singlePlayerButton);
+        buttonPanel.add(hostMultiplayerButton);
+        buttonPanel.add(joinMultiplayerButton);
+        // change profile
         f.setContentPane(p);
         f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        f.setPreferredSize(new Dimension(500, 400));
         f.pack();
-        f.setLocation(0, 0);
+        //f.setLocation(0, 0);
         f.setVisible(true);
     }
 

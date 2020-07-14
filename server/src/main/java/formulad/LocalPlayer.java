@@ -193,31 +193,7 @@ public final class LocalPlayer {
     }
 
     public void draw(Graphics2D g, int x, int y, double angle) {
-        g.setColor(Color.BLACK);
-        AffineTransform at = new AffineTransform();
-        at.translate(x, y);
-        g.transform(at);
-        g.rotate(angle);
-        g.fillRect(-7, -3, 1, 7);
-        g.fillRect(-6, 0, 1, 1);
-        g.fillRect(-4, -4, 3, 2);
-        g.fillRect(-4, 3, 3, 2);
-        g.fillRect(6, -3, 1, 7);
-        g.fillRect(3, -2, 1, 1);
-        g.fillRect(3, 2, 1, 1);
-        g.fillRect(2, -4, 3, 2);
-        g.fillRect(2, 3, 3, 2);
-        g.setColor(color1);
-        g.fillRect(-5, -2, 6, 5);
-        g.fillRect(1, -1, 5, 3);
-        g.setColor(color2);
-        g.fillRect(-4, -1, 5, 3);
-        g.fillRect(1, 0, 5, 1);
-        g.setColor(color1);
-        g.fillRect(-3, 0, 3, 1);
-        // needed if something is drawn after this
-        g.rotate(-angle);
-        g.translate(-x, -y);
+        Player.draw(g, x, y, angle, color1, color2, 1.0);
     }
 
     public void drawStats(Graphics2D g, int x, int y) {
