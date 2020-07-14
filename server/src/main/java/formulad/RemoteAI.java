@@ -15,6 +15,7 @@ import sun.tools.java.ClassNotFound;
 
 public class RemoteAI implements AI {
 
+    private static final int heartBeatMs = 200;
     private final Socket socket;
     private ObjectInputStream ois;
     private ObjectOutputStream oos;
@@ -42,6 +43,11 @@ public class RemoteAI implements AI {
         } catch (EOFException e) {
             // this might be ok if there's no response yet
             // test whether connection still exists by writing empty notification
+            try {
+                Thread.sleep(heartBeatMs);
+            } catch (InterruptedException exception) {
+                e.printStackTrace();
+            }
             oos.writeObject(new Notification(""));
         }
         return null;
