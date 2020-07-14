@@ -19,8 +19,10 @@ public class RemoteAI implements AI {
     private final Socket socket;
     private ObjectInputStream ois;
     private ObjectOutputStream oos;
-    private AI fallback;
+    private GreatAI fallback;
     private Track track;
+    private GameState gameState;
+    private int gear;
 
     public RemoteAI(Socket clientSocket) {
         this.socket = clientSocket;
@@ -94,6 +96,7 @@ public class RemoteAI implements AI {
 
     @Override
     public Gear selectGear(GameState gameState) {
+        this.gameState = gameState;
         if (oos != null && ois != null) {
             try {
                 oos.writeObject(gameState);
@@ -101,6 +104,7 @@ public class RemoteAI implements AI {
                 do {
                     response = getResponse();
                 } while (!(response instanceof Gear));
+                gear = ((Gear) response).getGear();
                 return (Gear) response;
             } catch (IOException | ClassNotFoundException e) {
                 close();
@@ -128,7 +132,7 @@ public class RemoteAI implements AI {
             } catch (IOException | ClassNotFoundException e) {
                 close();
                 fallback = new GreatAI();
-                fallback.startGame(track);
+                fallback.init(track, gameState, gear);
                 FormulaD.log.log(Level.SEVERE, "Lost connection to client, using fallback AI instead", e);
             }
         }

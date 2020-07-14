@@ -34,6 +34,12 @@ public class GreatAI implements AI {
     private Random random = new Random();
     public boolean debug;
 
+    public void init(Track track, GameState gameState, int selectedGear) {
+        startGame(track);
+        selectGear(gameState);
+        gear = selectedGear;
+    }
+
     @Override
     public NameAtStart startGame(Track track) {
         playerId = track.getPlayer().getPlayerId();
