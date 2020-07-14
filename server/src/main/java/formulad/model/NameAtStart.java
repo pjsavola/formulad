@@ -2,9 +2,23 @@ package formulad.model;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.UUID;
 
 public class NameAtStart implements Serializable {
+  private UUID id = null;
   private String name = null;
+
+  public NameAtStart id(UUID id) {
+    this.id = id;
+    return this;
+  }
+
+  public UUID getId() {
+    return id;
+  }
+  public void setId(UUID id) {
+    this.id = id;
+  }
 
   public NameAtStart name(String name) {
     this.name = name;

@@ -6,6 +6,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.swing.JFrame;
 
@@ -34,17 +35,19 @@ public class ManualAI implements AI {
     private final Screen game;
     private boolean automaticMove;
     private static final int listenerDelay = 50;
+    private final UUID id;
 
-    public ManualAI(AI ai, JFrame frame, Screen game) {
+    public ManualAI(AI ai, JFrame frame, Screen game, UUID id) {
         this.ai = ai;
         this.frame = frame;
         this.game = game;
+        this.id = id;
     }
 
     @Override
     public NameAtStart startGame(Track track) {
         this.playerId = track.getPlayer().getPlayerId();
-        return ai.startGame(track);
+        return ai.startGame(track).id(id);
     }
 
     @Override

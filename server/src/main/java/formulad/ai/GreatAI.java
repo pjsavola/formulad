@@ -1,13 +1,6 @@
 package formulad.ai;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 import formulad.ai.AI;
 import formulad.ai.AIUtil;
@@ -45,7 +38,7 @@ public class GreatAI implements AI {
         playerId = track.getPlayer().getPlayerId();
         nodeMap = AIUtil.buildNodeMap(track.getTrack().getNodes(), track.getTrack().getEdges());
         prevNodeMap = AIUtil.buildPrevNodeMap(nodeMap.values());
-        return new NameAtStart().name("Great");
+        return new NameAtStart().name("Great").id(UUID.randomUUID());
     }
 
     @Override

@@ -1,9 +1,6 @@
 package formulad.ai;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 import formulad.model.GameState;
 import formulad.model.Moves;
@@ -26,7 +23,7 @@ public class ExampleAI implements AI {
     public NameAtStart startGame(Track track) {
         playerId = track.getPlayer().getPlayerId();
         nodeMap = AIUtil.buildNodeMap(track.getTrack().getNodes(), track.getTrack().getEdges());
-        return new NameAtStart().name("Example");
+        return new NameAtStart().name("Example").id(UUID.randomUUID());
     }
 
     @Override

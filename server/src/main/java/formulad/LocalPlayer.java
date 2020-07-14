@@ -5,12 +5,7 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.geom.AffineTransform;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -32,6 +27,7 @@ public final class LocalPlayer {
         new Color(0x007777), new Color(0x993300), Color.GRAY, new Color(0x770077), Color.BLACK };
     private final String playerId;
     private String name;
+    private UUID id;
     private Node node;
     private int hitpoints = 18;
     private int gear;
@@ -79,6 +75,10 @@ public final class LocalPlayer {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
     }
 
     public int getGridPosition() {
@@ -463,8 +463,10 @@ public final class LocalPlayer {
     public PlayerStats getStatistics(int position, Map<Node, Double> distanceMap) {
         final PlayerStats stats = new PlayerStats();
         stats.playerId = playerId;
+        stats.id = id;
         stats.position = position;
         stats.turns = turns;
+        stats.lapsToGo = lapsToGo;
         stats.timeUsed = timeUsed;
         stats.exceptions = exceptions;
         stats.hitpoints = hitpoints;

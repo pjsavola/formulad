@@ -38,8 +38,11 @@ public class Client extends Screen implements Runnable {
     private PlayerStats[] finalStandings;
     private final JFrame frame;
     private final JPanel panel;
+    private final Profile profile;
+    private boolean initialStandingsReceived;
 
-    public Client(JFrame frame, Socket socket, JPanel panel) throws IOException {
+    public Client(JFrame frame, Socket socket, JPanel panel, Profile profile) throws IOException {
+        this.profile = profile;
         this.socket = socket;
         oos = new ObjectOutputStream(socket.getOutputStream());
         ois = new ObjectInputStream(socket.getInputStream()); // This may block if connection cannot be established!
@@ -54,7 +57,7 @@ public class Client extends Screen implements Runnable {
             throw new RuntimeException("Cannot be bothered to work this out", e);
         }
         final AI backupAI = new GreatAI();
-        ai = new ManualAI(backupAI, frame, this);
+        ai = new ManualAI(backupAI, frame, this, profile.getId());
     }
 
     @Override
@@ -78,7 +81,21 @@ public class Client extends Screen implements Runnable {
                         }
                     } else if (request instanceof FinalStandings) {
                         final FinalStandings standings = (FinalStandings) request;
+                        if (!initialStandingsReceived) {
+                            profile.standingsReceived(standings.getStats(), true);
+                            initialStandingsReceived = true;
+                            synchronized (this.standings) {
+                                for (PlayerStats stats : standings.getStats()) {
+                                    final Player player = playerMap.get(stats.playerId);
+                                    if (player != null) {
+                                        this.standings.add(player);
+                                    }
+                                }
+                            }
+                            continue;
+                        }
                         finalStandings = standings.getStats();
+                        profile.standingsReceived(finalStandings, false);
                         repaint();
                         break;
                     } else {

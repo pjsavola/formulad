@@ -1,13 +1,14 @@
 package formulad.model;
 
-import formulad.LocalPlayer;
-
 import java.io.Serializable;
+import java.util.UUID;
 
 public class PlayerStats implements Serializable {
     public String playerId;
+    public UUID id;
     public int position;
     public int turns;
+    public int lapsToGo;
     public long timeUsed;
     public int exceptions;
     public int hitpoints;

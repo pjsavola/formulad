@@ -4,15 +4,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +34,7 @@ import io.swagger.annotations.OAuth2Definition;
 
 public class FormulaD extends Screen implements Runnable {
     private final JFrame frame;
+    private final Profile profile;
     // Node identifier equals to the index in this array
     private final List<Node> nodes = new ArrayList<>();
     private final Map<Node, List<Node>> prevNodeMap;
@@ -80,9 +74,10 @@ public class FormulaD extends Screen implements Runnable {
         }
     }
 
-    public FormulaD(Params params, Lobby lobby, JFrame frame) {
+    public FormulaD(Params params, Lobby lobby, JFrame frame, Profile profile) {
         this.lobby = lobby;
         this.frame = frame;
+        this.profile = profile;
         backgroundImage = ImageCache.getImage("/sebring.jpg");
         setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
 
@@ -104,7 +99,13 @@ public class FormulaD extends Screen implements Runnable {
         createGrid(params, attributes);
         waitingPlayers.addAll(players);
         waitingPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
-        lobby.notifyClients(new Standings(waitingPlayers));
+        final List<PlayerStats> stats = new ArrayList<>();
+        for (int i = 0; i < waitingPlayers.size(); i++) {
+            final LocalPlayer player = waitingPlayers.get(i);
+            final PlayerStats playerStats = player.getStatistics(i + 1, distanceMap);
+            stats.add(playerStats);
+        }
+        lobby.notifyClients(new FinalStandings(stats));
         current = waitingPlayers.remove(0);
     }
 
@@ -124,7 +125,7 @@ public class FormulaD extends Screen implements Runnable {
                     log.log(Level.SEVERE, msg);
                     throw new RuntimeException(msg);
                 }
-                final AI manualAI = new ManualAI((AI) ai, frame, this);
+                final AI manualAI = new ManualAI((AI) ai, frame, this, profile.getId());
                 createAiPlayer(manualAI, grid, startingOrder, attributes, params.leeway);
             } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
                 log.log(Level.SEVERE, "Error while trying to create AI from path " + path, e);
@@ -171,22 +172,26 @@ public class FormulaD extends Screen implements Runnable {
     private void createAiPlayer(AI ai, List<Node> grid, List<Integer> startingOrder, Map<Node, Double> attributes, int leeway) {
         // Recreate track for each player, so nothing bad happens if AI mutates it.
         final int playerCount = allPlayers.size();
-        final String id = "p" + (playerCount + 1);
-        final Track track = ApiHelper.buildTrack(gameId, id, nodes);
+        final String playerId = "p" + (playerCount + 1);
+        final Track track = ApiHelper.buildTrack(gameId, playerId, nodes);
         final Node startNode = grid.get(startingOrder.get(playerCount));
-        final LocalPlayer player = new LocalPlayer(id, startNode, attributes.get(startNode), 1, this, leeway);
+        final LocalPlayer player = new LocalPlayer(playerId, startNode, attributes.get(startNode), 1, this, leeway);
         current = player;
-        log.info("Initializing player " + id);
+        log.info("Initializing player " + playerId);
         NameAtStart nameResponse = getAiInput(() -> ai.startGame(track), initTimeoutInMillis);
         final String name;
+        final UUID id;
         if (nameResponse == null) {
-            log.warning("Received no name from player " + id + ", using name Unresponsive instead");
+            log.warning("Received no name from player " + playerId + ", using name Unresponsive instead");
             name = "Unresponsive";
+            id = UUID.randomUUID();
         } else {
             name = nameResponse.getName();
+            id = nameResponse.getId();
         }
         log.info("Initialization done, player " + name + " starts from position " + (startingOrder.get(playerCount) + 1));
         player.setName(name);
+        player.setId(id);
         players.add(player);
         allPlayers.add(player);
         player.setGridPosition(allPlayers.size());
@@ -584,7 +589,7 @@ public class FormulaD extends Screen implements Runnable {
         private Long seed = null;
     }
 
-    private static void showMenu(JFrame f, Params params) {
+    private static void showMenu(JFrame f, Params params, Profile profile) {
         final int playerCount = params.manualAIs.size() + params.localAIs.size() + params.simpleAIs;
         final JPanel p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
@@ -629,7 +634,7 @@ public class FormulaD extends Screen implements Runnable {
                 p.add(label);
                 JButton button = new JButton("Start");
                 button.addActionListener(event -> {
-                    final FormulaD server = new FormulaD(params, lobby, f);
+                    final FormulaD server = new FormulaD(params, lobby, f, profile);
                     f.setContentPane(server);
                     f.pack();
                     new Thread(server).start();
@@ -656,7 +661,7 @@ public class FormulaD extends Screen implements Runnable {
                 if (addressAndPort.length == 2) {
                     final int port = Integer.parseInt(addressAndPort[1]);
                     Socket socket = new Socket(addressAndPort[0], port);
-                    final Client client = new Client(f, socket, p);
+                    final Client client = new Client(f, socket, p, profile);
                     f.setContentPane(client);
                     f.pack();
                     new Thread(client).start();
@@ -710,6 +715,7 @@ public class FormulaD extends Screen implements Runnable {
             System.exit(3);
         }
         LocalPlayer.animationDelayInMillis = params.animationDelayInMillis;
-        showMenu(f, params);
+        final Profile defaultProfile = new Profile("Default");
+        showMenu(f, params, defaultProfile);
     }
 }
