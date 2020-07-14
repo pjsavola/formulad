@@ -610,7 +610,7 @@ public class FormulaD extends Screen implements Runnable {
         });
         final JButton joinMultiplayerButton = new JButton("Join Multiplayer");
         joinMultiplayerButton.addActionListener(e -> {
-            String result = (String) JOptionPane.showInputDialog(f, "IP Address", "IP Address", JOptionPane.PLAIN_MESSAGE,  null, null, "localhost:1277");
+            String result = (String) JOptionPane.showInputDialog(p, "IP address and port", "IP address and port", JOptionPane.PLAIN_MESSAGE,  null, null, "localhost:1277");
             String[] addressAndPort = result.split(":");
             try {
                 if (addressAndPort.length == 2) {
@@ -622,14 +622,12 @@ public class FormulaD extends Screen implements Runnable {
                     new Thread(client).start();
                 }
                 else {
-                    System.out.println("Please specify lobby IP and port (e.g. 123.456.7.8:1277)");
+                    JOptionPane.showConfirmDialog(p, "Please specify server IP address and port (for example 123.456.7.8:1277)", "Error", JOptionPane.DEFAULT_OPTION);
                 }
             } catch (NumberFormatException exception) {
-                System.out.println("Invalid port: " + addressAndPort[1]);
+                JOptionPane.showConfirmDialog(p, "Invalid port: '" + addressAndPort[1] + "'", "Error", JOptionPane.DEFAULT_OPTION);
             } catch (IOException exception) {
-                // TODO: maybe add error popup here?
-                System.out.println("Unable to connect to server " + result);
-                exception.printStackTrace();
+                JOptionPane.showConfirmDialog(p, "Unable to connect to server " + result, "Error", JOptionPane.DEFAULT_OPTION);
             }
         });
         p.add(singlePlayerButton);
