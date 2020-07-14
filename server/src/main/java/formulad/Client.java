@@ -20,8 +20,6 @@ public class Client extends Screen implements Runnable {
     // Node identifier equals to the index in this array
     private final List<Node> nodes = new ArrayList<>();
     private BufferedImage backgroundImage;
-    private Integer roll;
-    private static final String gameId = "Sebring";
     @Nullable
     private Map<Integer, Integer> highlightedNodeToDamage;
 
@@ -29,6 +27,7 @@ public class Client extends Screen implements Runnable {
     private final ObjectOutputStream oos;
     private final ObjectInputStream ois;
     private final AI ai;
+    private Integer roll;
     private Player current;
     private Player controlledPlayer;
     private String controlledPlayerId;
@@ -41,6 +40,9 @@ public class Client extends Screen implements Runnable {
     private final JPanel panel;
 
     public Client(JFrame frame, Socket socket, JPanel panel) throws IOException {
+        this.socket = socket;
+        oos = new ObjectOutputStream(socket.getOutputStream());
+        ois = new ObjectInputStream(socket.getInputStream()); // This may block if connection cannot be established!
         this.frame = frame;
         this.panel = panel;
         backgroundImage = ImageCache.getImage("/sebring.jpg");
@@ -51,10 +53,6 @@ public class Client extends Screen implements Runnable {
         } catch (IOException e) {
             throw new RuntimeException("Cannot be bothered to work this out", e);
         }
-
-        this.socket = socket;
-        oos = new ObjectOutputStream(socket.getOutputStream());
-        ois = new ObjectInputStream(socket.getInputStream()); // This may block if connection cannot be established!
         final AI backupAI = new GreatAI();
         ai = new ManualAI(backupAI, frame, this);
     }
@@ -112,17 +110,13 @@ public class Client extends Screen implements Runnable {
             }
             if (finalStandings == null) {
                 JOptionPane.showConfirmDialog(this, "Connection to server lost", "Error", JOptionPane.DEFAULT_OPTION);
-                frame.setContentPane(panel);
-                frame.pack();
-                panel.repaint();
+                exit();
             } else {
                 addMouseListener(new MouseListener() {
                     @Override
                     public void mouseClicked(MouseEvent e) {
                         removeMouseListener(this);
-                        frame.setContentPane(panel);
-                        frame.pack();
-                        panel.repaint();
+                        exit();
                     }
                     @Override
                     public void mousePressed(MouseEvent e) {
@@ -143,7 +137,14 @@ public class Client extends Screen implements Runnable {
             socket.close();
         } catch (IOException e) {
             FormulaD.log.log(Level.WARNING, "Error when closing server connection", e);
+            exit();
         }
+    }
+
+    private void exit() {
+        frame.setContentPane(panel);
+        frame.pack();
+        panel.repaint();
     }
 
     public void notify(MovementNotification notification) {
@@ -237,46 +238,50 @@ public class Client extends Screen implements Runnable {
         drawTargets(g2d);
         drawInfoBox(g2d);
         drawPlayers(g2d);
+        drawStandings(g2d);
+    }
 
+    private void drawStandings(Graphics2D g2d) {
         if (finalStandings != null) {
             final int height = 5 + 15 * (finalStandings.length + 1);
             final int x = getWidth() / 2 - 200;
             final int y = getHeight() / 2 - height / 2;
-            g.setColor(Color.BLACK);
-            g.setFont(new Font("Arial", Font.BOLD, 20));
-            final int titleWidth = g.getFontMetrics().stringWidth("STANDINGS");
-            g.drawString("STANDINGS", x + 200 - titleWidth / 2, y - 20);
+            g2d.setColor(Color.BLACK);
+            g2d.setFont(new Font("Arial", Font.BOLD, 20));
+            final int titleWidth = g2d.getFontMetrics().stringWidth("STANDINGS");
+            g2d.drawString("STANDINGS", x + 200 - titleWidth / 2, y - 20);
             g2d.setColor(Color.GRAY);
             g2d.fillRect(x, y, 400, height);
             g2d.setColor(Color.BLACK);
             g2d.drawRect(x, y, 400, height);
-            g.setColor(Color.BLACK);
-            g.setFont(new Font("Arial", Font.BOLD, 12));
-            g.drawString("Name", x + 30, y + 15);
-            g.drawString("HP", x + 140, y + 15);
-            g.drawString("Turns", x + 190, y + 15);
-            g.drawString("Grid", x + 230, y + 15);
-            g.drawString("Time", x + 270, y + 15);
-            g.setFont(new Font("Arial", Font.PLAIN, 12));
+            g2d.setColor(Color.BLACK);
+            g2d.setFont(new Font("Arial", Font.BOLD, 12));
+            g2d.drawString("Name", x + 30, y + 15);
+            g2d.drawString("HP", x + 140, y + 15);
+            g2d.drawString("Turns", x + 190, y + 15);
+            g2d.drawString("Grid", x + 230, y + 15);
+            g2d.drawString("Time", x + 270, y + 15);
+            g2d.setFont(new Font("Arial", Font.PLAIN, 12));
             for (int i = 0; i < finalStandings.length; ++i) {
                 final PlayerStats stats = finalStandings[i];
                 synchronized (playerMap) {
                     final Player player = playerMap.get(stats.playerId);
                     final String name = player.getName();
                     player.draw(g2d, x + 15, y + (i + 1) * 15 + 10, 0);
-                    g.setColor(Color.BLACK);
-                    g.drawString(name, x + 30, y + (i + 1) * 15 + 15);
+                    g2d.setColor(Color.BLACK);
+                    g2d.drawString(name, x + 30, y + (i + 1) * 15 + 15);
                     final String hp = stats.hitpoints > 0 ? Integer.toString(stats.hitpoints) : "DNF";
-                    g.drawString(hp, x + 140, y + (i + 1) * 15 + 15);
-                    g.drawString(Integer.toString(stats.turns), x + 190, y + (i + 1) * 15 + 15);
-                    g.drawString(Integer.toString(stats.gridPosition), x + 230, y + (i + 1) * 15 + 15);
+                    g2d.drawString(hp, x + 140, y + (i + 1) * 15 + 15);
+                    g2d.drawString(Integer.toString(stats.turns), x + 190, y + (i + 1) * 15 + 15);
+                    g2d.drawString(Integer.toString(stats.gridPosition), x + 230, y + (i + 1) * 15 + 15);
                     final long timeUsed = stats.timeUsed / 100;
                     final double timeUsedSecs = timeUsed / 10.0;
-                    g.drawString(Double.toString(timeUsedSecs), x + 270, y + (i + 1) * 15 + 15);
+                    g2d.drawString(Double.toString(timeUsedSecs), x + 270, y + (i + 1) * 15 + 15);
                 }
             }
         }
     }
+
 
     private void drawTargets(Graphics2D g2d) {
         if (highlightedNodeToDamage != null) {
