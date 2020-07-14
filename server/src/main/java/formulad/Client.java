@@ -7,6 +7,8 @@ import formulad.model.*;
 import javax.annotation.Nullable;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
@@ -35,8 +37,12 @@ public class Client extends Screen implements Runnable {
     private final Map<String, Player> playerMap = new HashMap<>();
     private final List<Player> standings = new ArrayList<>();
     private PlayerStats[] finalStandings;
+    private final JFrame frame;
+    private final JPanel panel;
 
-    public Client(JFrame frame, Socket socket) throws IOException {
+    public Client(JFrame frame, Socket socket, JPanel panel) throws IOException {
+        this.frame = frame;
+        this.panel = panel;
         backgroundImage = ImageCache.getImage("/sebring.jpg");
         setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
         // Contains angles for start nodes and distance information for curves
@@ -94,16 +100,43 @@ public class Client extends Screen implements Runnable {
                             }
                         } catch (IOException e) {
                             FormulaD.log.log(Level.SEVERE, "Error when sending response to server", e);
+                            break;
                         }
                     }
                 } catch (EOFException e) {
                     // This is ok, no objects to read
                 } catch (IOException | ClassNotFoundException e) {
                     FormulaD.log.log(Level.SEVERE, "Error when reading object input from server", e);
+                    break;
                 }
             }
             if (finalStandings == null) {
                 JOptionPane.showConfirmDialog(this, "Connection to server lost", "Error", JOptionPane.DEFAULT_OPTION);
+                frame.setContentPane(panel);
+                frame.pack();
+                panel.repaint();
+            } else {
+                addMouseListener(new MouseListener() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        removeMouseListener(this);
+                        frame.setContentPane(panel);
+                        frame.pack();
+                        panel.repaint();
+                    }
+                    @Override
+                    public void mousePressed(MouseEvent e) {
+                    }
+                    @Override
+                    public void mouseReleased(MouseEvent e) {
+                    }
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+                    }
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+                    }
+                });
             }
             ois.close();
             oos.close();

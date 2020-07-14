@@ -616,7 +616,7 @@ public class FormulaD extends Screen implements Runnable {
                 if (addressAndPort.length == 2) {
                     final int port = Integer.parseInt(addressAndPort[1]);
                     Socket socket = new Socket(addressAndPort[0], port);
-                    final Client client = new Client(f, socket);
+                    final Client client = new Client(f, socket, p);
                     f.setContentPane(client);
                     f.pack();
                     new Thread(client).start();
