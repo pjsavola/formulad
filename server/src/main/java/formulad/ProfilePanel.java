@@ -3,16 +3,21 @@ package formulad;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.List;
 
 public class ProfilePanel extends JPanel {
+    private class CarPreview extends JPanel {
+        @Override
+        public void paintComponent(Graphics g) {
+            final int x = getWidth() / 2;
+            final int y = getHeight() / 2;
+            Player.draw((Graphics2D) g, x, y, 0, new Color(activeProfile.getColor1()), new Color(activeProfile.getColor2()), 2.5);
+        }
+    }
+
     private Profile activeProfile;
     ProfilePanel(List<Profile> profiles) {
         activeProfile = profiles.stream().filter(Profile::isActive).findFirst().orElse(profiles.get(0));
@@ -22,15 +27,28 @@ public class ProfilePanel extends JPanel {
         profileTitle.setFont(new Font("Arial", Font.BOLD, 16));
         final JLabel profileName = new JLabel(activeProfile.getName());
         profileName.setFont(new Font("Arial", Font.PLAIN, 16));
-        final JPanel carPreview = new JPanel() {
-            @Override
-            public void paintComponent(Graphics g) {
-                Player.draw((Graphics2D) g, 40, 20, 0, new Color(activeProfile.getColor1()), new Color(activeProfile.getColor2()), 2.5);
-            }
-        };
+        final CarPreview carPreview = new CarPreview();
+
         add(profileTitle);
         add(profileName);
         add(carPreview);
+
+        final JSlider sliderColor1 = new JSlider(JSlider.HORIZONTAL, 0x000000, 0xFFFFFF, activeProfile.getColor1());
+        final JSlider sliderColor2 = new JSlider(JSlider.HORIZONTAL, 0x000000, 0xFFFFFF, activeProfile.getColor2());
+
+        sliderColor1.addChangeListener(e -> {
+            final JSlider slider = (JSlider) e.getSource();
+            activeProfile.setColor1(slider.getValue());
+            carPreview.repaint();
+        });
+        sliderColor2.addChangeListener(e -> {
+            final JSlider slider = (JSlider) e.getSource();
+            activeProfile.setColor2(slider.getValue());
+            carPreview.repaint();
+        });
+
+        add(sliderColor1);
+        add(sliderColor2);
 
         profileTitle.addMouseListener(new MouseListener() {
             @Override
@@ -54,73 +72,63 @@ public class ProfilePanel extends JPanel {
                 final JButton newButton = new JButton("New");
                 final JButton selectButton = new JButton("Select");
                 final JButton deleteButton = new JButton("Delete");
-                newButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        String result = (String) JOptionPane.showInputDialog(dialog, "New profile name", "New profile", JOptionPane.PLAIN_MESSAGE, null, null, null);
-                        if (result != null && !result.isEmpty()) {
-                            if (profiles.stream().noneMatch(p -> p.getName().equals(result))) {
-                                final Profile newProfile = new Profile(result);
-                                newProfile.setActive(true);
-                                profiles.add(newProfile);
-                                activeProfile.setActive(false);
-                                activeProfile = newProfile;
-                                profileName.setText(result);
-                                dialog.setVisible(false);
-                            } else {
-                                JOptionPane.showConfirmDialog(dialog, "Profile with name " + result + " already exists", "Error", JOptionPane.DEFAULT_OPTION);
-                            }
-                        }
-                    }
-                });
-                selectButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        final int index = list.getSelectedIndex();
-                        if (index == -1) {
-                            return;
-                        }
-                        final Profile selectedProfile = profiles.get(index);
-                        if (selectedProfile != activeProfile) {
+                newButton.addActionListener(e1 -> {
+                    String result = (String) JOptionPane.showInputDialog(dialog, "New profile name", "New profile", JOptionPane.PLAIN_MESSAGE, null, null, null);
+                    if (result != null && !result.isEmpty()) {
+                        if (profiles.stream().noneMatch(p -> p.getName().equals(result))) {
+                            final Profile newProfile = new Profile(result);
+                            newProfile.setActive(true);
+                            profiles.add(newProfile);
                             activeProfile.setActive(false);
-                            selectedProfile.setActive(true);
-                            activeProfile = selectedProfile;
-                            profileName.setText(selectedProfile.getName());
+                            activeProfile = newProfile;
+                            profileName.setText(result);
+                            dialog.setVisible(false);
+                            carPreview.repaint();
+                        } else {
+                            JOptionPane.showConfirmDialog(dialog, "Profile with name " + result + " already exists", "Error", JOptionPane.DEFAULT_OPTION);
                         }
-                        dialog.setVisible(false);
                     }
                 });
-                deleteButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        final int index = list.getSelectedIndex();
-                        if (index == -1) {
-                            return;
-                        }
-                        final String name = profiles.get(index).getName();
-                        int result = JOptionPane.showConfirmDialog(dialog, "Are you sure you want to delete profile " + name, "Confirm", JOptionPane.YES_NO_OPTION);
-                        if (result == JOptionPane.YES_OPTION) {
-                            final Profile removedProfile = profiles.remove(index);
-                            model.remove(index);
-                            list.setSelectedIndex(-1);
-                        }
+                selectButton.addActionListener(e12 -> {
+                    final int index = list.getSelectedIndex();
+                    if (index == -1) {
+                        return;
+                    }
+                    final Profile selectedProfile = profiles.get(index);
+                    if (selectedProfile != activeProfile) {
+                        activeProfile.setActive(false);
+                        selectedProfile.setActive(true);
+                        activeProfile = selectedProfile;
+                        profileName.setText(selectedProfile.getName());
+                        carPreview.repaint();
+                    }
+                    dialog.setVisible(false);
+                });
+                deleteButton.addActionListener(e13 -> {
+                    final int index = list.getSelectedIndex();
+                    if (index == -1) {
+                        return;
+                    }
+                    final String name = profiles.get(index).getName();
+                    int result = JOptionPane.showConfirmDialog(dialog, "Are you sure you want to delete profile " + name, "Confirm", JOptionPane.YES_NO_OPTION);
+                    if (result == JOptionPane.YES_OPTION) {
+                        final Profile removedProfile = profiles.remove(index);
+                        model.remove(index);
+                        list.setSelectedIndex(-1);
                     }
                 });
                 deleteButton.setEnabled(false);
 
                 list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
                 list.setSelectedIndex(profiles.indexOf(activeProfile));
-                list.addListSelectionListener(new ListSelectionListener() {
-                    @Override
-                    public void valueChanged(ListSelectionEvent e) {
-                        if (!e.getValueIsAdjusting()) {
-                            if (list.getSelectedIndex() == -1) {
-                                deleteButton.setEnabled(false);
-                                selectButton.setEnabled(false);
-                            } else {
-                                deleteButton.setEnabled(!profiles.get(list.getSelectedIndex()).isActive());
-                                selectButton.setEnabled(true);
-                            }
+                list.addListSelectionListener(e14 -> {
+                    if (!e14.getValueIsAdjusting()) {
+                        if (list.getSelectedIndex() == -1) {
+                            deleteButton.setEnabled(false);
+                            selectButton.setEnabled(false);
+                        } else {
+                            deleteButton.setEnabled(!profiles.get(list.getSelectedIndex()).isActive());
+                            selectButton.setEnabled(true);
                         }
                     }
                 });
@@ -189,45 +197,5 @@ public class ProfilePanel extends JPanel {
                 profileName.setForeground(Color.BLACK);
             }
         });
-
-        addMouseListener(new MouseListener() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                final int x = e.getX();
-                final int y = e.getY();
-                if (x >= 50 && x <= 100 && y >= 25 && y <= 35) {
-                    System.err.println("Change profile");
-                }
-            }
-            @Override
-            public void mousePressed(MouseEvent e) {
-            }
-            @Override
-            public void mouseReleased(MouseEvent e) {
-            }
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                final int x = e.getX();
-                final int y = e.getY();
-                if (x >= 50 && x <= 100 && y >= 25 && y <= 35) {
-                    System.err.println("Change profile");
-                }
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
-            }
-        });
     }
-
-    /*
-    @Override
-    public void paintComponent(Graphics g) {
-        g.setColor(activeProfileTextColor);
-        g.setFont(new Font("Arial", Font.BOLD, 16));
-        g.drawString("Active profile", 50, 30);
-        g.setColor(profileNameTextColor);
-        g.setFont(new Font("Arial", Font.PLAIN, 16));
-        g.drawString(activeProfile.getName(), 50, 50);
-        Player.draw((Graphics2D) g, 70, 70, 0, new Color(activeProfile.getColor1()), new Color(activeProfile.getColor2()), 2.5);
-    }*/
 }

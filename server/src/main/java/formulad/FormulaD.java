@@ -628,8 +628,8 @@ public class FormulaD extends Screen implements Runnable {
                 JLabel label = new JLabel("Connected Clients: 0");
                 final int port = Integer.parseInt(result);
                 final Lobby lobby = new Lobby(port, playerCount, label);
-                p.removeAll();
-                p.add(label);
+                final JPanel lobbyPanel = new JPanel();
+                lobbyPanel.add(label);
                 JButton button = new JButton("Start");
                 button.addActionListener(event -> {
                     final FormulaD server = new FormulaD(params, lobby, f, activeProfile.getValue());
@@ -637,7 +637,8 @@ public class FormulaD extends Screen implements Runnable {
                     f.pack();
                     new Thread(server).start();
                 });
-                p.add(button);
+                lobbyPanel.add(button);
+                f.setContentPane(lobbyPanel);
                 f.pack();
                 lobby.start();
             } catch (NumberFormatException exception) {
@@ -682,12 +683,10 @@ public class FormulaD extends Screen implements Runnable {
         buttonPanel.add(singlePlayerButton);
         buttonPanel.add(hostMultiplayerButton);
         buttonPanel.add(joinMultiplayerButton);
-        // change profile
         f.setContentPane(p);
         f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         f.setPreferredSize(new Dimension(500, 400));
         f.pack();
-        //f.setLocation(0, 0);
         f.setVisible(true);
     }
 

@@ -14,7 +14,6 @@ public class Lobby extends Thread {
     private final ServerSocket serverSocket;
     private final int playerCount;
     private final JLabel label;
-    private boolean ready;
     final List<RemoteAI> clients = new ArrayList<>();
     public Lobby(int port, int playerCount, JLabel label) throws IOException {
         serverSocket = new ServerSocket(port);
