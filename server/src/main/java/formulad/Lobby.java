@@ -1,38 +1,75 @@
 package formulad;
 
+import formulad.model.Kick;
+
 import javax.swing.*;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 
 public class Lobby extends Thread {
 
     private final ServerSocket serverSocket;
-    private final int playerCount;
+    private PlayerSlot[] slots;
     private final JLabel label;
+    volatile boolean done;
     final List<RemoteAI> clients = new ArrayList<>();
-    public Lobby(int port, int playerCount, JLabel label) throws IOException {
+    final Map<UUID, RemoteAI> clientMap = new HashMap<>();
+    public Lobby(int port, JLabel label) throws IOException {
         serverSocket = new ServerSocket(port);
-        this.playerCount = playerCount;
         this.label = label;
+    }
+
+    public void setSlots(PlayerSlot[] slots) {
+        this.slots = slots;
     }
 
     @Override
     public void run() {
-        while (playerCount + clients.size() < 10) {
+        waiting:
+        while (!done) {
             System.out.println("Waiting for clients");
             try {
                 final Socket socket = serverSocket.accept();
-                System.out.println("Client connected: " + socket.getInetAddress().toString());
-                clients.add(new RemoteAI(socket));
-                label.setText("Connected clients: " + clients.size());
-                label.repaint();
+                for (PlayerSlot slot : slots) {
+                    if (slot.isFree()) {
+                        slot.setProfile(ProfileMessage.pending);
+                        System.out.println("Client connected: " + socket.getInetAddress().toString());
+                        final RemoteAI client = new RemoteAI(socket);
+                        final ProfileMessage message = client.getProfile(new ProfileRequest("sebring"));
+                        if (message != null) {
+                            synchronized (clientMap) {
+                                clientMap.put(message.getId(), client);
+                                clients.add(client);
+                            }
+                            slot.setProfile(message);
+                            slot.setEnabled(true);
+                            slot.repaint();
+                        }
+                        continue waiting;
+                    }
+                }
+                // The game is full :(
+                socket.close();
             } catch (IOException e) {
                 FormulaD.log.log(Level.SEVERE, "Server IOException", e);
+            }
+        }
+    }
+
+    public RemoteAI getClient(UUID id) {
+        return clientMap.get(id);
+    }
+
+    public void dropClient(UUID id) {
+        synchronized (clientMap) {
+            final RemoteAI client = clientMap.remove(id);
+            if (client != null) {
+                client.notify(new Kick("Sorry"));
+                clients.remove(client);
+                client.close();
             }
         }
     }

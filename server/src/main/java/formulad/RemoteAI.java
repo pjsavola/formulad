@@ -71,6 +71,22 @@ public class RemoteAI implements AI {
         oos = null;
     }
 
+    public ProfileMessage getProfile(ProfileRequest request) {
+        if (oos != null && ois != null) {
+            try {
+                oos.writeObject(request);
+                Object response;
+                do {
+                    response = getResponse();
+                } while (!(response instanceof ProfileMessage));
+                return (ProfileMessage) response;
+            } catch (IOException | ClassNotFoundException e) {
+                close();
+            }
+        }
+        return null;
+    }
+
     @Override
     public NameAtStart startGame(Track track) {
         this.track = track; // fallback AI might need this

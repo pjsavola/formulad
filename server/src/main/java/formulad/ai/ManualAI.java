@@ -36,18 +36,20 @@ public class ManualAI implements AI {
     private boolean automaticMove;
     private static final int listenerDelay = 50;
     private final UUID id;
+    private final String name;
 
-    public ManualAI(AI ai, JFrame frame, Screen game, UUID id) {
+    public ManualAI(AI ai, JFrame frame, Screen game, UUID id, String name) {
         this.ai = ai;
         this.frame = frame;
         this.game = game;
         this.id = id;
+        this.name = name;
     }
 
     @Override
     public NameAtStart startGame(Track track) {
         this.playerId = track.getPlayer().getPlayerId();
-        return ai.startGame(track).id(id);
+        return ai.startGame(track).name(name).id(id);
     }
 
     @Override

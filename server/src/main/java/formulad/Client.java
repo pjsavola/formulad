@@ -112,6 +112,12 @@ public class Client extends Screen implements Runnable {
                             } else if (request instanceof Moves) {
                                 final Moves moves = (Moves) request;
                                 oos.writeObject(ai.selectMove(moves));
+                            } else if (request instanceof ProfileRequest) {
+                                oos.writeObject(new ProfileMessage(profile));
+                            } else if (request instanceof Kick) {
+                                JOptionPane.showConfirmDialog(this, "You have been kicked", "Oops", JOptionPane.DEFAULT_OPTION);
+                                exit();
+                                return;
                             }
                         } catch (IOException e) {
                             FormulaD.log.log(Level.SEVERE, "Error when sending response to server", e);

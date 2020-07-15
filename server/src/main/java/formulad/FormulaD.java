@@ -39,7 +39,6 @@ import org.apache.commons.lang3.mutable.MutableObject;
 
 public class FormulaD extends Screen implements Runnable {
     private final JFrame frame;
-    private final Profile profile;
     // Node identifier equals to the index in this array
     private final List<Node> nodes = new ArrayList<>();
     private final Map<Node, List<Node>> prevNodeMap;
@@ -79,10 +78,9 @@ public class FormulaD extends Screen implements Runnable {
         }
     }
 
-    public FormulaD(Params params, Lobby lobby, JFrame frame, Profile profile) {
+    public FormulaD(Params params, Lobby lobby, JFrame frame, PlayerSlot[] slots) {
         this.lobby = lobby;
         this.frame = frame;
-        this.profile = profile;
         backgroundImage = ImageCache.getImage("/sebring.jpg");
         setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
 
@@ -101,7 +99,7 @@ public class FormulaD extends Screen implements Runnable {
         gearTimeoutInMillis = params.gearTimeoutInMillis;
         moveTimeoutInMillis = params.moveTimeoutInMillis;
         allPlayers = new ArrayList<>();
-        createGrid(params, attributes);
+        createGrid(params, attributes, slots);
         waitingPlayers.addAll(players);
         waitingPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
         final List<PlayerStats> stats = new ArrayList<>();
@@ -114,13 +112,36 @@ public class FormulaD extends Screen implements Runnable {
         current = waitingPlayers.remove(0);
     }
 
-    private void createGrid(Params params, Map<Node, Double> attributes) {
-        int playerCount = params.manualAIs.size() + lobby.clients.size() + params.localAIs.size() + params.simpleAIs;
+    private void createGrid(Params params, Map<Node, Double> attributes, PlayerSlot[] slots) {
+        final List<AI> aiList = new ArrayList<>();
+        for (PlayerSlot slot : slots) {
+            final ProfileMessage profile = slot.getProfile();
+            if (profile != null) {
+                if (profile.isAi()) {
+                    aiList.add(new GreatAI());
+                }
+                else if (profile.isLocal()) {
+                    aiList.add(new ManualAI(new GreatAI(), frame, this, profile.getId(), profile.getName()));
+                }
+                else {
+                    final RemoteAI client = lobby.getClient(profile.getId());
+                    if (client != null) {
+                        aiList.add(client);
+                    }
+                }
+            }
+        }
+        final int playerCount = aiList.size();
         final List<Node> grid = findGrid(attributes).subList(0, playerCount);
         final List<Integer> startingOrder = IntStream.range(0, playerCount).boxed().collect(Collectors.toList());
         Collections.shuffle(startingOrder, rng);
+        enableTimeout = true;
+        for (AI ai : aiList) {
+            createAiPlayer(ai, grid, startingOrder, attributes, params.leeway);
+        }
 
         // Create manually controlled AI players
+        /*
         for (String path : params.manualAIs) {
             try {
                 Class<?> clazz = Class.forName(path);
@@ -138,7 +159,7 @@ public class FormulaD extends Screen implements Runnable {
             }
         }
         // Timeout makes sense only if there are no manually controlled players.
-        enableTimeout = true;
+
         // Create automatically controlled AI players
         for (String path : params.localAIs) {
             try {
@@ -165,13 +186,13 @@ public class FormulaD extends Screen implements Runnable {
             final AI remoteAI = new RemoteAI(url);
             final AI manualAI = new ManualAI(remoteAI, frame, this);
             createAiPlayer(manualAI, grid, startingOrder, attributes, params.leeway);
-        }*/
+        }
         // Create computer players
         int count = params.simpleAIs;
         while (count-- > 0) {
             final AI ai = new GreatAI();
             createAiPlayer(ai, grid, startingOrder, attributes, params.leeway);
-        }
+        }*/
     }
 
     private void createAiPlayer(AI ai, List<Node> grid, List<Integer> startingOrder, Map<Node, Double> attributes, int leeway) {
@@ -627,16 +648,56 @@ public class FormulaD extends Screen implements Runnable {
             try {
                 JLabel label = new JLabel("Connected Clients: 0");
                 final int port = Integer.parseInt(result);
-                final Lobby lobby = new Lobby(port, playerCount, label);
+                final Lobby lobby = new Lobby(port, label);
+
+                final List<ProfileMessage> localProfiles = profiles.stream().map(ProfileMessage::new).collect(Collectors.toList());
+                final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
+                final PlayerSlot[] slots = new PlayerSlot[10];
+                for (int i = 0; i < slots.length; ++i) {
+                    final PlayerSlot slot = new PlayerSlot(f, localProfiles, lobby);
+                    playerPanel.add(slot);
+                    slots[i] = slot;
+                }
+                lobby.setSlots(slots);
+
                 final JPanel lobbyPanel = new JPanel();
-                lobbyPanel.add(label);
+                //lobbyPanel.setLayout(new BoxLayout(lobbyPanel, BoxLayout.Y_AXIS));
+                lobbyPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+                //lobbyPanel.add(label);
+                // TODO: Change track menu
+                JButton changeTrackButton = new JButton();
+                final ImageIcon icon = new ImageIcon();
+                final BufferedImage image = ImageCache.getImage("/sebring.jpg");
+                final int x = image.getWidth();
+                final int y = image.getHeight();
+                final int scale = Math.max(x / 200, y / 200);
+                icon.setImage(image.getScaledInstance(x / scale, y / scale, Image.SCALE_FAST));
+                changeTrackButton.setIcon(icon);
                 JButton button = new JButton("Start");
                 button.addActionListener(event -> {
-                    final FormulaD server = new FormulaD(params, lobby, f, activeProfile.getValue());
+                    boolean hasPlayers = false;
+                    final Set<UUID> ids = new HashSet<>();
+                    for (PlayerSlot slot : slots) {
+                        final ProfileMessage profile = slot.getProfile();
+                        if (profile != null) {
+                            hasPlayers = true;
+                            if (!profile.isAi() && !ids.add(profile.getId())) {
+                                JOptionPane.showConfirmDialog(lobbyPanel, "Duplicate profile: " + profile.getName(), "Error", JOptionPane.DEFAULT_OPTION);
+                                return;
+                            }
+                        }
+                    }
+                    if (!hasPlayers) {
+                        JOptionPane.showConfirmDialog(lobbyPanel, "Need at least 1 player", "Error", JOptionPane.DEFAULT_OPTION);
+                        return;
+                    }
+                    final FormulaD server = new FormulaD(params, lobby, f, slots);
                     f.setContentPane(server);
                     f.pack();
                     new Thread(server).start();
                 });
+                lobbyPanel.add(changeTrackButton);
+                lobbyPanel.add(playerPanel);
                 lobbyPanel.add(button);
                 f.setContentPane(lobbyPanel);
                 f.pack();
