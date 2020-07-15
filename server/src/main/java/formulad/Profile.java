@@ -11,13 +11,17 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 public class Profile implements Serializable {
+    private static final long serialVersionUID = -299482035708790405L;
+
     private final UUID id;
     private String name;
     private int color1;
     private int color2;
+    private boolean active;
     private List<Result> results = new ArrayList<>();
 
-    private class Result implements Serializable {
+    private static class Result implements Serializable {
+        private static final long serialVersionUID = -299482035708790406L;
         private final String trackId;
         private final int totalLaps;
         private final int totalHitpoints;
@@ -46,9 +50,6 @@ public class Profile implements Serializable {
             this.coveredDistance = coveredDistance;
             this.timeUsedMs = timeUsedMs;
             this.standings = standings;
-            if (position != standings.indexOf(id) + 1) {
-                FormulaD.log.log(Level.WARNING, "Standings and position do not match");
-            }
         }
     }
 
@@ -85,6 +86,14 @@ public class Profile implements Serializable {
         return color2;
     }
 
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
     public void standingsReceived(PlayerStats[] standings, boolean initial) {
         final List<UUID> players = new ArrayList<>();
         PlayerStats myStats = null;
@@ -102,6 +111,9 @@ public class Profile implements Serializable {
                 if (!lastResult.complete) {
                     final int coveredLaps = lastResult.totalLaps - myStats.lapsToGo - 1;
                     lastResult.complete(myStats.position, myStats.turns, myStats.hitpoints, coveredLaps, myStats.distance, myStats.timeUsed, players);
+                    if (myStats.position != players.indexOf(id) + 1) {
+                        FormulaD.log.log(Level.WARNING, "Standings and position do not match");
+                    }
                 }
             }
         }

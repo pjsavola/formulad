@@ -1,6 +1,10 @@
 package formulad;
 
 import java.awt.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
@@ -31,6 +35,7 @@ import formulad.ai.Node;
 import formulad.model.*;
 import formulad.model.Gear;
 import io.swagger.annotations.OAuth2Definition;
+import org.apache.commons.lang3.mutable.MutableObject;
 
 public class FormulaD extends Screen implements Runnable {
     private final JFrame frame;
@@ -589,7 +594,7 @@ public class FormulaD extends Screen implements Runnable {
         private Long seed = null;
     }
 
-    private static void showMenu(JFrame f, Params params, Profile profile) {
+    private static void showMenu(JFrame f, Params params, List<Profile> profiles) {
         final int playerCount = params.manualAIs.size() + params.localAIs.size() + params.simpleAIs;
         final JPanel p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
@@ -602,16 +607,9 @@ public class FormulaD extends Screen implements Runnable {
         p.add(contents);
         p.setBorder(new EmptyBorder(10, 10, 10, 10));
         final JPanel buttonPanel = new JPanel(new GridLayout(4, 0));
-        final JPanel profilePanel = new JPanel() {
-            @Override
-            public void paintComponent(Graphics g) {
-                g.setFont(new Font("Arial", Font.BOLD, 16));
-                g.drawString("Active profile", 50, 30);
-                g.setFont(new Font("Arial", Font.PLAIN, 16));
-                g.drawString("Xevoc", 50, 50);
-                Player.draw((Graphics2D) g, 70, 70, 0, Color.RED, Color.BLUE, 2.5);
-            }
-        };
+        final MutableObject<Profile> activeProfile = new MutableObject<>();
+        activeProfile.setValue(profiles.stream().filter(Profile::isActive).findFirst().orElse(profiles.get(0)));
+        final JPanel profilePanel = new ProfilePanel(profiles);
         buttonPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         contents.add(buttonPanel);
         contents.add(profilePanel);
@@ -634,7 +632,7 @@ public class FormulaD extends Screen implements Runnable {
                 p.add(label);
                 JButton button = new JButton("Start");
                 button.addActionListener(event -> {
-                    final FormulaD server = new FormulaD(params, lobby, f, profile);
+                    final FormulaD server = new FormulaD(params, lobby, f, activeProfile.getValue());
                     f.setContentPane(server);
                     f.pack();
                     new Thread(server).start();
@@ -661,7 +659,7 @@ public class FormulaD extends Screen implements Runnable {
                 if (addressAndPort.length == 2) {
                     final int port = Integer.parseInt(addressAndPort[1]);
                     Socket socket = new Socket(addressAndPort[0], port);
-                    final Client client = new Client(f, socket, p, profile);
+                    final Client client = new Client(f, socket, p, activeProfile.getValue());
                     f.setContentPane(client);
                     f.pack();
                     new Thread(client).start();
@@ -715,7 +713,53 @@ public class FormulaD extends Screen implements Runnable {
             System.exit(3);
         }
         LocalPlayer.animationDelayInMillis = params.animationDelayInMillis;
-        final Profile defaultProfile = new Profile("Default");
-        showMenu(f, params, defaultProfile);
+
+        final List<Profile> profiles = new ArrayList<>();
+        try {
+            final FileInputStream fileIn = new FileInputStream("profiles.dat");
+            final ObjectInputStream objectIn = new ObjectInputStream(fileIn);
+            while (true) {
+                final Object obj = objectIn.readObject();
+                if (obj == null) {
+                    break;
+                } else if (obj instanceof Profile) {
+                    profiles.add((Profile) obj);
+                }
+            }
+            objectIn.close();
+        } catch (IOException | ClassNotFoundException e) {
+            if (profiles.isEmpty()) {
+                final Profile defaultProfile = new Profile("Player");
+                defaultProfile.setActive(true);
+                profiles.add(defaultProfile);
+            }
+        }
+        f.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                super.windowClosing(e);
+                try {
+                    final FileOutputStream fos = new FileOutputStream("profiles.dat");
+                    final ObjectOutputStream oos = new ObjectOutputStream(fos);
+                    for (Profile profile : profiles) {
+                        oos.writeObject(profile);
+                    }
+                } catch (IOException ex) {
+                }
+            }
+        });
+        boolean activeFound = false;
+        for (Profile profile : profiles) {
+            if (profile.isActive()) {
+                if (activeFound) {
+                    profile.setActive(false);
+                }
+                activeFound = true;
+            }
+        }
+        if (!activeFound) {
+            profiles.get(0).setActive(true);
+        }
+        showMenu(f, params, profiles);
     }
 }
