@@ -91,7 +91,9 @@ public class Client extends Game implements Runnable {
                                 final GameState gameState = (GameState) request;
                                 roll = null;
                                 setCurrent(controlledPlayer);
+                                repaint();
                                 oos.writeObject(ai.selectGear(gameState));
+                                updateHitpointMap(gameState);
                             } else if (request instanceof Moves) {
                                 final Moves moves = (Moves) request;
                                 oos.writeObject(ai.selectMove(moves));
@@ -152,6 +154,7 @@ public class Client extends Game implements Runnable {
             setCurrent(player);
             roll = notification.getRoll();
             player.setGear(notification.getGear());
+            repaint();
         }
     }
 
@@ -192,12 +195,11 @@ public class Client extends Game implements Runnable {
     }
 
     private void setCurrent(Player player) {
+        if (current != null) {
+            current.clearRoute();
+        }
         if (current != player) {
-            if (current != null) {
-                current.clearRoute();
-            }
             current = player;
-            repaint();
         }
     }
 
@@ -273,7 +275,7 @@ public class Client extends Game implements Runnable {
                     g2d.fillPolygon(new int[] { getWidth() - 252, getWidth() - 257, getWidth() - 257 }, new int[] { i * 15 + 10, i * 15 + 7, i * 15 + 13 }, 3);
                 }
                 player.draw(g2d, getWidth() - 235, i * 15 + 10, 0);
-                player.drawStats(g2d, getWidth() - 220, i * 15 + 15);
+                player.drawStats(g2d, getWidth() - 220, i * 15 + 15, hitpointMap);
                 i++;
             }
         }

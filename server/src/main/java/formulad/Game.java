@@ -1,6 +1,7 @@
 package formulad;
 
 import formulad.ai.Node;
+import formulad.model.GameState;
 import formulad.model.PlayerStats;
 
 import javax.annotation.Nullable;
@@ -32,6 +33,8 @@ public abstract class Game extends JPanel {
 
     // Used when selecting where to move. Maps node index to damage taken if that node is selected.
     private Map<Integer, Integer> highlightedNodeToDamage;
+
+    Map<String, Integer> hitpointMap = new HashMap<>();
 
     // Current dice roll and player, needed for rendering.
     private Integer roll;
@@ -143,5 +146,12 @@ public abstract class Game extends JPanel {
     public Integer getNodeId(int x, int y) {
         final Node target = MapEditor.getNode(nodes, coordinates, x, y, MapEditor.DIAMETER);
         return target == null ? null : target.getId();
+    }
+
+    void updateHitpointMap(GameState gameState) {
+        hitpointMap.clear();
+        gameState.getPlayers().forEach(p -> {
+            hitpointMap.put(p.getPlayerId(), p.getHitpoints());
+        });
     }
 }

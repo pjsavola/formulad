@@ -17,59 +17,23 @@ import formulad.ai.Node;
 
 import formulad.model.*;
 
-public final class LocalPlayer {
-    private final String playerId;
-    private String name;
+public final class LocalPlayer extends Player {
     private UUID id;
-    private Node node;
-    private int hitpoints = 18;
-    private int gear;
-    private int curveStops;
-    private double angle;
     private int lapsToGo;
-    private final Color color1;
-    private final Color color2;
-    private boolean stopped;
     private final List<DamageAndPath> paths = new ArrayList<>();
     private final JPanel panel; // for repaint requests needed for animations
-    private boolean modifyingHitpoints;
-    private boolean modifyingGear;
     public static int animationDelayInMillis;
     private long timeUsed;
     private int exceptions;
     private int turns;
-    private final List<Node> route = new ArrayList<>();
-    private static final Color transparentWhite = new Color(1.0f, 1.0f, 1.0f, 0.3f);
     private int leeway;
     private int gridPosition;
 
     public LocalPlayer(String playerId, Node node, double initialAngle, int laps, JPanel panel, int leeway, int color1, int color2) {
-        this.playerId = playerId;
-        this.color1 = new Color(color1);
-        this.color2 = new Color(color2);
-        //color1 = defaultBorderColors[colorIndex];
-        //color2 = defaultColors[colorIndex++];
-        this.node = node;
-        this.angle = initialAngle;
+        super(playerId, node, initialAngle, panel, color1, color2);
         lapsToGo = laps;
         this.panel = panel;
         this.leeway = leeway;
-    }
-
-    public String getId() {
-        return playerId;
-    }
-
-    public String getNameAndId() {
-        return name + " (" + playerId + ")";
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public void setId(UUID id) {
@@ -126,7 +90,7 @@ public final class LocalPlayer {
 
     public void stop() {
         if (stopped) {
-            throw new RuntimeException(name + " is stopped twice!");
+            throw new RuntimeException(getName() + " is stopped twice!");
         }
         if (lapsToGo < 0) {
             FormulaD.log.info(getNameAndId() + " finished the race!");
@@ -140,93 +104,19 @@ public final class LocalPlayer {
         stopped = true;
     }
 
-    public void drawRoll(Graphics2D g2d, @Nullable Integer roll) {
-        if (roll != null && gear != 0) {
-            final Color color;
-            switch (gear) {
-                case 1:
-                    color = Color.YELLOW;
-                    break;
-                case 2:
-                    color = Color.ORANGE;
-                    break;
-                case 3:
-                    color = Color.RED;
-                    break;
-                case 4:
-                    color = Color.GREEN;
-                    break;
-                case 5:
-                    color = Color.MAGENTA;
-                    break;
-                case 6:
-                    color = Color.BLUE;
-                    break;
-                default:
-                    throw new RuntimeException("Invalid gear " + gear);
-            }
-            g2d.setColor(color);
-            g2d.setFont(new Font("Arial", Font.PLAIN, 20));
-            final int x = (roll >= 10) ? 30 : 36;
-            g2d.drawString(Integer.toString(roll), x, 48);
-        }
-    }
-
-    public void highlight(Graphics2D g2d, Map<Node, Point> coordinates) {
-        final Point p = coordinates.get(node);
-        MapEditor.drawOval(g2d, p.x, p.y, 14, 14, true, false, Color.GREEN, 1);
-    }
-
-    public void draw(Graphics2D g2d, Map<Node, Point> coordinates) {
-        if (!stopped) {
-            if (route.size() > 1) {
-                drawRoute(g2d, coordinates);
-            }
-            final Point p = coordinates.get(node);
-            draw(g2d, p.x, p.y, angle);
-        }
-    }
-
-    public void draw(Graphics2D g, int x, int y, double angle) {
-        Player.draw(g, x, y, angle, color1, color2, 1.0);
-    }
-
-    public void drawStats(Graphics2D g, int x, int y) {
-        g.setColor(Color.BLACK);
-        g.setFont(new Font("Arial", Font.PLAIN, 12));
-        g.drawString(name, x, y);
-        if (stopped) {
-            g.drawString(lapsToGo < 0 ? "Finished" : "DNF", x + 110, y);
-        } else {
-            if (modifyingHitpoints) {
-                g.setColor(Color.RED);
-            }
-            g.drawString("HP: " + Integer.toString(hitpoints), x + 110, y);
-            g.setColor(Color.BLACK);
-            if (modifyingGear) {
-                g.setColor(Color.BLUE);
-            }
-            g.drawString("G: " + Integer.toString(gear), x + 160, y);
-            g.setColor(Color.BLACK);
-            g.drawString("S: " + Integer.toString(curveStops), x + 190, y);
-        }
-    }
-
     public boolean switchGear(int newGear) {
         if (newGear < 1 || newGear > 6) return false;
 
         if (newGear == gear) return true;
 
         if (Math.abs(newGear - gear) <= 1) {
-            modifyingGear = true;
-            gear = newGear;
+            setGear(newGear);
             panel.repaint();
             try {
                 Thread.sleep(animationDelayInMillis);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            modifyingGear = false;
             return true;
         }
 
@@ -234,17 +124,13 @@ public final class LocalPlayer {
         final int damage = gear - newGear - 1;
         if (damage > 0 && damage < 4 && hitpoints > damage) {
             adjustHitpoints(damage);
-            modifyingGear = true;
-            while (gear > newGear) {
-                gear--;
-                panel.repaint();
-                try {
-                    Thread.sleep(animationDelayInMillis);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+            setGear(newGear);
+            panel.repaint();
+            try {
+                Thread.sleep(animationDelayInMillis);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-            modifyingGear = false;
             return true;
         }
         return false;
@@ -280,21 +166,10 @@ public final class LocalPlayer {
                 }
             }
         }
-        // Animation of the movement
-        this.route.clear();
-        if (size > 0) {
-            this.route.add(route.get(0));
-        }
-        for (int i = 0; i < size - 1; i++) {
-            final Node n1 = route.get(i);
-            final Node n2 = route.get(i + 1);
-            final Point p1 = coordinates.get(n1);
-            final Point p2 = coordinates.get(n2);
-            angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-            this.route.add(n2);
+        for (int i = 1; i < size; ++i) {
+            final Node n2 = route.get(i);
+            move(n2, coordinates);
             ((FormulaD) panel).notifyAll(new MovementNotification(playerId, n2.getId()));
-            node = n2;
-            panel.repaint();
             try {
                 Thread.sleep(animationDelayInMillis);
             } catch (InterruptedException e) {
@@ -335,22 +210,8 @@ public final class LocalPlayer {
         }
     }
 
-    public void clearRoute() {
-        route.clear();
-    }
-
-    private void drawRoute(Graphics2D g2d, Map<Node, Point> coordinates) {
-        g2d.setColor(transparentWhite);
-        for (int i = 0; i < route.size() - 1; i++) {
-            final Point n1 = coordinates.get(route.get(i));
-            final Point n2 = coordinates.get(route.get(i + 1));
-            g2d.drawLine(n1.x, n1.y, n2.x, n2.y);
-        }
-    }
-
     private void adjustHitpoints(int loss) {
         FormulaD.log.info("Player " + getNameAndId() + " loses " + loss + " hitpoints");
-        modifyingHitpoints = true;
         // Show animation
         int counter = loss;
         while (counter-- > 0) {
@@ -363,7 +224,6 @@ public final class LocalPlayer {
                 e.printStackTrace();
             }
         }
-        modifyingHitpoints = false;
     }
 
     public Moves findAllTargets(int roll, String gameId, List<LocalPlayer> players) {
@@ -476,14 +336,9 @@ public final class LocalPlayer {
     public boolean equals(Object other) {
         if (this == other) return true;
         if (other instanceof LocalPlayer) {
-            return playerId.equals(((LocalPlayer) other).getId());
+            return getId().equals(((LocalPlayer) other).getId());
         }
         return false;
-    }
-
-    @Override
-    public int hashCode() {
-        return playerId.hashCode();
     }
 
     public void populate(PlayerState playerState) {

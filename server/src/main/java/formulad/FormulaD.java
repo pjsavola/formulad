@@ -51,7 +51,6 @@ public class FormulaD extends Game implements Runnable {
     private final int initTimeoutInMillis;
     private final int gearTimeoutInMillis;
     private final int moveTimeoutInMillis;
-    private boolean highlightCurrentPlayer;
     private final Set<LocalPlayer> disconnectedPlayers = new HashSet<>();
     final Lobby lobby;
     public static final Logger log = Logger.getLogger(FormulaD.class.getName());
@@ -88,6 +87,7 @@ public class FormulaD extends Game implements Runnable {
             final PlayerStats playerStats = player.getStatistics(i + 1, distanceMap);
             stats.add(playerStats);
         }
+        allPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
         notifyAll(new FinalStandings(stats));
         current = waitingPlayers.remove(0);
     }
@@ -254,13 +254,16 @@ public class FormulaD extends Game implements Runnable {
 
     @Override
     public void run() {
+        final boolean hasManualAI = aiMap.values().stream().anyMatch(ai -> ai instanceof ManualAI);
         while (!stopped) {
-            highlightCurrentPlayer = true;
             current.beginTurn();
             final AI ai = aiMap.get(current);
             final GameState gameState = ApiHelper.buildGameState(gameId, players);
             log.info("Querying gear input from AI " + current.getNameAndId());
             final Gear gearResponse = getAiInput(() -> ai.selectGear(gameState), gearTimeoutInMillis);
+            if (!hasManualAI || ai instanceof ManualAI) {
+                updateHitpointMap(gameState);
+            }
             final Integer selectedGear = gearResponse == null ? null : gearResponse.getGear();
             if (selectedGear != null && current.switchGear(selectedGear)) {
                 log.info("Gear input received: " + selectedGear);
@@ -275,11 +278,9 @@ public class FormulaD extends Game implements Runnable {
             if (current.getLeeway() <= 0) {
                 log.info("Player " + current.getNameAndId() + " used his timeout leeway and was dropped from the game");
                 current.stop();
-                highlightCurrentPlayer = false;
             } else if (allMoves.getMoves().isEmpty()) {
                 log.info("No valid targets after dice roll " + roll + ", DNF");
                 current.stop();
-                highlightCurrentPlayer = false;
             } else {
                 log.info("Querying move input from AI " + current.getNameAndId());
                 final SelectedIndex moveResponse = getAiInput(() -> ai.selectMove(allMoves), moveTimeoutInMillis);
@@ -290,7 +291,6 @@ public class FormulaD extends Game implements Runnable {
                 } else {
                     log.info("Move input received: " + selectedIndex);
                 }
-                highlightCurrentPlayer = false;
                 current.move(selectedIndex, coordinates);
                 current.collide(players, prevNodeMap, rng);
                 if (roll == 20 || roll == 30) {
@@ -455,7 +455,7 @@ public class FormulaD extends Game implements Runnable {
                     g2d.fillPolygon(new int[] { getWidth() - 252, getWidth() - 257, getWidth() - 257 }, new int[] { i * 15 + 10, i * 15 + 7, i * 15 + 13 }, 3);
                 }
                 player.draw(g2d, getWidth() - 235, i * 15 + 10, 0);
-                player.drawStats(g2d, getWidth() - 220, i * 15 + 15);
+                player.drawStats(g2d, getWidth() - 220, i * 15 + 15, hitpointMap);
                 i++;
             }
         }
@@ -467,7 +467,7 @@ public class FormulaD extends Game implements Runnable {
             for (LocalPlayer player : allPlayers) {
                 if (player == current) {
                     player.drawRoll(g2d, roll);
-                    if (highlightCurrentPlayer) {
+                    if (!player.isStopped() && aiMap.get(current) instanceof ManualAI) {
                         player.highlight(g2d, coordinates);
                     }
                 }

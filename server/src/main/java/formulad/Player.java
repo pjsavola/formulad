@@ -13,23 +13,20 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
-public final class Player {
-    private static int colorIndex = 0;
-
-    private final String playerId;
+public class Player {
+    final String playerId;
     private String name;
-    private Node node;
-    private int hitpoints = 18;
-    private int gear;
-    private int curveStops;
+    Node node;
+    int hitpoints = 18;
+    int gear;
+    int curveStops;
     private double angle;
     private final Color color1;
     private final Color color2;
-    private boolean stopped;
+    boolean stopped;
     private final JPanel panel; // for repaint requests needed for animations
     private final List<Node> route = new ArrayList<>();
     private static final Color transparentWhite = new Color(1.0f, 1.0f, 1.0f, 0.3f);
-    private boolean modifyingHitpoints;
     private int lapsToGo;
 
     public Player(String playerId, Node node, double initialAngle, JPanel panel, int color1, int color2) {
@@ -71,7 +68,7 @@ public final class Player {
         }
     }
 
-    private Color getGearColor(int gear) {
+    Color getGearColor(int gear) {
         switch (gear) {
             case 0:
                 return Color.BLACK;
@@ -99,8 +96,10 @@ public final class Player {
 
     public void draw(Graphics2D g2d, Map<Node, Point> coordinates) {
         if (!stopped) {
-            if (route.size() > 1) {
-                drawRoute(g2d, coordinates);
+            synchronized (route) {
+                if (route.size() > 1) {
+                    drawRoute(g2d, coordinates);
+                }
             }
             final Point p = coordinates.get(node);
             draw(g2d, p.x, p.y, angle);
@@ -140,14 +139,15 @@ public final class Player {
         g.translate(-x, -y);
     }
 
-    public void drawStats(Graphics2D g, int x, int y) {
+    public void drawStats(Graphics2D g, int x, int y, Map<String, Integer> hitpointMap) {
         g.setColor(Color.BLACK);
         g.setFont(new Font("Arial", Font.PLAIN, 12));
         g.drawString(name, x, y);
         if (stopped) {
             g.drawString(hitpoints > 0 ? "Finished" : "DNF", x + 110, y);
         } else {
-            if (modifyingHitpoints) {
+            final Integer savedHitpooints = hitpointMap.get(playerId);
+            if (savedHitpooints != null && savedHitpooints != hitpoints) {
                 g.setColor(Color.RED);
             }
             g.drawString("HP: " + Integer.toString(hitpoints), x + 110, y);
@@ -160,29 +160,28 @@ public final class Player {
     }
 
     public void move(Node n, Map<Node, Point> coordinates) {
-        if (route.isEmpty()) {
-            route.add(node);
+        synchronized (route) {
+            if (route.isEmpty()) {
+                route.add(node);
+            }
+            final Point p1 = coordinates.get(node);
+            final Point p2 = coordinates.get(n);
+            angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            node = n;
+            route.add(n);
+            panel.repaint();
         }
-        final Point p1 = coordinates.get(node);
-        final Point p2 = coordinates.get(n);
-        angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-        node = n;
-        route.add(n);
-        panel.repaint();
     }
 
     public void setGear(int gear) {
-        modifyingHitpoints = false;
         if (gear != this.gear) {
             this.gear = gear;
-            panel.repaint();
         }
     }
 
     public void setHitpoints(int hitpoints) {
         if (hitpoints != this.hitpoints) {
             this.hitpoints = hitpoints;
-            modifyingHitpoints = true;
             if (hitpoints <= 0) {
                 stopped = true;
             }
@@ -208,7 +207,9 @@ public final class Player {
     }
 
     public void clearRoute() {
-        route.clear();
+        synchronized (route) {
+            route.clear();
+        }
     }
 
     private void drawRoute(Graphics2D g2d, Map<Node, Point> coordinates) {
