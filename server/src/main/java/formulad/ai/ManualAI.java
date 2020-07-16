@@ -4,20 +4,13 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
-import java.util.logging.Level;
 
 import javax.swing.JFrame;
 
-import formulad.FormulaD;
-import formulad.Player;
 import formulad.Profile;
-import formulad.Screen;
-import formulad.ai.AI;
-import formulad.ai.AIUtil;
+import formulad.Game;
 import formulad.model.*;
 import formulad.model.Gear;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -29,13 +22,13 @@ public class ManualAI implements AI {
     private int gear;
     private final AI ai;
     private final JFrame frame;
-    private final Screen game;
+    private final Game game;
     private boolean automaticMove;
     private static final int listenerDelay = 50;
     private final Profile profile;
     private boolean initialStandingsReceived;
 
-    public ManualAI(AI ai, JFrame frame, Screen game, Profile profile) {
+    public ManualAI(AI ai, JFrame frame, Game game, Profile profile) {
         this.ai = ai;
         this.frame = frame;
         this.game = game;

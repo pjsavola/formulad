@@ -1,8 +1,6 @@
 package formulad;
 
 import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
@@ -34,17 +32,9 @@ import formulad.ai.*;
 import formulad.ai.Node;
 import formulad.model.*;
 import formulad.model.Gear;
-import io.swagger.annotations.OAuth2Definition;
-import org.apache.commons.lang3.mutable.MutableObject;
 
-public class FormulaD extends Screen implements Runnable {
-    private final JFrame frame;
-    private final JPanel panel;
-    // Node identifier equals to the index in this array
-    private final List<Node> nodes = new ArrayList<>();
+public class FormulaD extends Game implements Runnable {
     private final Map<Node, List<Node>> prevNodeMap;
-    private Map<Node, Point> coordinates = new HashMap<>();
-    private BufferedImage backgroundImage;
     private LocalPlayer current;
     private LocalPlayer previous;
     private List<LocalPlayer> waitingPlayers = new ArrayList<>();
@@ -56,7 +46,7 @@ public class FormulaD extends Screen implements Runnable {
     private final Random rng;
     private final Map<Node, Double> distanceMap = new HashMap<>();
     private boolean stopped;
-    private static final String gameId = "Sebring";
+    private static final String gameId = "sebring";
     @Nullable
     private Map<Integer, Integer> highlightedNodeToDamage;
     private boolean enableTimeout;
@@ -80,20 +70,8 @@ public class FormulaD extends Screen implements Runnable {
     }
 
     public FormulaD(Params params, Lobby lobby, JFrame frame, JPanel panel, PlayerSlot[] slots) {
-        //setLayout(new BorderLayout());
+        super(frame, panel, "sebring");
         this.lobby = lobby;
-        this.frame = frame;
-        this.panel = panel;
-        backgroundImage = ImageCache.getImage("/sebring.jpg");
-        setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
-
-        final Map<Node, Double> attributes = new HashMap<>();
-        try (InputStream is = FormulaD.class.getResourceAsStream("/sebring.dat")) {
-            MapEditor.loadNodes(is, nodes, attributes, coordinates);
-        } catch (IOException e) {
-            throw new RuntimeException("Cannot be bothered to work this out", e);
-        }
-        // Contains angles for start nodes and distance information for curves
         prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
         final long seed = params.seed == null ? new Random().nextLong() : params.seed;
         this.rng = new Random(seed);
@@ -102,7 +80,7 @@ public class FormulaD extends Screen implements Runnable {
         gearTimeoutInMillis = params.gearTimeoutInMillis;
         moveTimeoutInMillis = params.moveTimeoutInMillis;
         allPlayers = new ArrayList<>();
-        createGrid(params, attributes, slots);
+        createGrid(params, attributes, slots, frame);
         waitingPlayers.addAll(players);
         waitingPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
         final List<PlayerStats> stats = new ArrayList<>();
@@ -115,7 +93,7 @@ public class FormulaD extends Screen implements Runnable {
         current = waitingPlayers.remove(0);
     }
 
-    private void createGrid(Params params, Map<Node, Double> attributes, PlayerSlot[] slots) {
+    private void createGrid(Params params, Map<Node, Double> attributes, PlayerSlot[] slots, JFrame frame) {
         final List<AI> aiList = new ArrayList<>();
         for (PlayerSlot slot : slots) {
             final ProfileMessage profile = slot.getProfile();
@@ -318,34 +296,19 @@ public class FormulaD extends Screen implements Runnable {
             roll = null;
             nextPlayer();
             repaint();
-            if (false) {
-                final List<PlayerStats> stats = new ArrayList<>();
-                for (int i = 0; i < allPlayers.size(); i++) {
-                    final LocalPlayer player = allPlayers.get(i);
-                    System.out.print((i + 1) + ". " + player.getNameAndId() + "   ");
-                    final PlayerStats playerStats = player.getStatistics(i + 1, distanceMap);
-                    stats.add(playerStats);
-                    System.out.println(playerStats);
-                }
-                notifyAll(new FinalStandings(stats));
-            }
         }
         final List<PlayerStats> stats = new ArrayList<>();
-        System.out.println("Results of Sebring circuit:");
-        System.out.println();
         for (int i = 0; i < stoppedPlayers.size(); i++) {
             final LocalPlayer player = stoppedPlayers.get(i);
-            System.out.print((i + 1) + ". " + player.getNameAndId() + "   ");
             final PlayerStats playerStats = player.getStatistics(i + 1, distanceMap);
             stats.add(playerStats);
-            System.out.println(playerStats);
         }
-        notifyAll(new FinalStandings(stats));
+        final FinalStandings fs = new FinalStandings(stats);
+        finalStandings = fs.getStats();
+        notifyAll(fs);
         lobby.close();
-        // TODO: Final standings
-        frame.setContentPane(panel);
-        frame.pack();
-        frame.repaint();
+        repaint();
+        clickToExit();
     }
 
 	private List<Node> findGrid(Map<Node, Double> attributes) {
@@ -456,58 +419,25 @@ public class FormulaD extends Screen implements Runnable {
         return grid;
     }
 
-    /**
-     * Sets nodes for highlighting, may be useful when rendering valid targets.
-     */
-    public void highlightNodes(@Nullable Map<Integer, Integer> nodeToDamage) {
-        this.highlightedNodeToDamage = nodeToDamage;
-        repaint();
-    }
-
-    /**
-     * Returns node identifier of the clicked node, or null if there are no nodes
-     * at the given coordinates.
-     */
-    @Nullable
-    public Integer getNodeId(int x, int y) {
-        final Node target = MapEditor.getNode(nodes, coordinates, x, y, MapEditor.DIAMETER);
-        return target == null ? null : target.getId();
-    }
-
     @Override
     public void paintComponent(Graphics g) {
-	    if (backgroundImage != null) {
-            g.drawImage(backgroundImage, 0, 0, null);
-        }
-        final Graphics2D g2d = (Graphics2D) g;
-	    // Circle for dice rolls
-        MapEditor.drawOval(g2d, 40, 40, 50, 50, true, true, Color.BLACK, 1);
-        drawTargets(g2d);
-        drawInfoBox(g2d);
-        drawPlayers(g2d);
+        super.paintComponent(g);
         // drawDistances(g2d); // For debugging
     }
 
-    private void drawTargets(Graphics2D g2d) {
-        if (highlightedNodeToDamage != null) {
-            for (Map.Entry<Integer, Integer> entry : highlightedNodeToDamage.entrySet()) {
-                final int nodeId = entry.getKey();
-                if (nodeId < 0 || nodeId >= nodes.size()) continue;
-                final Node node = nodes.get(nodeId);
-                final int damage = entry.getValue();
-                final Point p = coordinates.get(node);
-                if (damage > 0) {
-                    g2d.setFont(new Font("Arial", Font.PLAIN, 9));
-                    g2d.setColor(Color.RED);
-                    final int x = p.x - (damage >= 10 ? 5 : 2);
-                    g2d.drawString(Integer.toString(damage), x, p.y + 3);
-                }
-                MapEditor.drawOval(g2d, p.x, p.y, 12, 12, true, false, Color.YELLOW, 1);
-            }
+    private void drawDistances(Graphics2D g2d) {
+        for (Map.Entry<Node, Double> entry : distanceMap.entrySet()) {
+            final Point p = coordinates.get(entry.getKey());
+            final int posX = p.x - 5;
+            final int posY = p.y + 3;
+            g2d.setFont(new Font("Arial", Font.PLAIN, 8));
+            g2d.setColor(Color.BLUE);
+            g2d.drawString(entry.getValue().toString(), posX, posY);
         }
     }
 
-    private void drawInfoBox(Graphics2D g2d) {
+    @Override
+    protected void drawInfoBox(Graphics2D g2d) {
         g2d.setColor(Color.GRAY);
         g2d.fillRect(getWidth() - 250, 0, 249, 5 + 15 * allPlayers.size());
         g2d.setColor(Color.BLACK);
@@ -527,7 +457,8 @@ public class FormulaD extends Screen implements Runnable {
         }
     }
 
-    private void drawPlayers(Graphics2D g2d) {
+    @Override
+    protected void drawPlayers(Graphics2D g2d) {
         synchronized (allPlayers) {
             for (LocalPlayer player : allPlayers) {
                 if (player == current) {
@@ -541,14 +472,43 @@ public class FormulaD extends Screen implements Runnable {
         }
     }
 
-    private void drawDistances(Graphics2D g2d) {
-        for (Map.Entry<Node, Double> entry : distanceMap.entrySet()) {
-            final Point p = coordinates.get(entry.getKey());
-            final int posX = p.x - 5;
-            final int posY = p.y + 3;
-            g2d.setFont(new Font("Arial", Font.PLAIN, 8));
-            g2d.setColor(Color.BLUE);
-            g2d.drawString(entry.getValue().toString(), posX, posY);
+    @Override
+    protected void drawStandings(Graphics2D g2d) {
+        if (finalStandings != null) {
+            final int height = 5 + 15 * (finalStandings.length + 1);
+            final int x = getWidth() / 2 - 200;
+            final int y = getHeight() / 2 - height / 2;
+            g2d.setColor(Color.BLACK);
+            g2d.setFont(new Font("Arial", Font.BOLD, 20));
+            final int titleWidth = g2d.getFontMetrics().stringWidth("STANDINGS");
+            g2d.drawString("STANDINGS", x + 200 - titleWidth / 2, y - 20);
+            g2d.setColor(Color.GRAY);
+            g2d.fillRect(x, y, 400, height);
+            g2d.setColor(Color.BLACK);
+            g2d.drawRect(x, y, 400, height);
+            g2d.setColor(Color.BLACK);
+            g2d.setFont(new Font("Arial", Font.BOLD, 12));
+            g2d.drawString("Name", x + 30, y + 15);
+            g2d.drawString("HP", x + 140, y + 15);
+            g2d.drawString("Turns", x + 190, y + 15);
+            g2d.drawString("Grid", x + 230, y + 15);
+            g2d.drawString("Time", x + 270, y + 15);
+            g2d.setFont(new Font("Arial", Font.PLAIN, 12));
+            for (int i = 0; i < finalStandings.length; ++i) {
+                final PlayerStats stats = finalStandings[i];
+                final LocalPlayer player = allPlayers.stream().filter(p -> p.getId().equals(stats.playerId)).findFirst().get();
+                final String name = player.getName();
+                player.draw(g2d, x + 15, y + (i + 1) * 15 + 10, 0);
+                g2d.setColor(Color.BLACK);
+                g2d.drawString(name, x + 30, y + (i + 1) * 15 + 15);
+                final String hp = stats.hitpoints > 0 ? Integer.toString(stats.hitpoints) : "DNF";
+                g2d.drawString(hp, x + 140, y + (i + 1) * 15 + 15);
+                g2d.drawString(Integer.toString(stats.turns), x + 190, y + (i + 1) * 15 + 15);
+                g2d.drawString(Integer.toString(stats.gridPosition), x + 230, y + (i + 1) * 15 + 15);
+                final long timeUsed = stats.timeUsed / 100;
+                final double timeUsedSecs = timeUsed / 10.0;
+                g2d.drawString(Double.toString(timeUsedSecs), x + 270, y + (i + 1) * 15 + 15);
+            }
         }
     }
 

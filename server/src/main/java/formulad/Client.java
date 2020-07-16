@@ -16,13 +16,7 @@ import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
 
-public class Client extends Screen implements Runnable {
-    // Node identifier equals to the index in this array
-    private final List<Node> nodes = new ArrayList<>();
-    private BufferedImage backgroundImage;
-    @Nullable
-    private Map<Integer, Integer> highlightedNodeToDamage;
-
+public class Client extends Game implements Runnable {
     private final Socket socket;
     private final ObjectOutputStream oos;
     private final ObjectInputStream ois;
@@ -31,31 +25,17 @@ public class Client extends Screen implements Runnable {
     private Player current;
     private Player controlledPlayer;
     private String controlledPlayerId;
-    private final Map<Node, Point> coordinates = new HashMap<>();
-    private final Map<Node, Double> attributes = new HashMap<>();
     private final Map<String, Player> playerMap = new HashMap<>();
     private final List<Player> standings = new ArrayList<>();
-    private PlayerStats[] finalStandings;
-    private final JFrame frame;
-    private final JPanel panel;
     private final Profile profile;
     private boolean initialStandingsReceived;
 
     public Client(JFrame frame, Socket socket, JPanel panel, Profile profile) throws IOException {
+        super(frame, panel, "sebring");
         this.profile = profile;
         this.socket = socket;
         oos = new ObjectOutputStream(socket.getOutputStream());
         ois = new ObjectInputStream(socket.getInputStream()); // This may block if connection cannot be established!
-        this.frame = frame;
-        this.panel = panel;
-        backgroundImage = ImageCache.getImage("/sebring.jpg");
-        setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
-        // Contains angles for start nodes and distance information for curves
-        try (InputStream is = Client.class.getResourceAsStream("/sebring.dat")) {
-            MapEditor.loadNodes(is, nodes, attributes, coordinates);
-        } catch (IOException e) {
-            throw new RuntimeException("Cannot be bothered to work this out", e);
-        }
         final AI backupAI = new GreatAI();
         ai = new ManualAI(backupAI, frame, this, profile);
     }
@@ -135,25 +115,7 @@ public class Client extends Screen implements Runnable {
                 JOptionPane.showConfirmDialog(this, "Connection to server lost", "Error", JOptionPane.DEFAULT_OPTION);
                 exit();
             } else {
-                addMouseListener(new MouseListener() {
-                    @Override
-                    public void mouseClicked(MouseEvent e) {
-                        removeMouseListener(this);
-                        exit();
-                    }
-                    @Override
-                    public void mousePressed(MouseEvent e) {
-                    }
-                    @Override
-                    public void mouseReleased(MouseEvent e) {
-                    }
-                    @Override
-                    public void mouseEntered(MouseEvent e) {
-                    }
-                    @Override
-                    public void mouseExited(MouseEvent e) {
-                    }
-                });
+                clickToExit();
             }
             ois.close();
             oos.close();
@@ -162,12 +124,6 @@ public class Client extends Screen implements Runnable {
             FormulaD.log.log(Level.WARNING, "Error when closing server connection", e);
             exit();
         }
-    }
-
-    private void exit() {
-        frame.setContentPane(panel);
-        frame.pack();
-        panel.repaint();
     }
 
     public void notify(MovementNotification notification) {
@@ -232,39 +188,8 @@ public class Client extends Screen implements Runnable {
         }
     }
 
-    /**
-     * Sets nodes for highlighting, may be useful when rendering valid targets.
-     */
-    public void highlightNodes(@Nullable Map<Integer, Integer> nodeToDamage) {
-        this.highlightedNodeToDamage = nodeToDamage;
-        repaint();
-    }
-
-    /**
-     * Returns node identifier of the clicked node, or null if there are no nodes
-     * at the given coordinates.
-     */
-    @Nullable
-    public Integer getNodeId(int x, int y) {
-        final Node target = MapEditor.getNode(nodes, coordinates, x, y, MapEditor.DIAMETER);
-        return target == null ? null : target.getId();
-    }
-
     @Override
-    public void paintComponent(Graphics g) {
-	    if (backgroundImage != null) {
-            g.drawImage(backgroundImage, 0, 0, null);
-        }
-        final Graphics2D g2d = (Graphics2D) g;
-	    // Circle for dice rolls
-        MapEditor.drawOval(g2d, 40, 40, 50, 50, true, true, Color.BLACK, 1);
-        drawTargets(g2d);
-        drawInfoBox(g2d);
-        drawPlayers(g2d);
-        drawStandings(g2d);
-    }
-
-    private void drawStandings(Graphics2D g2d) {
+    protected void drawStandings(Graphics2D g2d) {
         if (finalStandings != null) {
             final int height = 5 + 15 * (finalStandings.length + 1);
             final int x = getWidth() / 2 - 200;
@@ -305,27 +230,8 @@ public class Client extends Screen implements Runnable {
         }
     }
 
-
-    private void drawTargets(Graphics2D g2d) {
-        if (highlightedNodeToDamage != null) {
-            for (Map.Entry<Integer, Integer> entry : highlightedNodeToDamage.entrySet()) {
-                final int nodeId = entry.getKey();
-                if (nodeId < 0 || nodeId >= nodes.size()) continue;
-                final Node node = nodes.get(nodeId);
-                final int damage = entry.getValue();
-                final Point p = coordinates.get(node);
-                if (damage > 0) {
-                    g2d.setFont(new Font("Arial", Font.PLAIN, 9));
-                    g2d.setColor(Color.RED);
-                    final int x = p.x - (damage >= 10 ? 5 : 2);
-                    g2d.drawString(Integer.toString(damage), x, p.y + 3);
-                }
-                MapEditor.drawOval(g2d, p.x, p.y, 12, 12, true, false, Color.YELLOW, 1);
-            }
-        }
-    }
-
-    private void drawInfoBox(Graphics2D g2d) {
+    @Override
+    protected void drawInfoBox(Graphics2D g2d) {
         int playerCount;
         synchronized (playerMap) {
             playerCount = playerMap.size();
@@ -349,7 +255,8 @@ public class Client extends Screen implements Runnable {
         }
     }
 
-    private void drawPlayers(Graphics2D g2d) {
+    @Override
+    protected void drawPlayers(Graphics2D g2d) {
         if (current != null) {
             if (roll != null) {
                 current.drawRoll(g2d, roll);
