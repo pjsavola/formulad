@@ -78,6 +78,7 @@ public class ManualAI implements AI {
             }
         };
         frame.addKeyListener(keyListener);
+        frame.requestFocus();
         while (true) {
             try {
                 Thread.sleep(listenerDelay);

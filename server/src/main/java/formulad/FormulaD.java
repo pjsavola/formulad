@@ -93,31 +93,31 @@ public class FormulaD extends Game implements Runnable {
     }
 
     private void createGrid(Params params, Map<Node, Double> attributes, PlayerSlot[] slots, JFrame frame) {
-        final List<AI> aiList = new ArrayList<>();
+        final Map<AI, ProfileMessage> aiToProfile = new HashMap<>();
         for (PlayerSlot slot : slots) {
             final ProfileMessage profile = slot.getProfile();
             if (profile != null) {
                 if (profile.isAi()) {
-                    aiList.add(new GreatAI());
+                    aiToProfile.put(new GreatAI(), profile);
                 }
                 else if (profile.isLocal()) {
-                    aiList.add(new ManualAI(new GreatAI(), frame, this, profile.originalProfile));
+                    aiToProfile.put(new ManualAI(new GreatAI(), frame, this, profile.originalProfile), profile);
                 }
                 else {
                     final RemoteAI client = lobby.getClient(profile.getId());
                     if (client != null) {
-                        aiList.add(client);
+                        aiToProfile.put(client, profile);
                     }
                 }
             }
         }
-        final int playerCount = aiList.size();
+        final int playerCount = aiToProfile.size();
         final List<Node> grid = findGrid(attributes).subList(0, playerCount);
         final List<Integer> startingOrder = IntStream.range(0, playerCount).boxed().collect(Collectors.toList());
         Collections.shuffle(startingOrder, rng);
         enableTimeout = true;
-        for (AI ai : aiList) {
-            createAiPlayer(ai, grid, startingOrder, attributes, params.leeway);
+        for (Map.Entry<AI, ProfileMessage> e : aiToProfile.entrySet()) {
+            createAiPlayer(e, grid, startingOrder, attributes, params.leeway);
         }
 
         // Create manually controlled AI players
@@ -175,16 +175,17 @@ public class FormulaD extends Game implements Runnable {
         }*/
     }
 
-    private void createAiPlayer(AI ai, List<Node> grid, List<Integer> startingOrder, Map<Node, Double> attributes, int leeway) {
+    private void createAiPlayer(Map.Entry<AI, ProfileMessage> ai, List<Node> grid, List<Integer> startingOrder, Map<Node, Double> attributes, int leeway) {
         // Recreate track for each player, so nothing bad happens if AI mutates it.
         final int playerCount = allPlayers.size();
         final String playerId = "p" + (playerCount + 1);
         final Track track = ApiHelper.buildTrack(gameId, playerId, nodes);
         final Node startNode = grid.get(startingOrder.get(playerCount));
-        final LocalPlayer player = new LocalPlayer(playerId, startNode, attributes.get(startNode), 1, this, leeway);
+        final LocalPlayer player = new LocalPlayer(playerId, startNode, attributes.get(startNode), 1, this, leeway, ai.getValue().getColor1(), ai.getValue().getColor2());
         current = player;
         log.info("Initializing player " + playerId);
-        NameAtStart nameResponse = getAiInput(() -> ai.startGame(track), initTimeoutInMillis);
+        NameAtStart nameResponse = getAiInput(() -> ai.getKey().startGame(track), initTimeoutInMillis);
+        /*
         final String name;
         final UUID id;
         if (nameResponse == null) {
@@ -194,14 +195,16 @@ public class FormulaD extends Game implements Runnable {
         } else {
             name = nameResponse.getName();
             id = nameResponse.getId();
-        }
+        }*/
+        final String name = ai.getValue().getName();
+        final UUID id = ai.getValue().getId();
         log.info("Initialization done, player " + name + " starts from position " + (startingOrder.get(playerCount) + 1));
         player.setName(name);
         player.setId(id);
         players.add(player);
         allPlayers.add(player);
         player.setGridPosition(allPlayers.size());
-        aiMap.put(player, ai);
+        aiMap.put(player, ai.getKey());
         notifyAll(new CreatedPlayerNotification(current.getId(), name, startNode.getId(), 18, 1));
     }
 
@@ -626,7 +629,7 @@ public class FormulaD extends Game implements Runnable {
                 lobby.setSlots(slots);
 
                 final JPanel lobbyPanel = new JPanel();
-                //lobbyPanel.setLayout(new BoxLayout(lobbyPanel, BoxLayout.Y_AXIS));
+                lobbyPanel.setLayout(new BoxLayout(lobbyPanel, BoxLayout.Y_AXIS));
                 lobbyPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
                 //lobbyPanel.add(label);
                 // TODO: Change track menu
@@ -635,7 +638,7 @@ public class FormulaD extends Game implements Runnable {
                 final BufferedImage image = ImageCache.getImage("/sebring.jpg");
                 final int x = image.getWidth();
                 final int y = image.getHeight();
-                final int scale = Math.max(x / 200, y / 200);
+                final int scale = Math.max(x / 300, y / 300);
                 icon.setImage(image.getScaledInstance(x / scale, y / scale, Image.SCALE_FAST));
                 changeTrackButton.setIcon(icon);
                 JButton button = new JButton("Start");
@@ -664,8 +667,10 @@ public class FormulaD extends Game implements Runnable {
                     final FormulaD server = new FormulaD(params, lobby, f, p, slots, "sebring");
                     new Thread(server).start();
                 });
-                lobbyPanel.add(changeTrackButton);
-                lobbyPanel.add(playerPanel);
+                final JPanel gridPanel = new JPanel(new GridLayout(0, 2));
+                gridPanel.add(changeTrackButton);
+                gridPanel.add(playerPanel);
+                lobbyPanel.add(gridPanel);
                 lobbyPanel.add(button);
                 f.setContentPane(lobbyPanel);
                 f.pack();

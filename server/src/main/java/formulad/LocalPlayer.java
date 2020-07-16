@@ -50,10 +50,12 @@ public final class LocalPlayer {
     private int leeway;
     private int gridPosition;
 
-    public LocalPlayer(String playerId, Node node, double initialAngle, int laps, JPanel panel, int leeway) {
+    public LocalPlayer(String playerId, Node node, double initialAngle, int laps, JPanel panel, int leeway, int color1, int color2) {
         this.playerId = playerId;
-        color1 = defaultBorderColors[colorIndex];
-        color2 = defaultColors[colorIndex++];
+        this.color1 = new Color(color1);
+        this.color2 = new Color(color2);
+        //color1 = defaultBorderColors[colorIndex];
+        //color2 = defaultColors[colorIndex++];
         this.node = node;
         this.angle = initialAngle;
         lapsToGo = laps;
