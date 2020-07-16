@@ -701,6 +701,7 @@ public class FormulaD extends Screen implements Runnable {
                         JOptionPane.showConfirmDialog(lobbyPanel, "Need at least 1 player", "Error", JOptionPane.DEFAULT_OPTION);
                         return;
                     }
+                    lobby.done = true;
                     final FormulaD server = new FormulaD(params, lobby, f, p, slots);
                     f.setContentPane(server);
                     f.pack();

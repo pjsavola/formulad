@@ -60,6 +60,7 @@ public class Lobby extends Thread {
     }
 
     public RemoteAI getClient(UUID id) {
+        // Does not need to be synchronized. Map is not mutated anymore.
         return clientMap.get(id);
     }
 
@@ -83,5 +84,6 @@ public class Lobby extends Thread {
         } catch (IOException e) {
             FormulaD.log.log(Level.SEVERE, "Lobby IOException", e);
         }
+        done = true;
     }
 }
