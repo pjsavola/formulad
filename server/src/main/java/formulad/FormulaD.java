@@ -42,7 +42,6 @@ public class FormulaD extends Game implements Runnable {
     private final List<LocalPlayer> players = new ArrayList<>();
     private final List<LocalPlayer> stoppedPlayers = new ArrayList<>();
     private final Map<LocalPlayer, AI> aiMap = new HashMap<>();
-    private Integer roll;
     private final Random rng;
     private final Map<Node, Double> distanceMap = new HashMap<>();
     private boolean stopped;
@@ -88,6 +87,7 @@ public class FormulaD extends Game implements Runnable {
             stats.add(playerStats);
         }
         allPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
+        standings = new ArrayList<>(allPlayers);
         notifyAll(new FinalStandings(stats));
         current = waitingPlayers.remove(0);
     }
@@ -121,6 +121,8 @@ public class FormulaD extends Game implements Runnable {
             notifications.add(createAiPlayer(e, grid, startingOrder, attributes, params.leeway));
         }
         notifications.forEach(this::notifyAll);
+        immutablePlayerMap = new HashMap<>(aiToProfile.size());
+        allPlayers.forEach(player -> immutablePlayerMap.put(player.getId(), player));
 
         // Create manually controlled AI players
         /*
@@ -440,82 +442,6 @@ public class FormulaD extends Game implements Runnable {
         }
     }
 
-    @Override
-    protected void drawInfoBox(Graphics2D g2d) {
-        g2d.setColor(Color.GRAY);
-        g2d.fillRect(getWidth() - 250, 0, 249, 5 + 15 * allPlayers.size());
-        g2d.setColor(Color.BLACK);
-        g2d.drawRect(getWidth() - 250, 0, 249, 5 + 15 * allPlayers.size());
-        int i = 0;
-        synchronized (allPlayers) {
-            for (LocalPlayer player : allPlayers) {
-                if (player == current) {
-                    // Turn marker
-                    g2d.setColor(Color.RED);
-                    g2d.fillPolygon(new int[] { getWidth() - 252, getWidth() - 257, getWidth() - 257 }, new int[] { i * 15 + 10, i * 15 + 7, i * 15 + 13 }, 3);
-                }
-                player.draw(g2d, getWidth() - 235, i * 15 + 10, 0);
-                player.drawStats(g2d, getWidth() - 220, i * 15 + 15, hitpointMap);
-                i++;
-            }
-        }
-    }
-
-    @Override
-    protected void drawPlayers(Graphics2D g2d) {
-        synchronized (allPlayers) {
-            for (LocalPlayer player : allPlayers) {
-                if (player == current) {
-                    player.drawRoll(g2d, roll);
-                    if (!player.isStopped() && aiMap.get(current) instanceof ManualAI) {
-                        player.highlight(g2d, coordinates);
-                    }
-                }
-                player.draw(g2d, coordinates);
-            }
-        }
-    }
-
-    @Override
-    protected void drawStandings(Graphics2D g2d) {
-        if (finalStandings != null) {
-            final int height = 5 + 15 * (finalStandings.length + 1);
-            final int x = getWidth() / 2 - 200;
-            final int y = getHeight() / 2 - height / 2;
-            g2d.setColor(Color.BLACK);
-            g2d.setFont(new Font("Arial", Font.BOLD, 20));
-            final int titleWidth = g2d.getFontMetrics().stringWidth("STANDINGS");
-            g2d.drawString("STANDINGS", x + 200 - titleWidth / 2, y - 20);
-            g2d.setColor(Color.GRAY);
-            g2d.fillRect(x, y, 400, height);
-            g2d.setColor(Color.BLACK);
-            g2d.drawRect(x, y, 400, height);
-            g2d.setColor(Color.BLACK);
-            g2d.setFont(new Font("Arial", Font.BOLD, 12));
-            g2d.drawString("Name", x + 30, y + 15);
-            g2d.drawString("HP", x + 140, y + 15);
-            g2d.drawString("Turns", x + 190, y + 15);
-            g2d.drawString("Grid", x + 230, y + 15);
-            g2d.drawString("Time", x + 270, y + 15);
-            g2d.setFont(new Font("Arial", Font.PLAIN, 12));
-            for (int i = 0; i < finalStandings.length; ++i) {
-                final PlayerStats stats = finalStandings[i];
-                final LocalPlayer player = allPlayers.stream().filter(p -> p.getId().equals(stats.playerId)).findFirst().get();
-                final String name = player.getName();
-                player.draw(g2d, x + 15, y + (i + 1) * 15 + 10, 0);
-                g2d.setColor(Color.BLACK);
-                g2d.drawString(name, x + 30, y + (i + 1) * 15 + 15);
-                final String hp = stats.hitpoints > 0 ? Integer.toString(stats.hitpoints) : "DNF";
-                g2d.drawString(hp, x + 140, y + (i + 1) * 15 + 15);
-                g2d.drawString(Integer.toString(stats.turns), x + 190, y + (i + 1) * 15 + 15);
-                g2d.drawString(Integer.toString(stats.gridPosition), x + 230, y + (i + 1) * 15 + 15);
-                final long timeUsed = stats.timeUsed / 100;
-                final double timeUsedSecs = timeUsed / 10.0;
-                g2d.drawString(Double.toString(timeUsedSecs), x + 270, y + (i + 1) * 15 + 15);
-            }
-        }
-    }
-
     private void nextPlayer() {
 	    // Drop stopped players
 	    final Iterator<LocalPlayer> it = players.iterator();
@@ -540,10 +466,9 @@ public class FormulaD extends Game implements Runnable {
             waitingPlayers.addAll(players);
             waitingPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
             // Sort info box contents to match with current standings and turn order
-            synchronized (allPlayers) {
-                allPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
-                notifyAll(new Standings(allPlayers));
-            }
+            allPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
+            standings = new ArrayList<>(allPlayers);
+            notifyAll(new Standings(allPlayers));
         }
         previous = current;
         current = waitingPlayers.remove(0);
@@ -616,9 +541,8 @@ public class FormulaD extends Game implements Runnable {
                 return;
             }
             try {
-                JLabel label = new JLabel("Connected Clients: 0");
                 final int port = Integer.parseInt(result);
-                final Lobby lobby = new Lobby(port, label);
+                final Lobby lobby = new Lobby(port);
 
                 final List<ProfileMessage> localProfiles = profiles.stream().map(ProfileMessage::new).collect(Collectors.toList());
                 final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
@@ -666,6 +590,7 @@ public class FormulaD extends Game implements Runnable {
                         return;
                     }
                     lobby.done = true;
+                    lobby.interrupt();
                     final FormulaD server = new FormulaD(params, lobby, f, p, slots, "sebring");
                     new Thread(server).start();
                 });
@@ -792,5 +717,10 @@ public class FormulaD extends Game implements Runnable {
             profiles.get(0).setActive(true);
         }
         showMenu(f, params, profiles);
+    }
+
+    @Override
+    protected LocalPlayer getCurrent() {
+        return current;
     }
 }

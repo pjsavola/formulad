@@ -13,13 +13,11 @@ public class Lobby extends Thread {
 
     private final ServerSocket serverSocket;
     private PlayerSlot[] slots;
-    private final JLabel label;
     volatile boolean done;
     final List<RemoteAI> clients = new ArrayList<>();
     final Map<UUID, RemoteAI> clientMap = new HashMap<>();
-    public Lobby(int port, JLabel label) throws IOException {
+    public Lobby(int port) throws IOException {
         serverSocket = new ServerSocket(port);
-        this.label = label;
     }
 
     public void setSlots(PlayerSlot[] slots) {

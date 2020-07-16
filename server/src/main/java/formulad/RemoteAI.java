@@ -65,7 +65,7 @@ public class RemoteAI implements AI {
             }
             socket.close();
         } catch (IOException e) {
-            FormulaD.log.log(Level.SEVERE, "Error when terminating Client " + socket.getInetAddress().toString(), e);
+            FormulaD.log.log(Level.WARNING, "Error when terminating Client " + socket.getInetAddress().toString(), e);
         }
         ois = null;
         oos = null;
@@ -101,7 +101,7 @@ public class RemoteAI implements AI {
             } catch (IOException | ClassNotFoundException e) {
                 close();
                 fallback = new GreatAI();
-                FormulaD.log.log(Level.SEVERE, "Lost connection to client, using fallback AI instead", e);
+                FormulaD.log.log(Level.WARNING, "Lost connection to client, using fallback AI instead", e);
             }
         }
         if (fallback != null) {
@@ -126,7 +126,7 @@ public class RemoteAI implements AI {
                 close();
                 fallback = new GreatAI();
                 fallback.startGame(track);
-                FormulaD.log.log(Level.SEVERE, "Lost connection to client, using fallback AI instead", e);
+                FormulaD.log.log(Level.WARNING, "Lost connection to client, using fallback AI instead", e);
             }
         }
         if (fallback != null) {
@@ -149,7 +149,7 @@ public class RemoteAI implements AI {
                 close();
                 fallback = new GreatAI();
                 fallback.init(track, gameState, gear);
-                FormulaD.log.log(Level.SEVERE, "Lost connection to client, using fallback AI instead", e);
+                FormulaD.log.log(Level.WARNING, "Lost connection to client, using fallback AI instead", e);
             }
         }
         if (fallback != null) {
