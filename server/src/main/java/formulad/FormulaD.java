@@ -80,6 +80,7 @@ public class FormulaD extends Screen implements Runnable {
     }
 
     public FormulaD(Params params, Lobby lobby, JFrame frame, JPanel panel, PlayerSlot[] slots) {
+        //setLayout(new BorderLayout());
         this.lobby = lobby;
         this.frame = frame;
         this.panel = panel;
@@ -703,7 +704,6 @@ public class FormulaD extends Screen implements Runnable {
                     final FormulaD server = new FormulaD(params, lobby, f, p, slots);
                     f.setContentPane(server);
                     f.pack();
-                    f.repaint();
                     new Thread(server).start();
                 });
                 lobbyPanel.add(changeTrackButton);
@@ -756,7 +756,6 @@ public class FormulaD extends Screen implements Runnable {
         buttonPanel.add(joinMultiplayerButton);
         f.setContentPane(p);
         f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        f.setPreferredSize(new Dimension(500, 400));
         f.pack();
         f.setVisible(true);
     }
