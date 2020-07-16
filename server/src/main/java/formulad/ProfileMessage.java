@@ -3,21 +3,31 @@ package formulad;
 import formulad.model.PlayerStats;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 public class ProfileMessage implements Serializable {
     private final UUID id;
     private final String name;
-    private final int color1;
-    private final int color2;
+    private int color1;
+    private int color2;
     private boolean local;
     private boolean ai;
     public transient Profile originalProfile;
 
     public static ProfileMessage pending = new ProfileMessage("...", false);
+
+    private static Random random = new Random();
+    private static String[] randomNames = new String[] { "Mika", "Keke", "Kimi", "Heikki", "Leo", "Valtteri", "Nico", "Michael", "Lewis", "Sebastian", "Max", "Fernando" };
+
+    public static ProfileMessage createRandomAIProfile(Set<String> usedNames) {
+        final List<String> validNames = Arrays.stream(randomNames).filter(n -> !usedNames.contains(n)).collect(Collectors.toList());
+        final ProfileMessage profile = new ProfileMessage(validNames.get(random.nextInt(validNames.size())), true);
+        profile.color1 = random.nextInt(0xFFFFFF + 1);
+        profile.color2 = random.nextInt(0xFFFFFF + 1);
+        return profile;
+    }
     public static ProfileMessage aiProfile = new ProfileMessage("AI", true);
 
     private ProfileMessage(String name, boolean ai) {

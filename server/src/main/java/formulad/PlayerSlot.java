@@ -6,6 +6,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -29,12 +30,24 @@ public class PlayerSlot extends JButton {
 
     private ProfileMessage profile;
 
-    PlayerSlot(JFrame frame, List<ProfileMessage> localProfiles, Lobby lobby) {
+    private static Set<String> getUsedAINames(PlayerSlot[] slots) {
+        final Set<String> usedNames = new HashSet<>();
+        for (PlayerSlot slot : slots) {
+            if (slot.profile != null) {
+                if (slot.profile.isAi()) {
+                    usedNames.add(slot.profile.getName());
+                }
+            }
+        }
+        return usedNames;
+    }
+
+    PlayerSlot(JFrame frame, List<ProfileMessage> localProfiles, Lobby lobby, PlayerSlot[] slots) {
         setIcon(new CarIcon());
         addActionListener(e -> {
             if (profile == null) {
                 if (localProfiles.isEmpty()) {
-                    setProfile(ProfileMessage.aiProfile);
+                    setProfile(ProfileMessage.createRandomAIProfile(getUsedAINames(slots)));
                     return;
                 }
                 profile = ProfileMessage.pending;
@@ -61,7 +74,7 @@ public class PlayerSlot extends JButton {
                     if (index == -1) {
                         return;
                     }
-                    setProfile(ProfileMessage.aiProfile);
+                    setProfile(ProfileMessage.createRandomAIProfile(getUsedAINames(slots)));
                     dialog.setVisible(false);
                 });
 

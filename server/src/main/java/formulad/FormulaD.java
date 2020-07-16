@@ -622,7 +622,7 @@ public class FormulaD extends Game implements Runnable {
                 final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
                 final PlayerSlot[] slots = new PlayerSlot[10];
                 for (int i = 0; i < slots.length; ++i) {
-                    final PlayerSlot slot = new PlayerSlot(f, localProfiles, lobby);
+                    final PlayerSlot slot = new PlayerSlot(f, localProfiles, lobby, slots);
                     playerPanel.add(slot);
                     slots[i] = slot;
                 }
