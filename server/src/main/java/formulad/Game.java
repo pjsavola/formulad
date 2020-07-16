@@ -1,7 +1,6 @@
 package formulad;
 
 import formulad.ai.Node;
-import formulad.model.FinalStandings;
 import formulad.model.PlayerStats;
 
 import javax.annotation.Nullable;
@@ -22,7 +21,7 @@ public abstract class Game extends JPanel {
     private final JFrame frame;
     private final JPanel panel;
 
-    private final BufferedImage backgroundImage;
+    private BufferedImage backgroundImage;
 
     // Node identifier equals to the index in this array
     final List<Node> nodes = new ArrayList<>();
@@ -40,18 +39,26 @@ public abstract class Game extends JPanel {
 
     PlayerStats[] finalStandings;
 
-    protected Game(JFrame frame, JPanel panel, String trackId) {
+    private Font damageFont = new Font("Arial", Font.PLAIN, 9);
+
+    Game(JFrame frame, JPanel panel) {
         this.frame = frame;
         this.panel = panel;
+    }
+
+    void initTrack(String trackId) {
         final String dataFile = "/" + trackId + ".dat";
         final String imageFile = "/" + trackId + ".jpg";
         backgroundImage = ImageCache.getImage(imageFile);
-        setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
         try (InputStream is = Client.class.getResourceAsStream(dataFile)) {
             MapEditor.loadNodes(is, nodes, attributes, coordinates);
         } catch (IOException e) {
             throw new RuntimeException("Data file " + dataFile + " is missing", e);
         }
+        setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
+        frame.setContentPane(this);
+        frame.pack();
+        repaint();
     }
 
     void clickToExit() {
@@ -105,7 +112,7 @@ public abstract class Game extends JPanel {
                 final int damage = entry.getValue();
                 final Point p = coordinates.get(node);
                 if (damage > 0) {
-                    g2d.setFont(new Font("Arial", Font.PLAIN, 9));
+                    g2d.setFont(damageFont);
                     g2d.setColor(Color.RED);
                     final int x = p.x - (damage >= 10 ? 5 : 2);
                     g2d.drawString(Integer.toString(damage), x, p.y + 3);

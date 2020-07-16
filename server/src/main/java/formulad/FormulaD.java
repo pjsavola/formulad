@@ -47,8 +47,6 @@ public class FormulaD extends Game implements Runnable {
     private final Map<Node, Double> distanceMap = new HashMap<>();
     private boolean stopped;
     private static final String gameId = "sebring";
-    @Nullable
-    private Map<Integer, Integer> highlightedNodeToDamage;
     private boolean enableTimeout;
     private final int initTimeoutInMillis;
     private final int gearTimeoutInMillis;
@@ -69,8 +67,9 @@ public class FormulaD extends Game implements Runnable {
         }
     }
 
-    public FormulaD(Params params, Lobby lobby, JFrame frame, JPanel panel, PlayerSlot[] slots) {
-        super(frame, panel, "sebring");
+    public FormulaD(Params params, Lobby lobby, JFrame frame, JPanel panel, PlayerSlot[] slots, String trackId) {
+        super(frame, panel);
+        initTrack(trackId);
         this.lobby = lobby;
         prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
         final long seed = params.seed == null ? new Random().nextLong() : params.seed;
@@ -662,9 +661,7 @@ public class FormulaD extends Game implements Runnable {
                         return;
                     }
                     lobby.done = true;
-                    final FormulaD server = new FormulaD(params, lobby, f, p, slots);
-                    f.setContentPane(server);
-                    f.pack();
+                    final FormulaD server = new FormulaD(params, lobby, f, p, slots, "sebring");
                     new Thread(server).start();
                 });
                 lobbyPanel.add(changeTrackButton);
@@ -693,11 +690,8 @@ public class FormulaD extends Game implements Runnable {
                     final int port = Integer.parseInt(addressAndPort[1]);
                     Socket socket = new Socket(addressAndPort[0], port);
                     final Client client = new Client(f, socket, p, profilePanel.getActiveProfile());
-                    f.setContentPane(client);
-                    f.pack();
                     new Thread(client).start();
-                }
-                else {
+                } else {
                     JOptionPane.showConfirmDialog(p, "Please specify server IP address and port (for example 123.456.7.8:1277)", "Error", JOptionPane.DEFAULT_OPTION);
                 }
             } catch (NumberFormatException exception) {

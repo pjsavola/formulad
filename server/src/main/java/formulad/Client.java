@@ -29,9 +29,10 @@ public class Client extends Game implements Runnable {
     private final List<Player> standings = new ArrayList<>();
     private final Profile profile;
     private boolean initialStandingsReceived;
+    private boolean waiting;
 
     public Client(JFrame frame, Socket socket, JPanel panel, Profile profile) throws IOException {
-        super(frame, panel, "sebring");
+        super(frame, panel);
         this.profile = profile;
         this.socket = socket;
         oos = new ObjectOutputStream(socket.getOutputStream());
@@ -89,10 +90,22 @@ public class Client extends Game implements Runnable {
                                 roll = null;
                                 setCurrent(controlledPlayer);
                                 oos.writeObject(ai.selectGear(gameState));
+                                waiting = false;
+                                repaint();
                             } else if (request instanceof Moves) {
                                 final Moves moves = (Moves) request;
                                 oos.writeObject(ai.selectMove(moves));
                             } else if (request instanceof ProfileRequest) {
+                                final String trackId = ((ProfileRequest) request).getTrackId();
+                                try {
+                                    waiting = true;
+                                    initTrack(trackId);
+                                } catch (RuntimeException e) {
+                                    FormulaD.log.log(Level.SEVERE, "Track " + trackId + " not found", e);
+                                    JOptionPane.showConfirmDialog(this, "Track " + trackId + " not found", "Error", JOptionPane.DEFAULT_OPTION);
+                                    exit();
+                                    return;
+                                }
                                 oos.writeObject(new ProfileMessage(profile));
                             } else if (request instanceof Kick) {
                                 JOptionPane.showConfirmDialog(this, "You have been kicked", "Oops", JOptionPane.DEFAULT_OPTION);
@@ -190,6 +203,17 @@ public class Client extends Game implements Runnable {
 
     @Override
     protected void drawStandings(Graphics2D g2d) {
+        if (waiting) {
+            final int x = getWidth() / 2 - 200;
+            final int y = getHeight() / 2 - 100;
+            g2d.setColor(Color.GRAY);
+            g2d.fillRect(x, y, 400, 200);
+            g2d.setColor(Color.BLACK);
+            g2d.drawRect(x, y, 400, 200);
+            final String text = "Waiting for race to begin!";
+            final int titleWidth = g2d.getFontMetrics().stringWidth(text);
+            g2d.drawString(text, x + 200 - titleWidth / 2, y + 100);
+        }
         if (finalStandings != null) {
             final int height = 5 + 15 * (finalStandings.length + 1);
             final int x = getWidth() / 2 - 200;
