@@ -39,6 +39,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 
 public class FormulaD extends Screen implements Runnable {
     private final JFrame frame;
+    private final JPanel panel;
     // Node identifier equals to the index in this array
     private final List<Node> nodes = new ArrayList<>();
     private final Map<Node, List<Node>> prevNodeMap;
@@ -78,9 +79,10 @@ public class FormulaD extends Screen implements Runnable {
         }
     }
 
-    public FormulaD(Params params, Lobby lobby, JFrame frame, PlayerSlot[] slots) {
+    public FormulaD(Params params, Lobby lobby, JFrame frame, JPanel panel, PlayerSlot[] slots) {
         this.lobby = lobby;
         this.frame = frame;
+        this.panel = panel;
         backgroundImage = ImageCache.getImage("/sebring.jpg");
         setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
 
@@ -338,10 +340,11 @@ public class FormulaD extends Screen implements Runnable {
             System.out.println(playerStats);
         }
         notifyAll(new FinalStandings(stats));
-        // TODO: Press any key to continue?
-        frame.setVisible(false);
         lobby.close();
-        System.exit(0);
+        // TODO: Final standings
+        frame.setContentPane(panel);
+        frame.pack();
+        frame.repaint();
     }
 
 	private List<Node> findGrid(Map<Node, Double> attributes) {
@@ -697,9 +700,10 @@ public class FormulaD extends Screen implements Runnable {
                         JOptionPane.showConfirmDialog(lobbyPanel, "Need at least 1 player", "Error", JOptionPane.DEFAULT_OPTION);
                         return;
                     }
-                    final FormulaD server = new FormulaD(params, lobby, f, slots);
+                    final FormulaD server = new FormulaD(params, lobby, f, p, slots);
                     f.setContentPane(server);
                     f.pack();
+                    f.repaint();
                     new Thread(server).start();
                 });
                 lobbyPanel.add(changeTrackButton);
