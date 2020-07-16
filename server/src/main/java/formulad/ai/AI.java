@@ -37,4 +37,7 @@ public interface AI {
      *
      */
     SelectedIndex selectMove(Moves moves);
+
+    default void notify(Object notification) {
+    }
 }

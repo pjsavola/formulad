@@ -259,7 +259,7 @@ public final class LocalPlayer {
         if (gear == 0) return 0;
         final int[] distribution = Gear.getDistribution(gear);
         final int roll = distribution[rng.nextInt(distribution.length)];
-        ((FormulaD) panel).lobby.notifyClients(new RollNotification(playerId, gear, roll));
+        ((FormulaD) panel).notifyAll(new RollNotification(playerId, gear, roll));
         return roll;
     }
 
@@ -297,7 +297,7 @@ public final class LocalPlayer {
             final Point p2 = coordinates.get(n2);
             angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
             this.route.add(n2);
-            ((FormulaD) panel).lobby.notifyClients(new MovementNotification(playerId, n2.getId()));
+            ((FormulaD) panel).notifyAll(new MovementNotification(playerId, n2.getId()));
             node = n2;
             panel.repaint();
             try {
@@ -333,10 +333,10 @@ public final class LocalPlayer {
             stop();
         }
         if (curveStops != oldCurveStops) {
-            ((FormulaD) panel).lobby.notifyClients(new CurveStopNotification(playerId, curveStops));
+            ((FormulaD) panel).notifyAll(new CurveStopNotification(playerId, curveStops));
         }
         if (lapsToGo != oldLapsToGo) {
-            ((FormulaD) panel).lobby.notifyClients(new LapChangeNotification(playerId, lapsToGo));
+            ((FormulaD) panel).notifyAll(new LapChangeNotification(playerId, lapsToGo));
         }
     }
 
@@ -360,7 +360,7 @@ public final class LocalPlayer {
         int counter = loss;
         while (counter-- > 0) {
             hitpoints--;
-            ((FormulaD) panel).lobby.notifyClients(new HitpointNotification(playerId, hitpoints));
+            ((FormulaD) panel).notifyAll(new HitpointNotification(playerId, hitpoints));
             panel.repaint();
             try {
                 Thread.sleep(animationDelayInMillis);

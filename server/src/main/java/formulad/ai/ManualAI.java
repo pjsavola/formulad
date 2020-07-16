@@ -4,26 +4,23 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
 
 import javax.swing.JFrame;
 
 import formulad.FormulaD;
+import formulad.Player;
+import formulad.Profile;
 import formulad.Screen;
 import formulad.ai.AI;
 import formulad.ai.AIUtil;
-import org.apache.commons.lang3.mutable.MutableInt;
-
-import formulad.model.GameState;
+import formulad.model.*;
 import formulad.model.Gear;
-import formulad.model.Moves;
-import formulad.model.NameAtStart;
-import formulad.model.PlayerState;
-import formulad.model.SelectedIndex;
-import formulad.model.Track;
-import formulad.model.ValidMove;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 public class ManualAI implements AI {
 
@@ -35,21 +32,20 @@ public class ManualAI implements AI {
     private final Screen game;
     private boolean automaticMove;
     private static final int listenerDelay = 50;
-    private final UUID id;
-    private final String name;
+    private final Profile profile;
+    private boolean initialStandingsReceived;
 
-    public ManualAI(AI ai, JFrame frame, Screen game, UUID id, String name) {
+    public ManualAI(AI ai, JFrame frame, Screen game, Profile profile) {
         this.ai = ai;
         this.frame = frame;
         this.game = game;
-        this.id = id;
-        this.name = name;
+        this.profile = profile;
     }
 
     @Override
     public NameAtStart startGame(Track track) {
         this.playerId = track.getPlayer().getPlayerId();
-        return ai.startGame(track).name(name).id(id);
+        return ai.startGame(track).name(profile.getName()).id(profile.getId());
     }
 
     @Override
@@ -189,6 +185,19 @@ public class ManualAI implements AI {
                 frame.removeKeyListener(keyListener);
                 game.removeMouseListener(mouseListener);
                 return new SelectedIndex().index(index);
+            }
+        }
+    }
+
+    @Override
+    public void notify(Object notification) {
+        if (notification instanceof FinalStandings) {
+            final FinalStandings standings = (FinalStandings) notification;
+            if (!initialStandingsReceived) {
+                profile.standingsReceived(standings.getStats(), true);
+                initialStandingsReceived = true;
+            } else {
+                profile.standingsReceived(standings.getStats(), false);
             }
         }
     }

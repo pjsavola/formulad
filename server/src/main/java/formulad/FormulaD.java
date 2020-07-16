@@ -108,7 +108,7 @@ public class FormulaD extends Screen implements Runnable {
             final PlayerStats playerStats = player.getStatistics(i + 1, distanceMap);
             stats.add(playerStats);
         }
-        lobby.notifyClients(new FinalStandings(stats));
+        notifyAll(new FinalStandings(stats));
         current = waitingPlayers.remove(0);
     }
 
@@ -121,7 +121,7 @@ public class FormulaD extends Screen implements Runnable {
                     aiList.add(new GreatAI());
                 }
                 else if (profile.isLocal()) {
-                    aiList.add(new ManualAI(new GreatAI(), frame, this, profile.getId(), profile.getName()));
+                    aiList.add(new ManualAI(new GreatAI(), frame, this, profile.originalProfile));
                 }
                 else {
                     final RemoteAI client = lobby.getClient(profile.getId());
@@ -222,7 +222,11 @@ public class FormulaD extends Screen implements Runnable {
         allPlayers.add(player);
         player.setGridPosition(allPlayers.size());
         aiMap.put(player, ai);
-        lobby.notifyClients(new CreatedPlayerNotification(current.getId(), name, startNode.getId(), 18, 1));
+        notifyAll(new CreatedPlayerNotification(current.getId(), name, startNode.getId(), 18, 1));
+    }
+
+    public void notifyAll(Object notification) {
+        aiMap.values().forEach(a -> a.notify(notification));
     }
 
     private <T> T getAiInput(Supplier<T> supplier, int timeout) {
@@ -320,7 +324,7 @@ public class FormulaD extends Screen implements Runnable {
                     stats.add(playerStats);
                     System.out.println(playerStats);
                 }
-                lobby.notifyClients(new FinalStandings(stats));
+                notifyAll(new FinalStandings(stats));
             }
         }
         final List<PlayerStats> stats = new ArrayList<>();
@@ -333,7 +337,7 @@ public class FormulaD extends Screen implements Runnable {
             stats.add(playerStats);
             System.out.println(playerStats);
         }
-        lobby.notifyClients(new FinalStandings(stats));
+        notifyAll(new FinalStandings(stats));
         // TODO: Press any key to continue?
         frame.setVisible(false);
         lobby.close();
@@ -570,7 +574,7 @@ public class FormulaD extends Screen implements Runnable {
             // Sort info box contents to match with current standings and turn order
             synchronized (allPlayers) {
                 allPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
-                lobby.notifyClients(new Standings(allPlayers));
+                notifyAll(new Standings(allPlayers));
             }
         }
         previous = current;
@@ -628,9 +632,7 @@ public class FormulaD extends Screen implements Runnable {
         p.add(contents);
         p.setBorder(new EmptyBorder(10, 10, 10, 10));
         final JPanel buttonPanel = new JPanel(new GridLayout(4, 0));
-        final MutableObject<Profile> activeProfile = new MutableObject<>();
-        activeProfile.setValue(profiles.stream().filter(Profile::isActive).findFirst().orElse(profiles.get(0)));
-        final JPanel profilePanel = new ProfilePanel(profiles);
+        final ProfilePanel profilePanel = new ProfilePanel(profiles);
         buttonPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         contents.add(buttonPanel);
         contents.add(profilePanel);
@@ -681,7 +683,11 @@ public class FormulaD extends Screen implements Runnable {
                         final ProfileMessage profile = slot.getProfile();
                         if (profile != null) {
                             hasPlayers = true;
-                            if (!profile.isAi() && !ids.add(profile.getId())) {
+                            if (profile == ProfileMessage.pending) {
+                                JOptionPane.showConfirmDialog(lobbyPanel, "Someone is about to join", "Error", JOptionPane.DEFAULT_OPTION);
+                                return;
+                            }
+                            else if (!profile.isAi() && !ids.add(profile.getId())) {
                                 JOptionPane.showConfirmDialog(lobbyPanel, "Duplicate profile: " + profile.getName(), "Error", JOptionPane.DEFAULT_OPTION);
                                 return;
                             }
@@ -721,7 +727,7 @@ public class FormulaD extends Screen implements Runnable {
                 if (addressAndPort.length == 2) {
                     final int port = Integer.parseInt(addressAndPort[1]);
                     Socket socket = new Socket(addressAndPort[0], port);
-                    final Client client = new Client(f, socket, p, activeProfile.getValue());
+                    final Client client = new Client(f, socket, p, profilePanel.getActiveProfile());
                     f.setContentPane(client);
                     f.pack();
                     new Thread(client).start();

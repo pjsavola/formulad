@@ -57,7 +57,7 @@ public class Client extends Screen implements Runnable {
             throw new RuntimeException("Cannot be bothered to work this out", e);
         }
         final AI backupAI = new GreatAI();
-        ai = new ManualAI(backupAI, frame, this, profile.getId());
+        ai = new ManualAI(backupAI, frame, this, profile);
     }
 
     @Override

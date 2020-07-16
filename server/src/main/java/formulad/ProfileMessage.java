@@ -15,6 +15,7 @@ public class ProfileMessage implements Serializable {
     private final int color2;
     private boolean local;
     private boolean ai;
+    public transient Profile originalProfile;
 
     public static ProfileMessage pending = new ProfileMessage("...", false);
     public static ProfileMessage aiProfile = new ProfileMessage("AI", true);
@@ -33,6 +34,7 @@ public class ProfileMessage implements Serializable {
         name = profile.getName();
         color1 = profile.getColor1();
         color2 = profile.getColor2();
+        originalProfile = profile;
     }
 
     public UUID getId() {

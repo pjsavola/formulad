@@ -19,6 +19,7 @@ public class ProfilePanel extends JPanel {
     }
 
     private Profile activeProfile;
+
     ProfilePanel(List<Profile> profiles) {
         activeProfile = profiles.stream().filter(Profile::isActive).findFirst().orElse(profiles.get(0));
         setBorder(new EmptyBorder(20, 50, 10, 10));
@@ -197,5 +198,9 @@ public class ProfilePanel extends JPanel {
                 profileName.setForeground(Color.BLACK);
             }
         });
+    }
+
+    public Profile getActiveProfile() {
+        return activeProfile;
     }
 }

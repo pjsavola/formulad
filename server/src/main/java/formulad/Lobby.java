@@ -36,7 +36,6 @@ public class Lobby extends Thread {
                 for (PlayerSlot slot : slots) {
                     if (slot.isFree()) {
                         slot.setProfile(ProfileMessage.pending);
-                        System.out.println("Client connected: " + socket.getInetAddress().toString());
                         final RemoteAI client = new RemoteAI(socket);
                         final ProfileMessage message = client.getProfile(new ProfileRequest("sebring"));
                         if (message != null) {
@@ -45,6 +44,7 @@ public class Lobby extends Thread {
                                 clients.add(client);
                             }
                             slot.setProfile(message);
+                            System.out.println("Client connected: " + message.getName());
                             slot.setEnabled(true);
                             slot.repaint();
                         }
@@ -71,12 +71,6 @@ public class Lobby extends Thread {
                 clients.remove(client);
                 client.close();
             }
-        }
-    }
-
-    public void notifyClients(Object notification) {
-        for (RemoteAI client : clients) {
-            client.notify(notification);
         }
     }
 

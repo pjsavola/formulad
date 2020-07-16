@@ -158,6 +158,7 @@ public class RemoteAI implements AI {
         return null;
     }
 
+    @Override
     public void notify(Object notification) {
         if (oos != null) {
             try {
