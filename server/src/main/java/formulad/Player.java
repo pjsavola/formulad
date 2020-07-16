@@ -28,6 +28,8 @@ public class Player {
     private final List<Node> route = new ArrayList<>();
     private static final Color transparentWhite = new Color(1.0f, 1.0f, 1.0f, 0.3f);
     private int lapsToGo;
+    private static final Font rollFont = new Font("Arial", Font.PLAIN, 20);
+    private static final Font statsFont = new Font("Arial", Font.PLAIN, 12);
 
     public Player(String playerId, Node node, double initialAngle, JPanel panel, int color1, int color2) {
         this.playerId = playerId;
@@ -62,7 +64,7 @@ public class Player {
         if (roll != null && gear != 0) {
             final Color color = getGearColor(gear);
             g2d.setColor(color);
-            g2d.setFont(new Font("Arial", Font.PLAIN, 20));
+            g2d.setFont(rollFont);
             final int x = (roll >= 10) ? 30 : 36;
             g2d.drawString(Integer.toString(roll), x, 48);
         }
@@ -141,7 +143,7 @@ public class Player {
 
     public void drawStats(Graphics2D g, int x, int y, Map<String, Integer> hitpointMap) {
         g.setColor(Color.BLACK);
-        g.setFont(new Font("Arial", Font.PLAIN, 12));
+        g.setFont(statsFont);
         g.drawString(name, x, y);
         if (stopped) {
             g.drawString(hitpoints > 0 ? "Finished" : "DNF", x + 110, y);

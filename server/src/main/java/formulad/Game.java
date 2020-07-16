@@ -43,6 +43,9 @@ public abstract class Game extends JPanel {
     PlayerStats[] finalStandings;
 
     private Font damageFont = new Font("Arial", Font.PLAIN, 9);
+    private Font titleFont = new Font("Arial", Font.BOLD, 20);
+    private Font headerFont = new Font("Arial", Font.BOLD, 12);
+    private Font statsFont = new Font("Arial", Font.PLAIN, 12);
 
     Game(JFrame frame, JPanel panel) {
         this.frame = frame;
@@ -169,7 +172,7 @@ public abstract class Game extends JPanel {
             final int x = getWidth() / 2 - 200;
             final int y = getHeight() / 2 - height / 2;
             g2d.setColor(Color.BLACK);
-            g2d.setFont(new Font("Arial", Font.BOLD, 20));
+            g2d.setFont(titleFont);
             final int titleWidth = g2d.getFontMetrics().stringWidth("STANDINGS");
             g2d.drawString("STANDINGS", x + 200 - titleWidth / 2, y - 20);
             g2d.setColor(Color.GRAY);
@@ -177,13 +180,13 @@ public abstract class Game extends JPanel {
             g2d.setColor(Color.BLACK);
             g2d.drawRect(x, y, 400, height);
             g2d.setColor(Color.BLACK);
-            g2d.setFont(new Font("Arial", Font.BOLD, 12));
+            g2d.setFont(headerFont);
             g2d.drawString("Name", x + 30, y + 15);
             g2d.drawString("HP", x + 140, y + 15);
             g2d.drawString("Turns", x + 190, y + 15);
             g2d.drawString("Grid", x + 230, y + 15);
             g2d.drawString("Time", x + 270, y + 15);
-            g2d.setFont(new Font("Arial", Font.PLAIN, 12));
+            g2d.setFont(statsFont);
             for (int i = 0; i < finalStandings.length; ++i) {
                 final PlayerStats stats = finalStandings[i];
                 final Player player = immutablePlayerMap.get(stats.playerId);
