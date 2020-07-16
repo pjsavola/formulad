@@ -116,9 +116,11 @@ public class FormulaD extends Game implements Runnable {
         final List<Integer> startingOrder = IntStream.range(0, playerCount).boxed().collect(Collectors.toList());
         Collections.shuffle(startingOrder, rng);
         enableTimeout = true;
+        final List<CreatedPlayerNotification> notifications = new ArrayList<>();
         for (Map.Entry<AI, ProfileMessage> e : aiToProfile.entrySet()) {
-            createAiPlayer(e, grid, startingOrder, attributes, params.leeway);
+            notifications.add(createAiPlayer(e, grid, startingOrder, attributes, params.leeway));
         }
+        notifications.forEach(this::notifyAll);
 
         // Create manually controlled AI players
         /*
@@ -175,7 +177,7 @@ public class FormulaD extends Game implements Runnable {
         }*/
     }
 
-    private void createAiPlayer(Map.Entry<AI, ProfileMessage> ai, List<Node> grid, List<Integer> startingOrder, Map<Node, Double> attributes, int leeway) {
+    private CreatedPlayerNotification createAiPlayer(Map.Entry<AI, ProfileMessage> ai, List<Node> grid, List<Integer> startingOrder, Map<Node, Double> attributes, int leeway) {
         // Recreate track for each player, so nothing bad happens if AI mutates it.
         final int playerCount = allPlayers.size();
         final String playerId = "p" + (playerCount + 1);
@@ -205,7 +207,7 @@ public class FormulaD extends Game implements Runnable {
         allPlayers.add(player);
         player.setGridPosition(allPlayers.size());
         aiMap.put(player, ai.getKey());
-        notifyAll(new CreatedPlayerNotification(current.getId(), name, startNode.getId(), 18, 1));
+        return new CreatedPlayerNotification(current.getId(), name, startNode.getId(), 18, 1, ai.getValue().getColor1(), ai.getValue().getColor2());
     }
 
     public void notifyAll(Object notification) {

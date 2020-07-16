@@ -15,12 +15,7 @@ import java.util.stream.Collectors;
 
 public final class Player {
     private static int colorIndex = 0;
-    private static final Color[] defaultColors = {
-        Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, Color.PINK,
-        Color.CYAN, Color.ORANGE, Color.WHITE, Color.MAGENTA, Color.GRAY };
-    private static final Color[] defaultBorderColors = {
-        new Color(0x770000), new Color(0x000077), new Color(0x007700), new Color(0x777700), new Color(0x773333),
-        new Color(0x007777), new Color(0x993300), Color.GRAY, new Color(0x770077), Color.BLACK };
+
     private final String playerId;
     private String name;
     private Node node;
@@ -37,10 +32,10 @@ public final class Player {
     private boolean modifyingHitpoints;
     private int lapsToGo;
 
-    public Player(String playerId, Node node, double initialAngle, JPanel panel) {
+    public Player(String playerId, Node node, double initialAngle, JPanel panel, int color1, int color2) {
         this.playerId = playerId;
-        color1 = defaultBorderColors[colorIndex];
-        color2 = defaultColors[colorIndex++];
+        this.color1 = new Color(color1);
+        this.color2 = new Color(color2);
         this.node = node;
         this.angle = initialAngle;
         this.panel = panel;

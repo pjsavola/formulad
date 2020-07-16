@@ -73,6 +73,8 @@ public class Client extends Game implements Runnable {
                                     }
                                 }
                             }
+                            waiting = false;
+                            repaint();
                             continue;
                         }
                         finalStandings = standings.getStats();
@@ -90,8 +92,6 @@ public class Client extends Game implements Runnable {
                                 roll = null;
                                 setCurrent(controlledPlayer);
                                 oos.writeObject(ai.selectGear(gameState));
-                                waiting = false;
-                                repaint();
                             } else if (request instanceof Moves) {
                                 final Moves moves = (Moves) request;
                                 oos.writeObject(ai.selectMove(moves));
@@ -178,7 +178,7 @@ public class Client extends Game implements Runnable {
 
     public void notify(CreatedPlayerNotification notification) {
         final Node startNode = nodes.get(notification.getNodeId());
-        final Player player = new Player(notification.getPlayerId(), startNode, attributes.get(startNode), this);
+        final Player player = new Player(notification.getPlayerId(), startNode, attributes.get(startNode), this, notification.getColor1(), notification.getColor2());
         player.setName(notification.getName());
         player.setHitpoints(notification.getHitpoints());
         player.setLapsRemaining(notification.getLapsRemaining());

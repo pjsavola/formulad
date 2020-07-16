@@ -2,8 +2,10 @@ package formulad;
 
 import formulad.model.PlayerStats;
 
+import java.awt.*;
 import java.io.Serializable;
 import java.util.*;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -20,6 +22,12 @@ public class ProfileMessage implements Serializable {
 
     private static Random random = new Random();
     private static String[] randomNames = new String[] { "Mika", "Keke", "Kimi", "Heikki", "Leo", "Valtteri", "Nico", "Michael", "Lewis", "Sebastian", "Max", "Fernando" };
+    private static final Color[] defaultColors = {
+            Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, Color.PINK,
+            Color.CYAN, Color.ORANGE, Color.WHITE, Color.MAGENTA, Color.GRAY };
+    private static final Color[] defaultBorderColors = {
+            new Color(0x770000), new Color(0x000077), new Color(0x007700), new Color(0x777700), new Color(0x773333),
+            new Color(0x007777), new Color(0x993300), Color.GRAY, new Color(0x770077), Color.BLACK };
 
     public static ProfileMessage createRandomAIProfile(Set<String> usedNames) {
         final List<String> validNames = Arrays.stream(randomNames).filter(n -> !usedNames.contains(n)).collect(Collectors.toList());

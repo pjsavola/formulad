@@ -18,13 +18,6 @@ import formulad.ai.Node;
 import formulad.model.*;
 
 public final class LocalPlayer {
-    private static int colorIndex = 0;
-    private static final Color[] defaultColors = {
-        Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, Color.PINK,
-        Color.CYAN, Color.ORANGE, Color.WHITE, Color.MAGENTA, Color.GRAY };
-    private static final Color[] defaultBorderColors = {
-        new Color(0x770000), new Color(0x000077), new Color(0x007700), new Color(0x777700), new Color(0x773333),
-        new Color(0x007777), new Color(0x993300), Color.GRAY, new Color(0x770077), Color.BLACK };
     private final String playerId;
     private String name;
     private UUID id;
