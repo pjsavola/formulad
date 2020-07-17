@@ -123,7 +123,7 @@ public class PlayerSlot extends JButton {
                     }
                     profile = null;
                     setEnabled(true);
-                } else {
+                } else if (lobby != null) {
                     int result = JOptionPane.showConfirmDialog(getParent(), "Are you sure you want to kick player " + profile.getName(), "Confirm", JOptionPane.YES_NO_OPTION);
                     if (result == JOptionPane.YES_OPTION) {
                         lobby.dropClient(profile.getId());

@@ -51,7 +51,7 @@ public class FormulaD extends Game implements Runnable {
     private final int gearTimeoutInMillis;
     private final int moveTimeoutInMillis;
     private final Set<LocalPlayer> disconnectedPlayers = new HashSet<>();
-    final Lobby lobby;
+    private final Lobby lobby;
     public static final Logger log = Logger.getLogger(FormulaD.class.getName());
     static {
         try {
@@ -93,7 +93,7 @@ public class FormulaD extends Game implements Runnable {
     }
 
     private void createGrid(Params params, Map<Node, Double> attributes, PlayerSlot[] slots, JFrame frame) {
-        final Map<AI, ProfileMessage> aiToProfile = new HashMap<>();
+        final Map<AI, ProfileMessage> aiToProfile = new LinkedHashMap<>(); // preserve order
         for (PlayerSlot slot : slots) {
             final ProfileMessage profile = slot.getProfile();
             if (profile != null) {
@@ -103,7 +103,7 @@ public class FormulaD extends Game implements Runnable {
                 else if (profile.isLocal()) {
                     aiToProfile.put(new ManualAI(new GreatAI(), frame, this, profile.originalProfile), profile);
                 }
-                else {
+                else if (lobby != null) {
                     final RemoteAI client = lobby.getClient(profile.getId());
                     if (client != null) {
                         aiToProfile.put(client, profile);
@@ -114,11 +114,13 @@ public class FormulaD extends Game implements Runnable {
         final int playerCount = aiToProfile.size();
         final List<Node> grid = findGrid(attributes).subList(0, playerCount);
         final List<Integer> startingOrder = IntStream.range(0, playerCount).boxed().collect(Collectors.toList());
-        Collections.shuffle(startingOrder, rng);
+        if (params.randomizeStartingOrder) {
+            Collections.shuffle(startingOrder, rng);
+        }
         enableTimeout = true;
         final List<CreatedPlayerNotification> notifications = new ArrayList<>();
         for (Map.Entry<AI, ProfileMessage> e : aiToProfile.entrySet()) {
-            notifications.add(createAiPlayer(e, grid, startingOrder, attributes, params.leeway));
+            notifications.add(createAiPlayer(e, grid, startingOrder, attributes, params.leeway, params.laps));
         }
         notifications.forEach(this::notifyAll);
         immutablePlayerMap = new HashMap<>(aiToProfile.size());
@@ -179,13 +181,13 @@ public class FormulaD extends Game implements Runnable {
         }*/
     }
 
-    private CreatedPlayerNotification createAiPlayer(Map.Entry<AI, ProfileMessage> ai, List<Node> grid, List<Integer> startingOrder, Map<Node, Double> attributes, int leeway) {
+    private CreatedPlayerNotification createAiPlayer(Map.Entry<AI, ProfileMessage> ai, List<Node> grid, List<Integer> startingOrder, Map<Node, Double> attributes, int leeway, int laps) {
         // Recreate track for each player, so nothing bad happens if AI mutates it.
         final int playerCount = allPlayers.size();
         final String playerId = "p" + (playerCount + 1);
         final Track track = ApiHelper.buildTrack(gameId, playerId, nodes);
         final Node startNode = grid.get(startingOrder.get(playerCount));
-        final LocalPlayer player = new LocalPlayer(playerId, startNode, attributes.get(startNode), 1, this, leeway, ai.getValue().getColor1(), ai.getValue().getColor2());
+        final LocalPlayer player = new LocalPlayer(playerId, startNode, attributes.get(startNode), laps, this, leeway, ai.getValue().getColor1(), ai.getValue().getColor2());
         current = player;
         log.info("Initializing player " + playerId);
         NameAtStart nameResponse = getAiInput(() -> ai.getKey().startGame(track), initTimeoutInMillis);
@@ -312,7 +314,9 @@ public class FormulaD extends Game implements Runnable {
         final FinalStandings fs = new FinalStandings(stats);
         finalStandings = fs.getStats();
         notifyAll(fs);
-        lobby.close();
+        if (lobby != null) {
+            lobby.close();
+        }
         repaint();
         clickToExit();
     }
@@ -510,6 +514,96 @@ public class FormulaD extends Game implements Runnable {
 
         @Parameter(names = "--rng_seed", description = "Specify seed used for RNG, uses random seed by default", arity = 1)
         private Long seed = null;
+
+        private boolean randomizeStartingOrder = false;
+        private int laps = 1;
+    }
+
+    private static void showGameSettings(JFrame frame, JPanel panel, Lobby lobby, List<Profile> profiles, Params params) {
+        final List<ProfileMessage> localProfiles = profiles.stream().map(ProfileMessage::new).collect(Collectors.toList());
+        final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
+        final PlayerSlot[] slots = new PlayerSlot[10];
+        for (int i = 0; i < slots.length; ++i) {
+            final PlayerSlot slot = new PlayerSlot(frame, localProfiles, lobby, slots);
+            playerPanel.add(slot);
+            slots[i] = slot;
+        }
+        if (lobby != null) {
+            lobby.setSlots(slots);
+        }
+        final JPanel lobbyPanel = new JPanel();
+        lobbyPanel.setLayout(new BoxLayout(lobbyPanel, BoxLayout.Y_AXIS));
+        lobbyPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        // TODO: Change track menu
+        final JButton changeTrackButton = new JButton();
+        final ImageIcon icon = new ImageIcon();
+        final BufferedImage image = ImageCache.getImage("/sebring.jpg");
+        final int x = image.getWidth();
+        final int y = image.getHeight();
+        final int scale = Math.max(x / 300, y / 300);
+        icon.setImage(image.getScaledInstance(x / scale, y / scale, Image.SCALE_FAST));
+        changeTrackButton.setIcon(icon);
+        final JButton startButton = new JButton("Start");
+        final JCheckBox randomStartingOrder = new JCheckBox("Randomize starting order", true);
+        final JLabel lapsLabel = new JLabel("Laps");
+        final JTextField lapsField = new JTextField("1");
+        lapsField.setPreferredSize(new Dimension(100, 20));
+        startButton.addActionListener(event -> {
+            boolean hasPlayers = false;
+            final Set<UUID> ids = new HashSet<>();
+            for (PlayerSlot slot : slots) {
+                final ProfileMessage profile = slot.getProfile();
+                if (profile != null) {
+                    hasPlayers = true;
+                    if (profile == ProfileMessage.pending) {
+                        JOptionPane.showConfirmDialog(lobbyPanel, "Someone is about to join", "Error", JOptionPane.DEFAULT_OPTION);
+                        return;
+                    }
+                    else if (!profile.isAi() && !ids.add(profile.getId())) {
+                        JOptionPane.showConfirmDialog(lobbyPanel, "Duplicate profile: " + profile.getName(), "Error", JOptionPane.DEFAULT_OPTION);
+                        return;
+                    }
+                }
+            }
+            if (!hasPlayers) {
+                JOptionPane.showConfirmDialog(lobbyPanel, "Need at least 1 player", "Error", JOptionPane.DEFAULT_OPTION);
+                return;
+            }
+            int laps;
+            try {
+                laps = Integer.parseInt(lapsField.getText());
+                if (laps < 1 || laps > 200) {
+                    JOptionPane.showConfirmDialog(lobbyPanel, "Please choose 1-200 laps", "Error", JOptionPane.DEFAULT_OPTION);
+                    return;
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showConfirmDialog(lobbyPanel, "Invalid lap count: " + lapsField.getText(), "Error", JOptionPane.DEFAULT_OPTION);
+                return;
+            }
+            if (lobby != null) {
+                lobby.done = true;
+                lobby.interrupt();
+            }
+            params.randomizeStartingOrder = randomStartingOrder.isSelected();
+            params.laps = laps;
+            final FormulaD server = new FormulaD(params, lobby, frame, panel, slots, "sebring");
+            new Thread(server).start();
+        });
+        final JPanel gridPanel = new JPanel(new GridLayout(0, 2));
+        gridPanel.add(changeTrackButton);
+        gridPanel.add(playerPanel);
+        lobbyPanel.add(gridPanel);
+        lobbyPanel.add(randomStartingOrder);
+        final JPanel lapsPanel = new JPanel(new FlowLayout());
+        lapsPanel.add(lapsLabel);
+        lapsPanel.add(lapsField);
+        lobbyPanel.add(lapsPanel);
+        lobbyPanel.add(startButton);
+        frame.setContentPane(lobbyPanel);
+        frame.pack();
+        if (lobby != null) {
+            lobby.start();
+        }
     }
 
     private static void showMenu(JFrame f, Params params, List<Profile> profiles) {
@@ -532,7 +626,7 @@ public class FormulaD extends Game implements Runnable {
 
         final JButton singlePlayerButton = new JButton("Single Player");
         singlePlayerButton.addActionListener(e -> {
-            // TODO
+            showGameSettings(f, p, null, profiles, params);
         });
         final JButton hostMultiplayerButton = new JButton("Host Multiplayer");
         hostMultiplayerButton.addActionListener(e -> {
@@ -543,65 +637,7 @@ public class FormulaD extends Game implements Runnable {
             try {
                 final int port = Integer.parseInt(result);
                 final Lobby lobby = new Lobby(port);
-
-                final List<ProfileMessage> localProfiles = profiles.stream().map(ProfileMessage::new).collect(Collectors.toList());
-                final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
-                final PlayerSlot[] slots = new PlayerSlot[10];
-                for (int i = 0; i < slots.length; ++i) {
-                    final PlayerSlot slot = new PlayerSlot(f, localProfiles, lobby, slots);
-                    playerPanel.add(slot);
-                    slots[i] = slot;
-                }
-                lobby.setSlots(slots);
-
-                final JPanel lobbyPanel = new JPanel();
-                lobbyPanel.setLayout(new BoxLayout(lobbyPanel, BoxLayout.Y_AXIS));
-                lobbyPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-                //lobbyPanel.add(label);
-                // TODO: Change track menu
-                JButton changeTrackButton = new JButton();
-                final ImageIcon icon = new ImageIcon();
-                final BufferedImage image = ImageCache.getImage("/sebring.jpg");
-                final int x = image.getWidth();
-                final int y = image.getHeight();
-                final int scale = Math.max(x / 300, y / 300);
-                icon.setImage(image.getScaledInstance(x / scale, y / scale, Image.SCALE_FAST));
-                changeTrackButton.setIcon(icon);
-                JButton button = new JButton("Start");
-                button.addActionListener(event -> {
-                    boolean hasPlayers = false;
-                    final Set<UUID> ids = new HashSet<>();
-                    for (PlayerSlot slot : slots) {
-                        final ProfileMessage profile = slot.getProfile();
-                        if (profile != null) {
-                            hasPlayers = true;
-                            if (profile == ProfileMessage.pending) {
-                                JOptionPane.showConfirmDialog(lobbyPanel, "Someone is about to join", "Error", JOptionPane.DEFAULT_OPTION);
-                                return;
-                            }
-                            else if (!profile.isAi() && !ids.add(profile.getId())) {
-                                JOptionPane.showConfirmDialog(lobbyPanel, "Duplicate profile: " + profile.getName(), "Error", JOptionPane.DEFAULT_OPTION);
-                                return;
-                            }
-                        }
-                    }
-                    if (!hasPlayers) {
-                        JOptionPane.showConfirmDialog(lobbyPanel, "Need at least 1 player", "Error", JOptionPane.DEFAULT_OPTION);
-                        return;
-                    }
-                    lobby.done = true;
-                    lobby.interrupt();
-                    final FormulaD server = new FormulaD(params, lobby, f, p, slots, "sebring");
-                    new Thread(server).start();
-                });
-                final JPanel gridPanel = new JPanel(new GridLayout(0, 2));
-                gridPanel.add(changeTrackButton);
-                gridPanel.add(playerPanel);
-                lobbyPanel.add(gridPanel);
-                lobbyPanel.add(button);
-                f.setContentPane(lobbyPanel);
-                f.pack();
-                lobby.start();
+                showGameSettings(f, p, lobby, profiles, params);
             } catch (NumberFormatException exception) {
                 JOptionPane.showConfirmDialog(p, "Invalid port: '" + result + "'", "Error", JOptionPane.DEFAULT_OPTION);
             } catch (IOException exception) {
