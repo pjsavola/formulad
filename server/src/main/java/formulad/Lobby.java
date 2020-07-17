@@ -13,6 +13,7 @@ public class Lobby extends Thread {
 
     private final ServerSocket serverSocket;
     private PlayerSlot[] slots;
+    private String trackId;
     volatile boolean done;
     final List<RemoteAI> clients = new ArrayList<>();
     final Map<UUID, RemoteAI> clientMap = new HashMap<>();
@@ -22,6 +23,30 @@ public class Lobby extends Thread {
 
     public void setSlots(PlayerSlot[] slots) {
         this.slots = slots;
+    }
+
+    public void setTrack(String trackId) {
+        if (!trackId.equals(this.trackId)) {
+            this.trackId = trackId;
+            synchronized (clientMap) {
+                final Set<UUID> idsToKick = new HashSet<>();
+                for (RemoteAI client : clients) {
+                    final ProfileMessage reply = client.getProfile(new ProfileRequest(trackId));
+                    if (reply == null) {
+                        clientMap.entrySet().stream().filter(e -> e.getValue() == client).map(Map.Entry::getKey).findFirst().ifPresent(idsToKick::add);
+                    }
+                }
+                if (!idsToKick.isEmpty()) {
+                    for (PlayerSlot slot : slots) {
+                        if (idsToKick.contains(slot.getProfile().getId())) {
+                            dropClient(slot.getProfile().getId());
+                            slot.setProfile((ProfileMessage) null);
+                            slot.setEnabled(true);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -35,7 +60,7 @@ public class Lobby extends Thread {
                     if (slot.isFree()) {
                         slot.setProfile(ProfileMessage.pending);
                         final RemoteAI client = new RemoteAI(socket);
-                        final ProfileMessage message = client.getProfile(new ProfileRequest("sebring"));
+                        final ProfileMessage message = client.getProfile(new ProfileRequest(trackId));
                         if (message != null) {
                             synchronized (clientMap) {
                                 clientMap.put(message.getId(), client);

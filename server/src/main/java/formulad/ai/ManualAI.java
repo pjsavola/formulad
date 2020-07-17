@@ -27,6 +27,7 @@ public class ManualAI implements AI {
     private static final int listenerDelay = 50;
     private final Profile profile;
     private boolean initialStandingsReceived;
+    private String trackId;
 
     public ManualAI(AI ai, JFrame frame, Game game, Profile profile) {
         this.ai = ai;
@@ -37,6 +38,7 @@ public class ManualAI implements AI {
 
     @Override
     public NameAtStart startGame(Track track) {
+        trackId = track.getGame().getGameId();
         this.playerId = track.getPlayer().getPlayerId();
         return ai.startGame(track).name(profile.getName()).id(profile.getId());
     }
@@ -188,10 +190,10 @@ public class ManualAI implements AI {
         if (notification instanceof FinalStandings) {
             final FinalStandings standings = (FinalStandings) notification;
             if (!initialStandingsReceived) {
-                profile.standingsReceived(standings.getStats(), true);
+                profile.standingsReceived(standings.getStats(), trackId);
                 initialStandingsReceived = true;
             } else {
-                profile.standingsReceived(standings.getStats(), false);
+                profile.standingsReceived(standings.getStats(), null);
             }
         }
     }

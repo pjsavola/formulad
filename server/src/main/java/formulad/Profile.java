@@ -94,7 +94,7 @@ public class Profile implements Serializable {
         return active;
     }
 
-    public void standingsReceived(PlayerStats[] standings, boolean initial) {
+    public void standingsReceived(PlayerStats[] standings, String trackId) {
         final List<UUID> players = new ArrayList<>();
         PlayerStats myStats = null;
         for (PlayerStats stats : standings) {
@@ -104,8 +104,8 @@ public class Profile implements Serializable {
             players.add(stats.id);
         }
         if (myStats != null) {
-            if (initial) {
-                results.add(new Result("sebring", myStats.lapsToGo, myStats.hitpoints, myStats.gridPosition));
+            if (trackId != null) {
+                results.add(new Result(trackId, myStats.lapsToGo, myStats.hitpoints, myStats.gridPosition));
             } else {
                 final Result lastResult = results.get(results.size() - 1);
                 if (!lastResult.complete) {
@@ -117,5 +117,12 @@ public class Profile implements Serializable {
                 }
             }
         }
+    }
+
+    public String getLastTrack() {
+        if (!results.isEmpty()) {
+            return results.get(results.size() - 1).trackId;
+        }
+        return "sebring";
     }
 }

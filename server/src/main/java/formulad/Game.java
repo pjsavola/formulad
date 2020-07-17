@@ -47,12 +47,15 @@ public abstract class Game extends JPanel {
     private Font headerFont = new Font("Arial", Font.BOLD, 12);
     private Font statsFont = new Font("Arial", Font.PLAIN, 12);
 
+    String trackId;
+
     Game(JFrame frame, JPanel panel) {
         this.frame = frame;
         this.panel = panel;
     }
 
     void initTrack(String trackId) {
+        this.trackId = trackId;
         final String dataFile = "/" + trackId + ".dat";
         final String imageFile = "/" + trackId + ".jpg";
         backgroundImage = ImageCache.getImage(imageFile);

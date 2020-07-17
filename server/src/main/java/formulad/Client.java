@@ -54,7 +54,7 @@ public class Client extends Game implements Runnable {
                     } else if (request instanceof FinalStandings) {
                         final FinalStandings standings = (FinalStandings) request;
                         if (!initialStandingsReceived) {
-                            profile.standingsReceived(standings.getStats(), true);
+                            profile.standingsReceived(standings.getStats(), trackId);
                             initialStandingsReceived = true;
                             immutablePlayerMap = new HashMap<>(playerMap);
                             this.standings = Arrays.stream(standings.getStats()).map(ps -> ps.playerId).map(immutablePlayerMap::get).collect(Collectors.toList());
@@ -63,7 +63,7 @@ public class Client extends Game implements Runnable {
                             continue;
                         }
                         finalStandings = standings.getStats();
-                        profile.standingsReceived(finalStandings, false);
+                        profile.standingsReceived(finalStandings, null);
                         repaint();
                         break;
                     } else {

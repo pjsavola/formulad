@@ -41,7 +41,6 @@ public class FormulaD extends Game implements Runnable {
     private final Random rng;
     private final Map<Node, Double> distanceMap = new HashMap<>();
     private boolean stopped;
-    private static final String gameId = "sebring";
     private boolean enableTimeout;
     private final int initTimeoutInMillis;
     private final int gearTimeoutInMillis;
@@ -128,7 +127,7 @@ public class FormulaD extends Game implements Runnable {
         // Recreate track for each player, so nothing bad happens if AI mutates it.
         final int playerCount = allPlayers.size();
         final String playerId = "p" + (playerCount + 1);
-        final Track track = ApiHelper.buildTrack(gameId, playerId, nodes);
+        final Track track = ApiHelper.buildTrack(trackId, playerId, nodes);
         final Node startNode = grid.get(startingOrder.get(playerCount));
         final LocalPlayer player = new LocalPlayer(playerId, startNode, attributes.get(startNode), laps, this, leeway, ai.getValue().getColor1(), ai.getValue().getColor2());
         current = player;
@@ -205,7 +204,7 @@ public class FormulaD extends Game implements Runnable {
         while (!stopped) {
             current.beginTurn();
             final AI ai = aiMap.get(current);
-            final GameState gameState = ApiHelper.buildGameState(gameId, players);
+            final GameState gameState = ApiHelper.buildGameState(trackId, players);
             log.info("Querying gear input from AI " + current.getNameAndId());
             final Gear gearResponse = getAiInput(() -> ai.selectGear(gameState), gearTimeoutInMillis);
             if (!hasManualAI || ai instanceof ManualAI) {
@@ -221,7 +220,7 @@ public class FormulaD extends Game implements Runnable {
                 previous.clearRoute();
             }
             roll = current.roll(rng);
-            final Moves allMoves = current.findAllTargets(roll, gameId, players);
+            final Moves allMoves = current.findAllTargets(roll, trackId, players);
             if (current.getLeeway() <= 0) {
                 log.info("Player " + current.getNameAndId() + " used his timeout leeway and was dropped from the game");
                 current.stop();
@@ -432,7 +431,7 @@ public class FormulaD extends Game implements Runnable {
         private int laps = 1;
     }
 
-    private static void showGameSettings(JFrame frame, JPanel panel, Lobby lobby, List<Profile> profiles, Params params) {
+    private static void showGameSettings(JFrame frame, JPanel panel, Lobby lobby, List<Profile> profiles, Params params, String trackId) {
         final List<ProfileMessage> localProfiles = profiles.stream().map(ProfileMessage::new).collect(Collectors.toList());
         final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
         final PlayerSlot[] slots = new PlayerSlot[10];
@@ -450,7 +449,7 @@ public class FormulaD extends Game implements Runnable {
         // TODO: Change track menu
         final JButton changeTrackButton = new JButton();
         final ImageIcon icon = new ImageIcon();
-        final BufferedImage image = ImageCache.getImage("/sebring.jpg");
+        final BufferedImage image = ImageCache.getImage("/" + trackId + ".jpg");
         final int x = image.getWidth();
         final int y = image.getHeight();
         final int scale = Math.max(x / 300, y / 300);
@@ -498,7 +497,7 @@ public class FormulaD extends Game implements Runnable {
                 lobby.interrupt();
             }
             params.randomizeStartingOrder = randomStartingOrder.isSelected();
-            final FormulaD server = new FormulaD(params, lobby, frame, panel, slots, "sebring");
+            final FormulaD server = new FormulaD(params, lobby, frame, panel, slots, trackId);
             new Thread(server).start();
         });
         final JPanel gridPanel = new JPanel(new GridLayout(2, 2));
@@ -545,7 +544,7 @@ public class FormulaD extends Game implements Runnable {
 
         final JButton singlePlayerButton = new JButton("Single Player");
         singlePlayerButton.addActionListener(e -> {
-            showGameSettings(f, p, null, profiles, params);
+            showGameSettings(f, p, null, profiles, params, profilePanel.getActiveProfile().getLastTrack());
         });
         final JButton hostMultiplayerButton = new JButton("Host Multiplayer");
         hostMultiplayerButton.addActionListener(e -> {
@@ -556,7 +555,9 @@ public class FormulaD extends Game implements Runnable {
             try {
                 final int port = Integer.parseInt(result);
                 final Lobby lobby = new Lobby(port);
-                showGameSettings(f, p, lobby, profiles, params);
+                final String trackId = profilePanel.getActiveProfile().getLastTrack();
+                lobby.setTrack(trackId);
+                showGameSettings(f, p, lobby, profiles, params, trackId);
             } catch (NumberFormatException exception) {
                 JOptionPane.showConfirmDialog(p, "Invalid port: '" + result + "'", "Error", JOptionPane.DEFAULT_OPTION);
             } catch (IOException exception) {
