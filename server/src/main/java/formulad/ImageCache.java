@@ -5,6 +5,7 @@ import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsEnvironment;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -20,12 +21,26 @@ public abstract class ImageCache {
         if (image != null) {
             return image;
         }
+        System.out.println(name);
         try (InputStream is = ImageCache.class.getResourceAsStream(name)) {
             image = ImageIO.read(is);
         } catch (IOException e) {
             throw new RuntimeException("Image " + name + " is missing");
         }
         return updateCache(image, name, imageCache);
+    }
+
+    public static BufferedImage getImageFromPath(String absolutePath) {
+        BufferedImage image = imageCache.get(absolutePath);
+        if (image != null) {
+            return image;
+        }
+        try (InputStream is = new FileInputStream(absolutePath)) {
+            image = ImageIO.read(is);
+        } catch (IOException e) {
+            throw new RuntimeException("Image " + absolutePath + " is missing");
+        }
+        return updateCache(image, absolutePath, imageCache);
     }
 
     private static <T> BufferedImage updateCache(BufferedImage image, T key, Map<T, BufferedImage> cache) {

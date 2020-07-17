@@ -614,15 +614,26 @@ public class FormulaD extends Game implements Runnable {
                 JOptionPane.showConfirmDialog(p, "Unable to connect to server " + result, "Error", JOptionPane.DEFAULT_OPTION);
             }
         });
+        final JButton trackEditorButton = new JButton("Track Editor");
+        trackEditorButton.addActionListener(e -> {
+            final MapEditor editor = new MapEditor(f);
+            if (editor.open()) {
+                f.setContentPane(editor);
+                f.pack();
+            }
+        });
         singlePlayerButton.setFont(new Font("Arial", Font.BOLD, 20));
         hostMultiplayerButton.setFont(new Font("Arial", Font.BOLD, 20));
         joinMultiplayerButton.setFont(new Font("Arial", Font.BOLD, 20));
+        trackEditorButton.setFont(new Font("Arial", Font.BOLD, 20));
         singlePlayerButton.setPreferredSize(new Dimension(80, 40));
         hostMultiplayerButton.setPreferredSize(new Dimension(80, 40));
         joinMultiplayerButton.setPreferredSize(new Dimension(80, 40));
+        trackEditorButton.setPreferredSize(new Dimension(80, 40));
         buttonPanel.add(singlePlayerButton);
         buttonPanel.add(hostMultiplayerButton);
         buttonPanel.add(joinMultiplayerButton);
+        buttonPanel.add(trackEditorButton);
         f.setContentPane(p);
         f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         f.pack();

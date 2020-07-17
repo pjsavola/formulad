@@ -53,14 +53,15 @@ public class MapEditor extends JPanel {
     private final Map<Node, Point> coordinates = new HashMap<>();
     private Node selectedNode;
     private BufferedImage backgroundImage;
+    private String backgroundImageFileName;
     private Node.Type stroke = Node.Type.STRAIGHT;
 
     // After drawing an edge, automatically select the target node.
     private boolean autoSelectMode = true;
 
-    public static enum Corner { NE, SE, SW, NW };
+    public enum Corner { NE, SE, SW, NW };
 
-	public MapEditor() {
+	public MapEditor(JFrame frame) {
         addMouseListener(new MouseListener() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -109,6 +110,51 @@ public class MapEditor extends JPanel {
             public void mouseExited(MouseEvent e) {
             }
         });
+        frame.addKeyListener(new KeyListener() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+                final char c = e.getKeyChar();
+                switch (c) {
+                    case '1':
+                        setStroke(Node.Type.STRAIGHT);
+                        break;
+                    case '2':
+                        setStroke(Node.Type.CURVE_2);
+                        break;
+                    case '3':
+                        setStroke(Node.Type.CURVE_1);
+                        break;
+                    case '4':
+                        setStroke(Node.Type.START);
+                        break;
+                    case '5':
+                        setStroke(Node.Type.FINISH);
+                        break;
+                    case 'a':
+                        toggleSelectMode();
+                        break;
+                    case 'o':
+                        open();
+                        frame.pack();
+                        break;
+                    case 's':
+                        save();
+                        break;
+                    case 'l':
+                        load();
+                        break;
+                    case 'z':
+                        setAttribute();
+                        break;
+                }
+            }
+            @Override
+            public void keyPressed(KeyEvent e) {
+            }
+            @Override
+            public void keyReleased(KeyEvent e) {
+            }
+        });
 	}
 
 	private void setStroke(Node.Type stroke) {
@@ -135,24 +181,33 @@ public class MapEditor extends JPanel {
         drawArcs(g2d, nodes);
     }
 
-    private void open() {
+    boolean open() {
         final JFileChooser fileChooser = new JFileChooser();
         fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
         final int result = fileChooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             final File selectedFile = fileChooser.getSelectedFile();
-            backgroundImage = ImageCache.getImage(selectedFile.getAbsolutePath());
+            backgroundImage = ImageCache.getImageFromPath(selectedFile.getAbsolutePath());
+            backgroundImageFileName = selectedFile.getName();
             setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
+            return true;
         }
+        return false;
     }
 
     private void save() {
+	    if (backgroundImageFileName == null) {
+	        return;
+        }
         final JFileChooser fileChooser = new JFileChooser();
         fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
         final int result = fileChooser.showSaveDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             final File selectedFile = fileChooser.getSelectedFile();
             try (final PrintWriter writer = new PrintWriter(selectedFile, "UTF-8")) {
+                writer.print(backgroundImageFileName);
+                writer.print(" ");
+                writer.println(Corner.NE.ordinal());
                 final Map<Node, Integer> idMap = new HashMap<>();
                 for (int i = 0; i < nodes.size(); i++) {
                     final Node node = nodes.get(i);
@@ -354,52 +409,7 @@ public class MapEditor extends JPanel {
 
     public static void main(String[] args) {
         final JFrame f = new JFrame();
-        final MapEditor p = new MapEditor();
-        f.addKeyListener(new KeyListener() {
-            @Override
-            public void keyTyped(KeyEvent e) {
-                final char c = e.getKeyChar();
-                switch (c) {
-                case '1':
-                    p.setStroke(Node.Type.STRAIGHT);
-                    break;
-                case '2':
-                    p.setStroke(Node.Type.CURVE_2);
-                    break;
-                case '3':
-                    p.setStroke(Node.Type.CURVE_1);
-                    break;
-                case '4':
-                    p.setStroke(Node.Type.START);
-                    break;
-                case '5':
-                    p.setStroke(Node.Type.FINISH);
-                    break;
-                case 'a':
-                    p.toggleSelectMode();
-                    break;
-                case 'o':
-                    p.open();
-                    f.pack();
-                    break;
-                case 's':
-                    p.save();
-                    break;
-                case 'l':
-                    p.load();
-                    break;
-                case 'z':
-                    p.setAttribute();
-                    break;
-                }
-            }
-            @Override
-            public void keyPressed(KeyEvent e) {
-            }
-            @Override
-            public void keyReleased(KeyEvent e) {
-            }
-        });
+        final MapEditor p = new MapEditor(f);
         f.setContentPane(p);
         f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         f.pack();
