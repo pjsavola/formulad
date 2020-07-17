@@ -28,6 +28,7 @@ import formulad.ai.*;
 import formulad.ai.Node;
 import formulad.model.*;
 import formulad.model.Gear;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class FormulaD extends Game implements Runnable {
@@ -274,7 +275,7 @@ public class FormulaD extends Game implements Runnable {
             if (node.getType() == Node.Type.FINISH) {
                 work.add(node);
                 visited.add(node);
-                if (node.childCount() == 3) {
+                if (node.childCount(Node.Type.PIT) == 3) {
                     center = node;
                 } else {
                     edges.add(node);
@@ -303,10 +304,11 @@ public class FormulaD extends Game implements Runnable {
             distanceMap.put(edges.get(1), 0.0);
         }
         work.add(center);
+        final MutableObject<Node> pit = new MutableObject<>(null);
         final List<Node> curves = new ArrayList<>();
         while (!work.isEmpty()) {
             final Node node = work.remove(0);
-            final int childCount = node.childCount();
+            final long childCount = node.childCount(Node.Type.PIT);
             node.forEachChild(next -> {
                 if (distanceMap.containsKey(next)) {
                     return;
@@ -315,7 +317,16 @@ public class FormulaD extends Game implements Runnable {
                     curves.add(next);
                     return;
                 }
-                final int nextChildCount = next.childCount();
+                if (next.getType() == Node.Type.PIT) {
+                    pit.setValue(next);
+                    final Double pitEntryDistance = distanceMap.get(next);
+                    final double pitStartDistance = distanceMap.get(node) - 0.4;
+                    if (pitEntryDistance == null || pitStartDistance < pitEntryDistance) {
+                        distanceMap.put(next, pitStartDistance);
+                    }
+                    return;
+                }
+                final long nextChildCount = next.childCount(Node.Type.PIT);
                 final boolean fromCenterToEdge = childCount == 3 && nextChildCount == 2;
                 distanceMap.put(next, distanceMap.get(node) + (fromCenterToEdge ? 0.5 : 1));
                 work.add(next);
@@ -369,6 +380,25 @@ public class FormulaD extends Game implements Runnable {
                 distanceMap.put(center, newMaxDistance + 0.5);
             }
         }
+        while (pit.getValue() != null) {
+            final Node node = pit.getValue();
+            final long childCount = node.childCount(null);
+            if (childCount > 1) {
+                node.forEachChild(next -> {
+                    if (next.getType() == Node.Type.PIT || !distanceMap.containsKey(next)) {
+                        throw new RuntimeException("Pit lane is branching");
+                    }
+                });
+                pit.setValue(null);
+            } else if (childCount < 1) {
+                throw new RuntimeException("Pit lane is dead end");
+            } else {
+                node.forEachChild(next -> {
+                    distanceMap.put(next, distanceMap.get(node) + 0.01);
+                    pit.setValue(next);
+                });
+            }
+        }
         return grid;
     }
 
@@ -405,7 +435,7 @@ public class FormulaD extends Game implements Runnable {
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        // drawDistances(g2d); // For debugging
+        //drawDistances((Graphics2D) g); // For debugging
     }
 
     private void drawDistances(Graphics2D g2d) {

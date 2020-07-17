@@ -166,6 +166,14 @@ public final class LocalPlayer extends Player {
                 }
             }
         }
+        if (route.get(route.size() - 1).getType() != Node.Type.PIT) {
+            for (int i = route.size() - 2; i >= 0; --i) {
+                if (route.get(i).getType() == Node.Type.PIT) {
+                    lapsToGo--;
+                    break;
+                }
+            }
+        }
         for (int i = 1; i < size; ++i) {
             final Node n2 = route.get(i);
             move(n2, coordinates);
@@ -199,6 +207,9 @@ public final class LocalPlayer extends Player {
             FormulaD.log.log(Level.SEVERE, getNameAndId() + " performed an illegal move, taking too much damage");
             stop();
         }
+        if (node.getType() == Node.Type.PIT) {
+            recoverHitpoints();
+        }
         if (lapsToGo < 0) {
             stop();
         }
@@ -216,6 +227,21 @@ public final class LocalPlayer extends Player {
         int counter = loss;
         while (counter-- > 0) {
             hitpoints--;
+            ((FormulaD) panel).notifyAll(new HitpointNotification(playerId, hitpoints));
+            panel.repaint();
+            try {
+                Thread.sleep(animationDelayInMillis);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void recoverHitpoints() {
+        FormulaD.log.info("Player " + getNameAndId() + " pits and recovers full hitpoints");
+        // Show animation
+        while (hitpoints < 18) {
+            hitpoints++;
             ((FormulaD) panel).notifyAll(new HitpointNotification(playerId, hitpoints));
             panel.repaint();
             try {
@@ -257,7 +283,9 @@ public final class LocalPlayer extends Player {
     }
 
     private Map<Node, DamageAndPath> findTargetNodes(int roll, Set<Node> forbiddenNodes) {
-        final Map<Node, DamageAndPath> result = NodeUtil.findNodes(node, roll, forbiddenNodes, true, curveStops, lapsToGo == 0);
+        final boolean finalLap = lapsToGo == 0;
+        final boolean allowPitEntry = !finalLap && gear < 5;
+        final Map<Node, DamageAndPath> result = NodeUtil.findNodes(node, roll, forbiddenNodes, true, curveStops, finalLap, allowPitEntry);
         final Map<Node, DamageAndPath> targets = new HashMap<>();
         for (Map.Entry<Node, DamageAndPath> entry : result.entrySet()) {
             if (entry.getValue().getDamage() < hitpoints) {

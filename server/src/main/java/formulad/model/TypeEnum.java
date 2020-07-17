@@ -8,7 +8,8 @@ public enum TypeEnum implements Serializable {
     CURVE_1("CURVE_1"),
     CURVE_2("CURVE_2"),
     CURVE_3("CURVE_3"),
-    FINISH("FINISH");
+    FINISH("FINISH"),
+    PIT("PIT");
 
     private String value;
 

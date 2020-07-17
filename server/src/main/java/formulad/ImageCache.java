@@ -21,7 +21,6 @@ public abstract class ImageCache {
         if (image != null) {
             return image;
         }
-        System.out.println(name);
         try (InputStream is = ImageCache.class.getResourceAsStream(name)) {
             image = ImageIO.read(is);
         } catch (IOException e) {

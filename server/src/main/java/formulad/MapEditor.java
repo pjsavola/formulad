@@ -78,7 +78,7 @@ public class MapEditor extends JPanel {
                         selectedNode = node;
                     } else if (selectedNode != node) {
                         selectedNode.addChild(node);
-                        selectedNode = autoSelectMode ? node : (node.childCount() == 0 ? node : null);
+                        selectedNode = autoSelectMode ? node : (node.childCount(null) == 0 ? node : null);
                     } else {
                         selectedNode = null;
                     }
@@ -131,6 +131,12 @@ public class MapEditor extends JPanel {
                         break;
                     case '5':
                         setStroke(Node.Type.FINISH);
+                        break;
+                    case '6':
+                        setStroke(Node.Type.CURVE_3);
+                        break;
+                    case '7':
+                        setStroke(Node.Type.PIT);
                         break;
                     case 'a':
                         toggleSelectMode();
@@ -393,6 +399,12 @@ public class MapEditor extends JPanel {
                 break;
             case FINISH:
                 color = Color.BLUE;
+                break;
+            case CURVE_3:
+                color = new Color(0xAA0000);
+                break;
+            case PIT:
+                color = Color.BLACK;
                 break;
             default:
                 throw new RuntimeException("Unknown node type");

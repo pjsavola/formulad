@@ -12,7 +12,7 @@ import java.util.stream.Stream;
 
 
 public final class Node {
-    public enum Type { UNKNOWN, STRAIGHT, CURVE_2, CURVE_1, START, FINISH, CURVE_3 };
+    public enum Type { UNKNOWN, STRAIGHT, CURVE_2, CURVE_1, START, FINISH, CURVE_3, PIT };
     private final int id;
     private final Type type;
     private final Set<Node> nextNodes = new HashSet<>();
@@ -60,8 +60,8 @@ public final class Node {
         nextNodes.forEach(consumer);
     }
 
-    public int childCount() {
-        return nextNodes.size();
+    public long childCount(Type excludeType) {
+        return excludeType == null ? nextNodes.size() : nextNodes.stream().filter(n -> n.type != excludeType).count();
     }
 
     public boolean hasChild(Node node) {

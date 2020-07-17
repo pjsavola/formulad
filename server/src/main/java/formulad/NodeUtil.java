@@ -41,7 +41,8 @@ public abstract class NodeUtil {
                                                      Set<Node> forbiddenNodes,
                                                      boolean allowCurveEntry,
                                                      int stopsDone,
-                                                     boolean finalLap) {
+                                                     boolean finalLap,
+                                                     boolean allowPitEntry) {
         // Set of visited non-curve nodes, for finding the shortest path in straights
         final Set<Node> visited = new HashSet<>();
         // For each node which is at target distance, calculate the damage and path
@@ -68,6 +69,10 @@ public abstract class NodeUtil {
                         // node is blocked
                         return;
                     }
+                    if (!allowPitEntry && next.getType() == Node.Type.PIT) {
+                        // cannot enter pits on final lap or with too large gear
+                        return;
+                    }
                     if (node.isCurve() || next.isCurve()) {
                         if (!node.isCurve()) {
                             // entering curve
@@ -81,7 +86,7 @@ public abstract class NodeUtil {
                                 final boolean allowEntry = stopsToDo <= 0;
                                 final int damage = stopsToDo <= 0 ? 0 : targetDistance - finalDistance;
                                 final List<Node> path = findPath(node, finalDistance, distanceMap);
-                                findNodes(next, targetDistance - finalDistance - 1, forbiddenNodes, allowEntry, 0, finalLap)
+                                findNodes(next, targetDistance - finalDistance - 1, forbiddenNodes, allowEntry, 0, finalLap, allowPitEntry)
                                     .forEach((n, dp) -> result.merge(
                                         n,
                                         dp.addPrefix(damage, path),
