@@ -52,13 +52,15 @@ public class GreatAI implements AI {
         if (location == null) {
             throw new RuntimeException("Unknown location for player: " + playerId);
         }
+        final boolean inPits = location.getType() == Node.Type.PIT;
+        final int maxGear = inPits ? 4 : 6;
         final int stopsDone = player.getStops();
         if (stopsDone < location.getStopCount()) {
             // This can only happen in curves, find max distance to the last curve node.
             final int maxDistance = getMaxDistanceToNextStraight(location) - 1;
             // Select the largest gear for which we might be able to stop in the curve.
             int bestGear = 2; // Never switch to gear 1, as it's intuitively a bad idea.
-            for (int gear = Math.min(6, player.getGear() + 1); gear >= 3; gear--) {
+            for (int gear = Math.min(maxGear, player.getGear() + 1); gear >= 3; gear--) {
                 final int[] distribution = Gear.getDistribution(gear);
                 if (distribution[distribution.length - 1] >= maxDistance + player.getHitpoints()) {
                     // Rolling max from this dice would cause DNF.
@@ -74,7 +76,7 @@ public class GreatAI implements AI {
             } else {
                 debug("Found gear " + bestGear + " which is good to get out of the curve");
             }
-            if (AIUtil.validateGear(player, bestGear)) {
+            if (AIUtil.validateGear(player, bestGear, inPits)) {
                 gear = bestGear;
             } else {
                 // This happens only if it would seem to be a good idea to switch
@@ -105,7 +107,7 @@ public class GreatAI implements AI {
                 } else {
                     debug("Cannot guarantee entrance to next corner, selecting largest possible gear " + bestGear);
                 }
-                if (AIUtil.validateGear(player, bestGear)) {
+                if (AIUtil.validateGear(player, bestGear, inPits)) {
                     gear = bestGear;
                 } else {
                     // This happens only if it would seem to be a good idea to switch
@@ -153,7 +155,7 @@ public class GreatAI implements AI {
                     debug("Gear " + bestGear + " is best for covering distance " + maxDistance);
                     gear = bestGear;
                 }
-                if (!AIUtil.validateGear(player, gear)) {
+                if (!AIUtil.validateGear(player, gear, inPits)) {
                     // This happens only if it would seem to be a good idea to switch
                     // down gears rapidly but we don't have hitpoints for it. This probably
                     // means we're going to DNF, but let's at least send a valid move. :(

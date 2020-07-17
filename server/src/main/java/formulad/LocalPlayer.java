@@ -109,6 +109,8 @@ public final class LocalPlayer extends Player {
 
         if (newGear == gear) return true;
 
+        if (node.getType() == Node.Type.PIT && newGear > 4) return false;
+
         if (Math.abs(newGear - gear) <= 1) {
             setGear(newGear);
             panel.repaint();

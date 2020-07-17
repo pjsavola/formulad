@@ -68,17 +68,19 @@ public abstract class AIUtil {
     /**
      * Returns true if the given player can select the given gear.
      */
-    public static boolean validateGear(PlayerState player, int newGear) {
-        return validateGear(player.getHitpoints(), player.getGear(), newGear);
+    public static boolean validateGear(PlayerState player, int newGear, boolean inPits) {
+        return validateGear(player.getHitpoints(), player.getGear(), newGear, inPits);
     }
 
     /**
      * Returns true if new gear can be selected if the player currently has old gear and given number of hitpoints.
      */
-    public static boolean validateGear(int hitpoints, int oldGear, int newGear) {
+    public static boolean validateGear(int hitpoints, int oldGear, int newGear, boolean inPits) {
         if (newGear < 1 || newGear > 6) return false;
 
         if (Math.abs(newGear - oldGear) <= 1) return true;
+
+        if (inPits && newGear > 4) return false;
 
         final int damage = oldGear - newGear - 1;
         return damage > 0 && damage < 4 && hitpoints > damage;

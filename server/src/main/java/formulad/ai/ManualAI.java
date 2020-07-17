@@ -20,6 +20,7 @@ public class ManualAI implements AI {
     private String playerId;
     private int hitpoints;
     private int gear;
+    private Node location;
     private final AI ai;
     private final JFrame frame;
     private final Game game;
@@ -28,6 +29,7 @@ public class ManualAI implements AI {
     private final Profile profile;
     private boolean initialStandingsReceived;
     private String trackId;
+    private Map<Integer, Node> nodeMap;
 
     public ManualAI(AI ai, JFrame frame, Game game, Profile profile) {
         this.ai = ai;
@@ -40,6 +42,7 @@ public class ManualAI implements AI {
     public NameAtStart startGame(Track track) {
         trackId = track.getGame().getGameId();
         this.playerId = track.getPlayer().getPlayerId();
+        nodeMap = AIUtil.buildNodeMap(track.getTrack().getNodes(), track.getTrack().getEdges());
         return ai.startGame(track).name(profile.getName()).id(profile.getId());
     }
 
@@ -49,6 +52,7 @@ public class ManualAI implements AI {
             if (playerId.equals(playerState.getPlayerId())) {
                 hitpoints = playerState.getHitpoints();
                 gear = playerState.getGear();
+                location = nodeMap.get(playerState.getNodeId());
                 break;
             }
         }
@@ -73,7 +77,8 @@ public class ManualAI implements AI {
                         selectedGear.setValue(gear.getGear());
                     }
                 } else if (c >= '1' && c <= '6') {
-                    if (AIUtil.validateGear(hitpoints, gear, c - '0')) {
+                    final boolean inPits = location != null && location.getType() == Node.Type.PIT;
+                    if (AIUtil.validateGear(hitpoints, gear, c - '0', inPits)) {
                         selectedGear.setValue(c - '0');
                     }
                 }
