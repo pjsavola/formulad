@@ -28,6 +28,7 @@ import formulad.ai.*;
 import formulad.ai.Node;
 import formulad.model.*;
 import formulad.model.Gear;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class FormulaD extends Game implements Runnable {
     private final Map<Node, List<Node>> prevNodeMap;
@@ -108,7 +109,7 @@ public class FormulaD extends Game implements Runnable {
             }
         }
         final int playerCount = aiToProfile.size();
-        final List<Node> grid = findGrid(attributes).subList(0, playerCount);
+        final List<Node> grid = findGrid(nodes, attributes, distanceMap, prevNodeMap).subList(0, playerCount);
         final List<Integer> startingOrder = IntStream.range(0, playerCount).boxed().collect(Collectors.toList());
         if (params.randomizeStartingOrder) {
             Collections.shuffle(startingOrder, rng);
@@ -263,7 +264,7 @@ public class FormulaD extends Game implements Runnable {
         clickToExit();
     }
 
-	private List<Node> findGrid(Map<Node, Double> attributes) {
+	private static List<Node> findGrid(List<Node> nodes, Map<Node, Double> attributes, Map<Node, Double> distanceMap, Map<Node, List<Node>> prevNodeMap) {
 	    final Set<Node> visited = new HashSet<>();
         final List<Node> grid = new ArrayList<>();
         final List<Node> work = new ArrayList<>();
@@ -371,6 +372,36 @@ public class FormulaD extends Game implements Runnable {
         return grid;
     }
 
+    public static boolean validateTrack(String trackId) {
+        final List<Node> nodes = new ArrayList<>();
+        final Map<Node, Double> attributes = new HashMap<>();
+        final Map<Node, Double> distanceMap = new HashMap<>();
+        final Map<Node, Point> coordinates = new HashMap<>();
+        try (InputStream is = FormulaD.class.getResourceAsStream("/" + trackId)) {
+            final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes, coordinates);
+            if (result == null) {
+                log.log(Level.SEVERE, "Track validation failed: Proper header is missing from " + trackId);
+                return false;
+            }
+            final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
+            final List<Node> grid = findGrid(nodes, attributes, distanceMap, prevNodeMap);
+            if (grid.size() < 10) {
+                log.log(Level.SEVERE, "Track validation failed: Starting grid has less than 10 spots");
+                return false;
+            }
+            final String imageFile = "/" + result.getLeft();
+            final BufferedImage image = ImageCache.getImage(imageFile);
+            if (image == null) {
+                log.log(Level.SEVERE, "Track validation failed: Background image " + result.getLeft() + " not found");
+                return false;
+            }
+        } catch (IOException e) {
+            log.log(Level.SEVERE, "Track validation failed: " + e.getMessage(), e);
+            return false;
+        }
+        return true;
+    }
+
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -443,18 +474,14 @@ public class FormulaD extends Game implements Runnable {
         if (lobby != null) {
             lobby.setSlots(slots);
         }
+        final TrackPreviewButton changeTrackButton = new TrackPreviewButton(frame, panel, lobby);
+        if (!changeTrackButton.setTrack(trackId)) {
+            return;
+        }
         final JPanel lobbyPanel = new JPanel();
         lobbyPanel.setLayout(new BoxLayout(lobbyPanel, BoxLayout.PAGE_AXIS));
         lobbyPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        // TODO: Change track menu
-        final JButton changeTrackButton = new JButton();
-        final ImageIcon icon = new ImageIcon();
-        final BufferedImage image = ImageCache.getImage("/" + trackId + ".jpg");
-        final int x = image.getWidth();
-        final int y = image.getHeight();
-        final int scale = Math.max(x / 300, y / 300);
-        icon.setImage(image.getScaledInstance(x / scale, y / scale, Image.SCALE_FAST));
-        changeTrackButton.setIcon(icon);
+
         final JButton startButton = new JButton("Start");
         final JCheckBox randomStartingOrder = new JCheckBox("Randomize starting order", true);
         final SettingsField laps = new SettingsField(lobbyPanel, "Laps", "1", 1, 200);
@@ -497,7 +524,7 @@ public class FormulaD extends Game implements Runnable {
                 lobby.interrupt();
             }
             params.randomizeStartingOrder = randomStartingOrder.isSelected();
-            final FormulaD server = new FormulaD(params, lobby, frame, panel, slots, trackId);
+            final FormulaD server = new FormulaD(params, lobby, frame, panel, slots, changeTrackButton.getTrack());
             new Thread(server).start();
         });
         final JPanel gridPanel = new JPanel(new GridLayout(2, 2));
@@ -556,7 +583,6 @@ public class FormulaD extends Game implements Runnable {
                 final int port = Integer.parseInt(result);
                 final Lobby lobby = new Lobby(port);
                 final String trackId = profilePanel.getActiveProfile().getLastTrack();
-                lobby.setTrack(trackId);
                 showGameSettings(f, p, lobby, profiles, params, trackId);
             } catch (NumberFormatException exception) {
                 JOptionPane.showConfirmDialog(p, "Invalid port: '" + result + "'", "Error", JOptionPane.DEFAULT_OPTION);

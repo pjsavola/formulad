@@ -3,7 +3,10 @@ package formulad;
 import formulad.model.FinalStandings;
 import formulad.model.PlayerStats;
 import formulad.model.Standings;
+import org.apache.commons.lang3.tuple.Pair;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -120,9 +123,16 @@ public class Profile implements Serializable {
     }
 
     public String getLastTrack() {
+        final String trackId;
         if (!results.isEmpty()) {
-            return results.get(results.size() - 1).trackId;
+            trackId = results.get(results.size() - 1).trackId;
+        } else {
+            trackId = "sebring.dat";
         }
-        return "sebring";
+        if (FormulaD.validateTrack(trackId)) {
+            return trackId;
+        }
+        // TODO: handle this in graciously
+        return null;
     }
 }

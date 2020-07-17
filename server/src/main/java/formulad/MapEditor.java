@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 
 import javax.annotation.Nullable;
 import javax.swing.JFileChooser;
@@ -36,6 +37,7 @@ import javax.swing.JPanel;
 import javax.swing.WindowConstants;
 
 import formulad.ai.Node;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class MapEditor extends JPanel {
 
@@ -55,6 +57,8 @@ public class MapEditor extends JPanel {
 
     // After drawing an edge, automatically select the target node.
     private boolean autoSelectMode = true;
+
+    public static enum Corner { NE, SE, SW, NW };
 
 	public MapEditor() {
         addMouseListener(new MouseListener() {
@@ -201,11 +205,27 @@ public class MapEditor extends JPanel {
         }
     }
 
-    public static void loadNodes(InputStream map,
-                                 Collection<Node> nodes,
-                                 Map<Node, Double> attributes,
-                                 Map<Node, Point> coordinates) {
+    public static Pair<String, Corner> loadHeader(String trackId) {
+        try (InputStream is = FormulaD.class.getResourceAsStream("/" + trackId); InputStreamReader ir = new InputStreamReader(is); final BufferedReader br = new BufferedReader(ir)) {
+            final String headerLine = br.readLine();
+            if (headerLine != null && !headerLine.isEmpty()) {
+                final String[] parts = headerLine.split(" ");
+                return Pair.of(parts[0], Corner.values()[Integer.parseInt(parts[1])]);
+            }
+        } catch (IOException e) {
+            FormulaD.log.log(Level.SEVERE, "Reading header of " + trackId + " failed", e);
+        }
+        return null;
+    }
+
+    public static Pair<String, Corner> loadNodes(InputStream map, Collection<Node> nodes, Map<Node, Double> attributes, Map<Node, Point> coordinates) {
+	    Pair<String, Corner> result = null;
         try (InputStreamReader ir = new InputStreamReader(map); final BufferedReader br = new BufferedReader(ir)) {
+            final String headerLine = br.readLine();
+            if (headerLine != null && !headerLine.isEmpty()) {
+                final String[] parts = headerLine.split(" ");
+                result = Pair.of(parts[0], Corner.values()[Integer.parseInt(parts[1])]);
+            }
             // File format begins with nodes, then a single empty line and then edges,
             // then a single empty line and then attributes.
             final Map<Integer, Node> idMap = new HashMap<>();
@@ -245,6 +265,7 @@ public class MapEditor extends JPanel {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return result;
     }
 
     private void setAttribute() {

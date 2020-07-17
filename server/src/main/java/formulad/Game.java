@@ -3,6 +3,7 @@ package formulad;
 import formulad.ai.Node;
 import formulad.model.GameState;
 import formulad.model.PlayerStats;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 import javax.swing.*;
@@ -56,13 +57,13 @@ public abstract class Game extends JPanel {
 
     void initTrack(String trackId) {
         this.trackId = trackId;
-        final String dataFile = "/" + trackId + ".dat";
-        final String imageFile = "/" + trackId + ".jpg";
-        backgroundImage = ImageCache.getImage(imageFile);
-        try (InputStream is = Client.class.getResourceAsStream(dataFile)) {
-            MapEditor.loadNodes(is, nodes, attributes, coordinates);
+        final String dataFile = "/" + trackId;
+        try (InputStream is = FormulaD.class.getResourceAsStream(dataFile)) {
+            final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes, coordinates);
+            final String imageFile = "/" + result.getLeft();
+            backgroundImage = ImageCache.getImage(imageFile);
         } catch (IOException e) {
-            throw new RuntimeException("Data file " + dataFile + " is missing", e);
+            throw new RuntimeException("Data file " + dataFile + " is missing or corrupted", e);
         }
         setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
         frame.setContentPane(this);
