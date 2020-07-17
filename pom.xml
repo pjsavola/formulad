@@ -4,7 +4,7 @@
 
     <groupId>fi.bogus</groupId>
     <artifactId>formulad</artifactId>
-    <version>${common-version}</version>
+    <version>0.1</version>
     <packaging>pom</packaging>
 
     <name>formulad-super</name>
@@ -71,11 +71,6 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.6</version>
-        </dependency>
-        <dependency>
-            <groupId>com.beust</groupId>
-            <artifactId>jcommander</artifactId>
-            <version>1.48</version>
         </dependency>
     </dependencies>
 

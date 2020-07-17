@@ -11,7 +11,6 @@ import formulad.ai.AI;
 
 import formulad.ai.GreatAI;
 import formulad.model.*;
-import sun.tools.java.ClassNotFound;
 
 public class RemoteAI implements AI {
 
