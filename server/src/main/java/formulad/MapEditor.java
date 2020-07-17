@@ -36,6 +36,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.WindowConstants;
 
+import formulad.ai.AIUtil;
 import formulad.ai.Node;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -145,6 +146,9 @@ public class MapEditor extends JPanel {
                         break;
                     case 'z':
                         setAttribute();
+                        break;
+                    case 'v':
+                        validateTrack();
                         break;
                 }
             }
@@ -343,6 +347,20 @@ public class MapEditor extends JPanel {
                 selectedNode = null;
                 repaint();
             }
+        }
+    }
+
+    private void validateTrack() {
+	    try {
+            final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
+            final Map<Node, Double> distanceMap = new HashMap<>();
+            final List<Node> grid = FormulaD.findGrid(nodes, attributes, distanceMap, prevNodeMap);
+            if (grid.size() < 10) {
+                JOptionPane.showConfirmDialog(this, "Track validation failed: Starting grid has less than 10 spots", "Validation Error", JOptionPane.DEFAULT_OPTION);
+            }
+            JOptionPane.showConfirmDialog(this, "Track seems OK", "Success", JOptionPane.DEFAULT_OPTION);
+        } catch (Exception e) {
+            JOptionPane.showConfirmDialog(this, "Track validation failed: " + e.getMessage(), "Validation Error", JOptionPane.DEFAULT_OPTION);
         }
     }
 

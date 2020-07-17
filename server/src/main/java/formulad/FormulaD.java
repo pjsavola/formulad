@@ -264,7 +264,7 @@ public class FormulaD extends Game implements Runnable {
         clickToExit();
     }
 
-	private static List<Node> findGrid(List<Node> nodes, Map<Node, Double> attributes, Map<Node, Double> distanceMap, Map<Node, List<Node>> prevNodeMap) {
+    static List<Node> findGrid(List<Node> nodes, Map<Node, Double> attributes, Map<Node, Double> distanceMap, Map<Node, List<Node>> prevNodeMap) {
 	    final Set<Node> visited = new HashSet<>();
         final List<Node> grid = new ArrayList<>();
         final List<Node> work = new ArrayList<>();
