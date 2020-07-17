@@ -56,6 +56,7 @@ public class MapEditor extends JPanel {
     private BufferedImage backgroundImage;
     private String backgroundImageFileName;
     private Node.Type stroke = Node.Type.STRAIGHT;
+    private Corner infoBoxCorner = Corner.NE;
 
     // After drawing an edge, automatically select the target node.
     private boolean autoSelectMode = true;
@@ -150,6 +151,9 @@ public class MapEditor extends JPanel {
                     case 'v':
                         validateTrack();
                         break;
+                    case 'i':
+                        switchInfoBoxCorner();
+                        break;
                 }
             }
             @Override
@@ -183,6 +187,7 @@ public class MapEditor extends JPanel {
             drawOval(g2d, p.x, p.y, DIAMETER + 2, DIAMETER + 2, true, false, Color.WHITE, 1);
         }
         drawArcs(g2d, nodes);
+        UIUtil.drawInfoBox(g2d, this, 10, infoBoxCorner);
     }
 
     boolean open() {
@@ -211,7 +216,7 @@ public class MapEditor extends JPanel {
             try (final PrintWriter writer = new PrintWriter(selectedFile, "UTF-8")) {
                 writer.print(backgroundImageFileName);
                 writer.print(" ");
-                writer.println(Corner.NE.ordinal());
+                writer.println(infoBoxCorner.ordinal());
                 final Map<Node, Integer> idMap = new HashMap<>();
                 for (int i = 0; i < nodes.size(); i++) {
                     final Node node = nodes.get(i);
@@ -255,7 +260,8 @@ public class MapEditor extends JPanel {
         if (result == JFileChooser.APPROVE_OPTION) {
             final File selectedFile = fileChooser.getSelectedFile();
             try (FileInputStream fis = new FileInputStream(selectedFile)) {
-                loadNodes(fis, nodes, attributes, coordinates);
+                final Pair<String, Corner> p = loadNodes(fis, nodes, attributes, coordinates);
+                infoBoxCorner = p.getRight();
                 nextNodeId += nodes.size();
                 repaint();
             } catch (IOException e) {
@@ -362,6 +368,12 @@ public class MapEditor extends JPanel {
         } catch (Exception e) {
             JOptionPane.showConfirmDialog(this, "Track validation failed: " + e.getMessage(), "Validation Error", JOptionPane.DEFAULT_OPTION);
         }
+    }
+
+    private void switchInfoBoxCorner() {
+	    final Corner[] corners = Corner.values();
+	    infoBoxCorner = corners[(infoBoxCorner.ordinal() + 1) % corners.length];
+	    repaint();
     }
 
     private void drawNode(Graphics2D g2d, Node node) {
