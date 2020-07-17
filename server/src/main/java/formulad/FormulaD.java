@@ -70,6 +70,7 @@ public class FormulaD extends Game implements Runnable {
         initTrack(trackId);
         this.lobby = lobby;
         prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
+        LocalPlayer.animationDelayInMillis = params.animationDelayInMillis;
         final long seed = params.seed == null ? new Random().nextLong() : params.seed;
         this.rng = new Random(seed);
         log.info("Initializing RNG with seed " + seed);
@@ -125,60 +126,6 @@ public class FormulaD extends Game implements Runnable {
         notifications.forEach(this::notifyAll);
         immutablePlayerMap = new HashMap<>(aiToProfile.size());
         allPlayers.forEach(player -> immutablePlayerMap.put(player.getId(), player));
-
-        // Create manually controlled AI players
-        /*
-        for (String path : params.manualAIs) {
-            try {
-                Class<?> clazz = Class.forName(path);
-                final Object ai = clazz.newInstance();
-                if (!(ai instanceof AI)) {
-                    final String msg = path + " does not implement formulad.ai.AI";
-                    log.log(Level.SEVERE, msg);
-                    throw new RuntimeException(msg);
-                }
-                final AI manualAI = new ManualAI((AI) ai, frame, this, profile.getId());
-                createAiPlayer(manualAI, grid, startingOrder, attributes, params.leeway);
-            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-                log.log(Level.SEVERE, "Error while trying to create AI from path " + path, e);
-                throw new RuntimeException(e);
-            }
-        }
-        // Timeout makes sense only if there are no manually controlled players.
-
-        // Create automatically controlled AI players
-        for (String path : params.localAIs) {
-            try {
-                Class<?> clazz = Class.forName(path);
-                final Object ai = clazz.newInstance();
-                if (!(ai instanceof AI)) {
-                    final String msg = path + " does not implement formulad.ai.AI";
-                    log.log(Level.SEVERE, msg);
-                    throw new RuntimeException(msg);
-                }
-                createAiPlayer((AI) ai, grid, startingOrder, attributes, params.leeway);
-            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-                log.log(Level.SEVERE, "Error while trying to create AI from path " + path, e);
-                throw new RuntimeException(e);
-            }
-        }
-        // Create remotely controlled AI players
-        for (RemoteAI client : lobby.clients) {
-            createAiPlayer(client, grid, startingOrder, attributes, params.leeway);
-        }
-        // Create remotely and manually controlled AI players
-        /*
-        for (String url : params.manualRemoteAIs) {
-            final AI remoteAI = new RemoteAI(url);
-            final AI manualAI = new ManualAI(remoteAI, frame, this);
-            createAiPlayer(manualAI, grid, startingOrder, attributes, params.leeway);
-        }
-        // Create computer players
-        int count = params.simpleAIs;
-        while (count-- > 0) {
-            final AI ai = new GreatAI();
-            createAiPlayer(ai, grid, startingOrder, attributes, params.leeway);
-        }*/
     }
 
     private CreatedPlayerNotification createAiPlayer(Map.Entry<AI, ProfileMessage> ai, List<Node> grid, List<Integer> startingOrder, Map<Node, Double> attributes, int leeway, int laps) {
@@ -479,42 +426,12 @@ public class FormulaD extends Game implements Runnable {
     }
 
     private static class Params {
-        @Parameter(names = "--manual_ai", description = "Path to manually controlled local AI, can be given multiple times. Keys: '1'-'6': gears, 'a': let AI make move, '.': Brake less, ',': Brake more")
-        private List<String> manualAIs = new ArrayList<>();
-
-        //@Parameter(names = "--manual_remote_ai", description = "Path to manually controlled remote AI, can be given multiple times. Keys: '1'-'6': gears, 'a': let AI make move, '.': Brake less, ',': Brake more")
-        //private List<String> manualRemoteAIs = new ArrayList<>();
-
-        @Parameter(names = "--local_ai", description = "Path to local AI, can be given multiple times")
-        private List<String> localAIs = new ArrayList<>();
-
-        //@Parameter(names = "--remote_ai", description = "URL of AI, can be given multiple times")
-        //private List<String> remoteAIs = new ArrayList<>();
-
-        @Parameter(names = "--simple_ais", description = "Number of pre-built AIs to include", arity = 1)
-        private int simpleAIs = 0;
-
-        @Parameter(names = "--help", description = "Displays this help", help = true)
-        private boolean help;
-
-        @Parameter(names = "--animation_delay", description = "Timeout length in animations (ms)", arity = 1)
-        private int animationDelayInMillis = 100;
-
-        @Parameter(names = "--timeout_init", description = "Timeout length for AI initialization (ms)", arity = 1)
+       private int animationDelayInMillis = 100;
         private int initTimeoutInMillis = 3000;
-
-        @Parameter(names = "--timeout_gear", description = "Timeout length for AI gear selection (ms)", arity = 1)
         private int gearTimeoutInMillis = 3000;
-
-        @Parameter(names = "--timeout_move", description = "Timeout length for AI moving (ms)", arity = 1)
         private int moveTimeoutInMillis = 3000;
-
-        @Parameter(names = "--leeway", description = "Total player specific leeway for exceeding timeouts (ms)", arity = 1)
         private int leeway = 3600000;
-
-        @Parameter(names = "--rng_seed", description = "Specify seed used for RNG, uses random seed by default", arity = 1)
         private Long seed = null;
-
         private boolean randomizeStartingOrder = false;
         private int laps = 1;
     }
@@ -532,7 +449,7 @@ public class FormulaD extends Game implements Runnable {
             lobby.setSlots(slots);
         }
         final JPanel lobbyPanel = new JPanel();
-        lobbyPanel.setLayout(new BoxLayout(lobbyPanel, BoxLayout.Y_AXIS));
+        lobbyPanel.setLayout(new BoxLayout(lobbyPanel, BoxLayout.PAGE_AXIS));
         lobbyPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         // TODO: Change track menu
         final JButton changeTrackButton = new JButton();
@@ -545,9 +462,10 @@ public class FormulaD extends Game implements Runnable {
         changeTrackButton.setIcon(icon);
         final JButton startButton = new JButton("Start");
         final JCheckBox randomStartingOrder = new JCheckBox("Randomize starting order", true);
-        final JLabel lapsLabel = new JLabel("Laps");
-        final JTextField lapsField = new JTextField("1");
-        lapsField.setPreferredSize(new Dimension(100, 20));
+        final SettingsField laps = new SettingsField(lobbyPanel, "Laps", "1", 1, 200);
+        final SettingsField animationDelay = new SettingsField(lobbyPanel, "Animation delay (ms)", "100", 0, 1000);
+        final SettingsField time = new SettingsField(lobbyPanel, "Time per turn (s)", "3", 0, 3600);
+        final SettingsField leeway = new SettingsField(lobbyPanel, "Time leeway (s)", "3600", 0, 36000);
         startButton.addActionListener(event -> {
             boolean hasPlayers = false;
             final Set<UUID> ids = new HashSet<>();
@@ -569,15 +487,14 @@ public class FormulaD extends Game implements Runnable {
                 JOptionPane.showConfirmDialog(lobbyPanel, "Need at least 1 player", "Error", JOptionPane.DEFAULT_OPTION);
                 return;
             }
-            int laps;
             try {
-                laps = Integer.parseInt(lapsField.getText());
-                if (laps < 1 || laps > 200) {
-                    JOptionPane.showConfirmDialog(lobbyPanel, "Please choose 1-200 laps", "Error", JOptionPane.DEFAULT_OPTION);
-                    return;
-                }
+                params.laps = laps.getValue();
+                params.animationDelayInMillis = animationDelay.getValue();
+                params.initTimeoutInMillis = time.getValue() * 1000;
+                params.gearTimeoutInMillis = time.getValue() * 1000;
+                params.moveTimeoutInMillis = time.getValue() * 1000;
+                params.leeway = leeway.getValue() * 1000;
             } catch (NumberFormatException ex) {
-                JOptionPane.showConfirmDialog(lobbyPanel, "Invalid lap count: " + lapsField.getText(), "Error", JOptionPane.DEFAULT_OPTION);
                 return;
             }
             if (lobby != null) {
@@ -585,20 +502,27 @@ public class FormulaD extends Game implements Runnable {
                 lobby.interrupt();
             }
             params.randomizeStartingOrder = randomStartingOrder.isSelected();
-            params.laps = laps;
             final FormulaD server = new FormulaD(params, lobby, frame, panel, slots, "sebring");
             new Thread(server).start();
         });
-        final JPanel gridPanel = new JPanel(new GridLayout(0, 2));
+        final JPanel gridPanel = new JPanel(new GridLayout(2, 2));
         gridPanel.add(changeTrackButton);
         gridPanel.add(playerPanel);
+        final JPanel settings = new JPanel();
+        settings.setLayout(new BoxLayout(settings, BoxLayout.Y_AXIS));
+        randomStartingOrder.setAlignmentX(Component.LEFT_ALIGNMENT);
+        laps.setAlignmentX(Component.LEFT_ALIGNMENT);
+        animationDelay.setAlignmentX(Component.LEFT_ALIGNMENT);
+        time.setAlignmentX(Component.LEFT_ALIGNMENT);
+        leeway.setAlignmentX(Component.LEFT_ALIGNMENT);
+        settings.add(randomStartingOrder);
+        settings.add(laps);
+        settings.add(animationDelay);
+        settings.add(time);
+        settings.add(leeway);
+        gridPanel.add(settings);
+        gridPanel.add(startButton);
         lobbyPanel.add(gridPanel);
-        lobbyPanel.add(randomStartingOrder);
-        final JPanel lapsPanel = new JPanel(new FlowLayout());
-        lapsPanel.add(lapsLabel);
-        lapsPanel.add(lapsField);
-        lobbyPanel.add(lapsPanel);
-        lobbyPanel.add(startButton);
         frame.setContentPane(lobbyPanel);
         frame.pack();
         if (lobby != null) {
@@ -607,7 +531,6 @@ public class FormulaD extends Game implements Runnable {
     }
 
     private static void showMenu(JFrame f, Params params, List<Profile> profiles) {
-        final int playerCount = params.manualAIs.size() + params.localAIs.size() + params.simpleAIs;
         final JPanel p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
         final JPanel title = new JPanel();
@@ -686,26 +609,6 @@ public class FormulaD extends Game implements Runnable {
     public static void main(String[] args) {
         final JFrame f = new JFrame();
         final Params params = new Params();
-        final JCommander commander = new JCommander(params);
-        try {
-            commander.parse(args);
-            if (params.help) {
-                commander.usage();
-                System.exit(1);
-            }
-        } catch (ParameterException e) {
-            System.out.printf("Invalid parameter: %s%n", e.getMessage());
-            commander.usage();
-            System.exit(2);
-        }
-        final int playerCount = params.manualAIs.size() + params.localAIs.size() + params.simpleAIs;
-        if (playerCount < 1 || playerCount > 10) {
-            System.out.printf("Please provide 1-10 players%n");
-            commander.usage();
-            System.exit(3);
-        }
-        LocalPlayer.animationDelayInMillis = params.animationDelayInMillis;
-
         final List<Profile> profiles = new ArrayList<>();
         try {
             final FileInputStream fileIn = new FileInputStream("profiles.dat");
@@ -737,6 +640,7 @@ public class FormulaD extends Game implements Runnable {
                         oos.writeObject(profile);
                     }
                 } catch (IOException ex) {
+                    FormulaD.log.log(Level.SEVERE, "Writing of profiles.dat failed");
                 }
             }
         });
