@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
-public class TrackPreviewButton extends JButton {
+class TrackPreviewButton extends JButton {
     private final JPanel panel;
     private final Lobby lobby;
     private String trackId;
@@ -35,8 +35,12 @@ public class TrackPreviewButton extends JButton {
             final JPanel trackPanel = new JPanel(new GridLayout(0, 2));
             final JDialog trackDialog = new JDialog(frame);
             filenames.stream().filter(name -> name.endsWith(".dat")).filter(FormulaD::validateTrack).forEach(f -> {
+                final BufferedImage image = getImage(f);
+                if (image == null) {
+                    return;
+                }
                 final JButton selectTrackButton = new JButton();
-                final ImageIcon icon = TrackPreviewButton.createIcon(ImageCache.getImage("/" + MapEditor.loadHeader(f).getLeft()));
+                final ImageIcon icon = createIcon(image);
                 selectTrackButton.addActionListener(l -> {
                     setIcon(icon);
                     setTrack(f);
@@ -56,12 +60,10 @@ public class TrackPreviewButton extends JButton {
     }
 
     boolean setTrack(String trackId) {
-        final Pair<String, MapEditor.Corner> header = MapEditor.loadHeader(trackId);
-        if (header == null) {
-            JOptionPane.showConfirmDialog(panel, "Invalid track " + trackId, "Error", JOptionPane.DEFAULT_OPTION);
+        final BufferedImage image = getImage(trackId);
+        if (image == null) {
             return false;
         }
-        final BufferedImage image = ImageCache.getImage("/" + header.getLeft());
         setIcon(createIcon(image));
         if (lobby != null && !trackId.equals(this.trackId)) {
             lobby.setTrack(trackId);
@@ -72,6 +74,16 @@ public class TrackPreviewButton extends JButton {
 
     String getTrack() {
         return trackId;
+    }
+
+    private BufferedImage getImage(String trackId) {
+        final Pair<String, MapEditor.Corner> header = MapEditor.loadHeader(trackId);
+        if (header == null) {
+            JOptionPane.showConfirmDialog(panel, "Invalid track " + trackId, "Error", JOptionPane.DEFAULT_OPTION);
+        } else {
+            return ImageCache.getImage("/" + header.getLeft());
+        }
+        return null;
     }
 
     private static ImageIcon createIcon(BufferedImage image) {
