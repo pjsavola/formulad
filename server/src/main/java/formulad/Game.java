@@ -49,6 +49,7 @@ public abstract class Game extends JPanel {
     private Font statsFont = new Font("Arial", Font.PLAIN, 12);
 
     String trackId;
+    MapEditor.Corner infoBoxCorner;
 
     Game(JFrame frame, JPanel panel) {
         this.frame = frame;
@@ -61,6 +62,7 @@ public abstract class Game extends JPanel {
         try (InputStream is = FormulaD.class.getResourceAsStream(dataFile)) {
             final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes, coordinates);
             final String imageFile = "/" + result.getLeft();
+            infoBoxCorner = result.getRight();
             backgroundImage = ImageCache.getImage(imageFile);
         } catch (IOException e) {
             throw new RuntimeException("Data file " + dataFile + " is missing or corrupted", e);
@@ -136,17 +138,11 @@ public abstract class Game extends JPanel {
         // Other thread may replace this.standings with a new object, but it's not mutated
         final List<Player> standings = this.standings;
         if (standings == null) return;
-
-        g2d.setColor(Color.GRAY);
-        g2d.fillRect(getWidth() - 250, 0, 249, 5 + 15 * standings.size());
-        g2d.setColor(Color.BLACK);
-        g2d.drawRect(getWidth() - 250, 0, 249, 5 + 15 * standings.size());
+        UIUtil.drawInfoBox(g2d, this, standings.size(), infoBoxCorner);
         int i = 0;
         for (Player player : standings) {
             if (player == getCurrent()) {
-                // Turn marker
-                g2d.setColor(Color.RED);
-                g2d.fillPolygon(new int[] { getWidth() - 252, getWidth() - 257, getWidth() - 257 }, new int[] { i * 15 + 10, i * 15 + 7, i * 15 + 13 }, 3);
+                UIUtil.drawTurnMarker(g2d, this, standings.size(), infoBoxCorner, i);
             }
             player.draw(g2d, getWidth() - 235, i * 15 + 10, 0);
             player.drawStats(g2d, getWidth() - 220, i * 15 + 15, hitpointMap);
