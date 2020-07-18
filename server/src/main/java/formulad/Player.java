@@ -105,6 +105,22 @@ public class Player {
             }
             final Point p = coordinates.get(node);
             draw(g2d, p.x, p.y, angle);
+        } else if (hitpoints <= 0) {
+            // Draw small x for retired players
+            final Point p = coordinates.get(node);
+            g2d.setColor(color1);
+            g2d.drawLine(p.x - 2, p.y - 2, p.x + 2, p.y + 2);
+            g2d.drawLine(p.x + 2, p.y - 2, p.x - 2, p.y + 2);
+        }
+    }
+
+    public void drawRetired(Graphics2D g2d, Map<Node, Point> coordinates) {
+        if (stopped && hitpoints <= 0) {
+            // Draw small x for retired players
+            final Point p = coordinates.get(node);
+            g2d.setColor(color1);
+            g2d.drawLine(p.x - 2, p.y - 2, p.x + 2, p.y + 2);
+            g2d.drawLine(p.x + 2, p.y - 2, p.x - 2, p.y + 2);
         }
     }
 

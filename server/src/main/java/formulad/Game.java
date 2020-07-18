@@ -111,6 +111,7 @@ public abstract class Game extends JPanel {
         MapEditor.drawOval(g2d, 40, 40, 50, 50, true, true, Color.BLACK, 1);
         drawTargets(g2d);
         drawInfoBox(g2d);
+        drawRetiredPlayers(g2d);
         drawPlayers(g2d);
         drawStandings(g2d);
     }
@@ -148,6 +149,12 @@ public abstract class Game extends JPanel {
             player.drawStats(g2d, getWidth() - 220, i * 15 + 15, hitpointMap);
             ++i;
         }
+    }
+
+    private void drawRetiredPlayers(Graphics2D g2d) {
+        if (immutablePlayerMap == null) return;
+
+        immutablePlayerMap.values().forEach(player -> player.drawRetired(g2d, coordinates));
     }
 
     private void drawPlayers(Graphics2D g2d) {
