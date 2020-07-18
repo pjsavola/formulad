@@ -111,6 +111,8 @@ public class FormulaD extends Game implements Runnable {
         }
         final int playerCount = aiToProfile.size();
         final List<Node> grid = findGrid(nodes, attributes, distanceMap, prevNodeMap).subList(0, playerCount);
+        grid.sort((n1, n2) -> (int) (100 * (distanceMap.get(n2) - distanceMap.get(n1))));
+
         final List<Integer> startingOrder = IntStream.range(0, playerCount).boxed().collect(Collectors.toList());
         if (params.randomizeStartingOrder) {
             Collections.shuffle(startingOrder, rng);
@@ -497,7 +499,7 @@ public class FormulaD extends Game implements Runnable {
         final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
         final PlayerSlot[] slots = new PlayerSlot[10];
         for (int i = 0; i < slots.length; ++i) {
-            final PlayerSlot slot = new PlayerSlot(frame, localProfiles, lobby, slots);
+            final PlayerSlot slot = new PlayerSlot(frame, localProfiles, lobby, slots, i + 1);
             playerPanel.add(slot);
             slots[i] = slot;
         }

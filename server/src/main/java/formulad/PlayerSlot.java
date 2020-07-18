@@ -29,6 +29,7 @@ public class PlayerSlot extends JButton {
     }
 
     private ProfileMessage profile;
+    private final int gridPosition;
 
     private static Set<String> getUsedAINames(PlayerSlot[] slots) {
         final Set<String> usedNames = new HashSet<>();
@@ -42,7 +43,8 @@ public class PlayerSlot extends JButton {
         return usedNames;
     }
 
-    PlayerSlot(JFrame frame, List<ProfileMessage> localProfiles, Lobby lobby, PlayerSlot[] slots) {
+    PlayerSlot(JFrame frame, List<ProfileMessage> localProfiles, Lobby lobby, PlayerSlot[] slots, int gridPosition) {
+        this.gridPosition = gridPosition;
         setIcon(new CarIcon());
         addActionListener(e -> {
             if (profile == null) {
@@ -150,7 +152,7 @@ public class PlayerSlot extends JButton {
 
     @Override
     public String getText() {
-        return profile == null ? "Free" : profile.getName();
+        return gridPosition + ". " + (profile == null ? "Free" : profile.getName());
     }
 
     public ProfileMessage getProfile() {
