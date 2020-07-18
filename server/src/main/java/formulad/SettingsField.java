@@ -26,17 +26,18 @@ public class SettingsField extends JPanel {
     }
 
     public int getValue() throws NumberFormatException {
+        int result;
         try {
-            int result = Integer.parseInt(lapsField.getText());
-            if (result < min || result > max) {
-                final String message = "Please choose value " + min + "-" + max + " for " + name;
-                JOptionPane.showConfirmDialog(parent, message, "Error", JOptionPane.DEFAULT_OPTION);
-                throw new NumberFormatException(message);
-            }
-            return result;
+            result = Integer.parseInt(lapsField.getText());
         } catch (NumberFormatException e) {
             JOptionPane.showConfirmDialog(parent, "Invalid value for " + name + ": " + lapsField.getText(), "Error", JOptionPane.DEFAULT_OPTION);
             throw e;
         }
+        if (result < min || result > max) {
+            final String message = "Please choose value " + min + "-" + max + " for " + name;
+            JOptionPane.showConfirmDialog(parent, message, "Error", JOptionPane.DEFAULT_OPTION);
+            throw new NumberFormatException(message);
+        }
+        return result;
     }
 }

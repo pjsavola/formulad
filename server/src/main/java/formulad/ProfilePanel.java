@@ -18,6 +18,42 @@ public class ProfilePanel extends JPanel {
         }
     }
 
+    private class ColorChangeListener implements MouseListener {
+        private final JPanel panel;
+        private final boolean mainColor;
+        private ColorChangeListener(JPanel panel, boolean mainColor) {
+            this.panel = panel;
+            this.mainColor = mainColor;
+        }
+        @Override
+        public void mouseClicked(MouseEvent e) {
+            if (e.getButton() == MouseEvent.BUTTON1) return;
+            final int oldColor = mainColor ? activeProfile.getColor1() : activeProfile.getColor2();
+            final String result = (String) JOptionPane.showInputDialog(ProfilePanel.this, "Set color RGB value", "Set color", JOptionPane.PLAIN_MESSAGE, null, null, Integer.toHexString(oldColor));
+            if (result == null) return;
+            try {
+                final int color = Color.decode(result).getRGB();
+                if (mainColor) activeProfile.setColor1(color);
+                else activeProfile.setColor2(color);
+                panel.repaint();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showConfirmDialog(ProfilePanel.this, "Please provide valid RGB value between #000000 and #FFFFFF", "Error", JOptionPane.DEFAULT_OPTION);
+            }
+        }
+        @Override
+        public void mousePressed(MouseEvent e) {
+        }
+        @Override
+        public void mouseReleased(MouseEvent e) {
+        }
+        @Override
+        public void mouseEntered(MouseEvent e) {
+        }
+        @Override
+        public void mouseExited(MouseEvent e) {
+        }
+    }
+
     private Profile activeProfile;
 
     ProfilePanel(List<Profile> profiles) {
@@ -47,6 +83,8 @@ public class ProfilePanel extends JPanel {
             activeProfile.setColor2(slider.getValue());
             carPreview.repaint();
         });
+        sliderColor1.addMouseListener(new ColorChangeListener(carPreview, true));
+        sliderColor2.addMouseListener(new ColorChangeListener(carPreview, false));
 
         add(sliderColor1);
         add(sliderColor2);
