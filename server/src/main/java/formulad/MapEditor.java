@@ -35,6 +35,7 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.WindowConstants;
+import javax.swing.filechooser.FileFilter;
 
 import formulad.ai.AIUtil;
 import formulad.ai.Node;
@@ -191,6 +192,15 @@ public class MapEditor extends JPanel {
         if (selectedNode != null) {
             final Point p = coordinates.get(selectedNode);
             drawOval(g2d, p.x, p.y, DIAMETER + 2, DIAMETER + 2, true, false, Color.WHITE, 1);
+            final Double attr = attributes.get(selectedNode);
+            if (attr != null) {
+                drawOval(g2d, 40, 40, 50, 50, true, true, Color.BLACK, 1);
+                final String attrStr = Double.toString(attr);
+                g2d.setColor(Color.WHITE);
+                g2d.setFont(Player.rollFont);
+                final int width = g2d.getFontMetrics().stringWidth(attrStr);
+                g2d.drawString(attrStr, 40 - width / 2, 48);
+            }
         }
         drawArcs(g2d, nodes);
         UIUtil.drawInfoBox(g2d, this, 10, infoBoxCorner);
@@ -198,7 +208,10 @@ public class MapEditor extends JPanel {
 
     boolean open() {
         final JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Select background image");
         fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+        fileChooser.addChoosableFileFilter(new Filter(Filter.imageExtensions, "Image only"));
+        fileChooser.setAcceptAllFileFilterUsed(true);
         final int result = fileChooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             final File selectedFile = fileChooser.getSelectedFile();
@@ -261,7 +274,11 @@ public class MapEditor extends JPanel {
 
     private void load() {
         final JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Load track data");
         fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+        fileChooser.addChoosableFileFilter(new Filter(Filter.dataExtensions, "Data file"));
+        fileChooser.setAcceptAllFileFilterUsed(true);
+        fileChooser.setAcceptAllFileFilterUsed(true);
         final int result = fileChooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             final File selectedFile = fileChooser.getSelectedFile();
@@ -468,5 +485,49 @@ public class MapEditor extends JPanel {
             }
         }
         return null;
+    }
+
+    private static class Filter extends FileFilter {
+        final static String[] imageExtensions = {"jpeg", "jpg", "gif", "tiff", "tif", "png"};
+        final static String[] dataExtensions = {"dat"};
+
+        private final String[] extensions;
+        private final String description;
+
+        Filter(String[] extensions, String description) {
+            this.extensions = extensions;
+            this.description = description;
+        }
+
+        @Override
+        public boolean accept(File f) {
+            if (f.isDirectory()) {
+                return true;
+            }
+            String extension = getExtension(f);
+            if (extension != null) {
+                for (String allowedExtension : extensions) {
+                    if (extension.equals(allowedExtension)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public String getDescription() {
+            return description;
+        }
+
+        String getExtension(File f) {
+            String ext = null;
+            String s = f.getName();
+            int i = s.lastIndexOf('.');
+            if (i > 0 &&  i < s.length() - 1) {
+                ext = s.substring(i+1).toLowerCase();
+            }
+            return ext;
+        }
     }
 }

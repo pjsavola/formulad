@@ -28,7 +28,7 @@ public class Player {
     private final List<Node> route = new ArrayList<>();
     private static final Color transparentWhite = new Color(1.0f, 1.0f, 1.0f, 0.3f);
     private int lapsToGo;
-    private static final Font rollFont = new Font("Arial", Font.PLAIN, 20);
+    static final Font rollFont = new Font("Arial", Font.PLAIN, 20);
     private static final Font statsFont = new Font("Arial", Font.PLAIN, 12);
 
     public Player(String playerId, Node node, double initialAngle, JPanel panel, int color1, int color2) {

@@ -49,7 +49,7 @@ public abstract class Game extends JPanel {
     private Font statsFont = new Font("Arial", Font.PLAIN, 12);
 
     String trackId;
-    MapEditor.Corner infoBoxCorner;
+    private MapEditor.Corner infoBoxCorner;
 
     Game(JFrame frame, JPanel panel) {
         this.frame = frame;
