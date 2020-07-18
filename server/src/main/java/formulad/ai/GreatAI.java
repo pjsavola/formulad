@@ -90,7 +90,7 @@ public class GreatAI implements AI {
                 // We really want to get to the next curve, but just barely. Select smallest
                 // gear which guarantees that we get to the next curve. If not possible,
                 // select largest gear.
-                int bestGear = Math.min(6, player.getGear() + 1);
+                int bestGear = Math.min(maxGear, player.getGear() + 1);
                 int gearCandidate = bestGear;
                 // Switching to gear 1 or 2 is intuitively bad idea!?
                 boolean found = false;
@@ -119,7 +119,7 @@ public class GreatAI implements AI {
                 // Try to get to the next curve, if possible. Collect all valid gears which are
                 // good enough to guarantee entry to next curve. Avoid gear 1, it's horrible.
                 final List<Integer> bestGears = new ArrayList<>();
-                for (int i = 2; i < Math.min(6, player.getGear() + 1); i++) {
+                for (int i = 2; i < Math.min(maxGear, player.getGear() + 1); i++) {
                     final int[] distribution = Gear.getDistribution(i);
                     if (distribution[0] >= minDistance) {
                         bestGears.add(i);
@@ -127,7 +127,7 @@ public class GreatAI implements AI {
                 }
                 if (bestGears.isEmpty()) {
                     // No gear is good enough, just return largest possible gear.
-                    gear = Math.min(6, player.getGear() + 1);
+                    gear = Math.min(maxGear, player.getGear() + 1);
                     debug("Cannot guarantee reaching next corner so selecting largest gear " + gear);
                 } else if (bestGears.size() == 1) {
                     // Found a single valid gear, use that.
@@ -137,7 +137,7 @@ public class GreatAI implements AI {
                     // Found multiple possibilities, find the gear for which maximum
                     // dice roll is closest to the start of next straight.
                     int maxDistance = !location.isCurve() ? getMaxDistanceToNextStraight(location) : getMaxDistanceToStraightAfterNextCurve(location);
-                    int bestGear = Math.min(6, player.getGear() + 1);
+                    int bestGear = Math.min(maxGear, player.getGear() + 1);
                     int score = 100;
                     for (int gear : bestGears) {
                         final int[] distribution = Gear.getDistribution(gear);

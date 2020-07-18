@@ -81,7 +81,14 @@ public final class Node {
      * possible collision damage if cars are in these two nodes.
      */
     public boolean isCloseTo(Node node, Map<Node, List<Node>> prevNodeMap) {
-        if (isAdjacentOf(node)) return !isInFrontOf(node);
+        if (type == Type.PIT && node.type == Type.PIT) {
+            // If both cars are in pits, don't cause collision damage
+            return false;
+        }
+        if (isAdjacentOf(node))
+        {
+            return !isInFrontOf(node);
+        }
 
         // Nodes can still be close to each other if there's no link between them.
         // One generic rule for this would be that if they have common parent or common child,
