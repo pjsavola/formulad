@@ -1,5 +1,6 @@
 package formulad.ai;
 
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -60,6 +61,19 @@ public class ManualAI implements AI {
             throw new RuntimeException("No data sent for player: " + playerId);
         }
         final MutableInt selectedGear = new MutableInt(0);
+        final boolean inPits = location != null && location.getType() == Node.Type.PIT;
+        game.actionMenu.removeAll();
+        for (int newGear = 1; newGear <= 6; ++newGear) {
+            if (AIUtil.validateGear(hitpoints, gear, newGear, inPits)) {
+                final MenuItem item = new MenuItem("Gear " + newGear);
+                item.setShortcut(new MenuShortcut(KeyEvent.VK_0 + newGear));
+                final int finalNewGear = newGear;
+                item.addActionListener(e -> {
+                    selectedGear.setValue(finalNewGear);
+                });
+                game.actionMenu.add(item);
+            }
+        }
         final KeyListener keyListener = new KeyListener() {
             @Override
             public void keyTyped(KeyEvent e) {
@@ -77,7 +91,6 @@ public class ManualAI implements AI {
                         selectedGear.setValue(gear.getGear());
                     }
                 } else if (c >= '1' && c <= '6') {
-                    final boolean inPits = location != null && location.getType() == Node.Type.PIT;
                     if (AIUtil.validateGear(hitpoints, gear, c - '0', inPits)) {
                         selectedGear.setValue(c - '0');
                     }
@@ -124,6 +137,29 @@ public class ManualAI implements AI {
         final int finalMinBraking = minBraking;
         game.highlightNodes(brakingMap.get(finalMinBraking));
         final MutableInt braking = new MutableInt(finalMinBraking);
+        game.actionMenu.removeAll();
+        final MenuItem item1 = new MenuItem("Brake more");
+        final MenuItem item2 = new MenuItem("Brake less");
+        item1.setEnabled(braking.getValue() + 1 < hitpoints && brakingMap.containsKey(braking.getValue() + 1));
+        item2.setEnabled(braking.getValue() > finalMinBraking);
+        item1.setShortcut(new MenuShortcut(KeyEvent.VK_DOWN));
+        item2.setShortcut(new MenuShortcut(KeyEvent.VK_UP));
+        item1.addActionListener(e -> {
+            final int b = braking.getValue();
+            braking.setValue(b + 1);
+            game.highlightNodes(brakingMap.get(b + 1));
+            item1.setEnabled(braking.getValue() + 1 < hitpoints && brakingMap.containsKey(braking.getValue() + 1));
+            item2.setEnabled(braking.getValue() > finalMinBraking);
+        });
+        item2.addActionListener(e -> {
+            final int b = braking.getValue();
+            braking.setValue(b - 1);
+            game.highlightNodes(brakingMap.get(b - 1));
+            item1.setEnabled(braking.getValue() + 1 < hitpoints && brakingMap.containsKey(braking.getValue() + 1));
+            item2.setEnabled(braking.getValue() > finalMinBraking);
+        });
+        game.actionMenu.add(item1);
+        game.actionMenu.add(item2);
         final KeyListener keyListener = new KeyListener() {
             @Override
             public void keyTyped(KeyEvent e) {

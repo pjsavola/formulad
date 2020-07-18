@@ -24,6 +24,7 @@ public abstract class Game extends JPanel {
     // Parent JFrame and main menu JPanel, used when returning back to the main menu after the race is over.
     private final JFrame frame;
     private final JPanel panel;
+    public final Menu actionMenu;
 
     private BufferedImage backgroundImage;
 
@@ -56,6 +57,10 @@ public abstract class Game extends JPanel {
     Game(JFrame frame, JPanel panel) {
         this.frame = frame;
         this.panel = panel;
+        actionMenu = new Menu("Action");
+        final MenuBar menuBar = new MenuBar();
+        menuBar.add(actionMenu);
+        frame.setMenuBar(menuBar);
     }
 
     void initTrack(String trackId) {
@@ -107,6 +112,7 @@ public abstract class Game extends JPanel {
     }
 
     void exit() {
+        frame.setMenuBar(null);
         frame.setContentPane(panel);
         frame.pack();
         panel.repaint();
