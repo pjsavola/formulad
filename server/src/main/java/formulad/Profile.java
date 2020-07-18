@@ -126,13 +126,14 @@ public class Profile implements Serializable {
         final String trackId;
         if (!results.isEmpty()) {
             trackId = results.get(results.size() - 1).trackId;
-        } else {
-            trackId = "sebring.dat";
+            try {
+                if (FormulaD.validateTrack(trackId)) {
+                    return trackId;
+                }
+            } catch (Exception e) {
+                // TODO: Better exception handling
+            }
         }
-        if (FormulaD.validateTrack(trackId)) {
-            return trackId;
-        }
-        // TODO: handle this in graciously
-        return null;
+        return "sebring.dat";
     }
 }
