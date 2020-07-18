@@ -239,7 +239,7 @@ public class FormulaD extends Game implements Runnable {
                 } else {
                     log.info("Move input received: " + selectedIndex);
                 }
-                current.move(selectedIndex, coordinates);
+                current.move(selectedIndex, coordinates, attributes);
                 current.collide(players, prevNodeMap, rng);
                 if (roll == 20 || roll == 30) {
                     LocalPlayer.possiblyAddEngineDamage(players, rng);

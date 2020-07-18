@@ -146,11 +146,11 @@ public final class LocalPlayer extends Player {
         return roll;
     }
 
-    public void move(int index, Map<Node, Point> coordinates) {
-        move(paths.get(index), coordinates);
+    public void move(int index, Map<Node, Point> coordinates, Map<Node, Double> attributes) {
+        move(paths.get(index), coordinates, attributes);
     }
 
-    private void move(DamageAndPath dp, Map<Node, Point> coordinates) {
+    private void move(DamageAndPath dp, Map<Node, Point> coordinates, Map<Node, Double> attributes) {
         final List<Node> route = dp.getPath();
         if (route == null || route.isEmpty()) {
             throw new RuntimeException("Invalid route: " + route);
@@ -209,7 +209,7 @@ public final class LocalPlayer extends Player {
             FormulaD.log.log(Level.SEVERE, getNameAndId() + " performed an illegal move, taking too much damage");
             stop();
         }
-        if (node.getType() == Node.Type.PIT) {
+        if (node.getType() == Node.Type.PIT && attributes.containsKey(node)) {
             recoverHitpoints();
         }
         if (lapsToGo < 0) {
