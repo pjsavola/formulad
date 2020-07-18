@@ -131,7 +131,7 @@ public class FormulaD extends Game implements Runnable {
         // Recreate track for each player, so nothing bad happens if AI mutates it.
         final int playerCount = allPlayers.size();
         final String playerId = "p" + (playerCount + 1);
-        final Track track = ApiHelper.buildTrack(trackId, playerId, nodes);
+        final Track track = ApiHelper.buildTrack(trackId, playerId, nodes, attributes);
         final Node startNode = grid.get(startingOrder.get(playerCount));
         final LocalPlayer player = new LocalPlayer(playerId, startNode, attributes.get(startNode), laps, this, leeway, ai.getValue().getColor1(), ai.getValue().getColor2());
         current = player;

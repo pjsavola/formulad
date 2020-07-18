@@ -11,6 +11,7 @@ import java.util.Objects;
 public class InitializeTrack implements Serializable {
   private List<Node> nodes = new ArrayList<Node>();
   private List<Edge> edges = new ArrayList<Edge>();
+  private List<Node> garageNodes = new ArrayList<>();
 
   public InitializeTrack nodes(List<Node> nodes) {
     this.nodes = nodes;
@@ -46,6 +47,23 @@ public class InitializeTrack implements Serializable {
     this.edges = edges;
   }
 
+  public InitializeTrack garageNodes(List<Node> nodes) {
+    this.garageNodes = nodes;
+    return this;
+  }
+
+  public InitializeTrack addGarageNodesItem(Node nodesItem) {
+    this.garageNodes.add(nodesItem);
+    return this;
+  }
+
+  public List<Node> getGarageNodes() {
+    return garageNodes;
+  }
+  public void setGarageNodes(List<Node> nodes) {
+    this.garageNodes = nodes;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -56,12 +74,13 @@ public class InitializeTrack implements Serializable {
     }
     InitializeTrack initializeTrack = (InitializeTrack) o;
     return Objects.equals(this.nodes, initializeTrack.nodes) &&
-        Objects.equals(this.edges, initializeTrack.edges);
+        Objects.equals(this.edges, initializeTrack.edges) &&
+        Objects.equals(this.garageNodes, initializeTrack.garageNodes);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(nodes, edges);
+    return Objects.hash(nodes, edges, garageNodes);
   }
 
   @Override

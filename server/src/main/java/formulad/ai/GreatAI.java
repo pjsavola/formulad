@@ -21,6 +21,7 @@ public class GreatAI implements AI {
     private Map<Integer, Node> nodeMap;
     private Map<String, PlayerState> playerMap;
     private Map<Node, List<Node>> prevNodeMap;
+    private Set<Node> garageNodes = new HashSet<>();
     private Node location;
     private PlayerState player;
     private int gear;
@@ -38,6 +39,9 @@ public class GreatAI implements AI {
         playerId = track.getPlayer().getPlayerId();
         nodeMap = AIUtil.buildNodeMap(track.getTrack().getNodes(), track.getTrack().getEdges());
         prevNodeMap = AIUtil.buildPrevNodeMap(nodeMap.values());
+        track.getTrack().getGarageNodes().forEach(node -> {
+            garageNodes.add(nodeMap.get(node.getNodeId()));
+        });
         return new NameAtStart().name("Great").id(UUID.randomUUID());
     }
 
@@ -350,6 +354,56 @@ public class GreatAI implements AI {
                 debug("Minimizing distance if next curve is accessible, candidates left: " + bestIndices);
             }
         }
+
+        // Consider pitting
+        boolean canPit = bestIndices.stream().map(i -> nodeMap.get(i)).anyMatch(n -> n.getType() == Node.Type.PIT);
+        if (canPit) {
+            final boolean mustPit = bestIndices.stream().map(i -> nodeMap.get(i)).noneMatch(n -> n.getType() != Node.Type.PIT);
+            if (!mustPit) {
+                // There is actually a choice
+                final boolean canPitNow = bestIndices.stream().map(i -> nodeMap.get(i)).anyMatch(n -> n.getType() == Node.Type.PIT && garageNodes.contains(n));
+                if (canPitNow) {
+                    final boolean lowHitpoints = player.getHitpoints() <= 12;
+                    final Iterator<Integer> it = bestIndices.iterator();
+                    while (it.hasNext()) {
+                        final int i = it.next();
+                        final Node node = nodeMap.get(moves.get(i).getNodeId());
+                        final boolean isGarage = garageNodes.contains(node);
+                        final boolean isPit = node.getType() == Node.Type.PIT;
+                        if (isPit && !isGarage) {
+                            // Remove all pit nodes with no garage
+                            it.remove();
+                        } else if (lowHitpoints) {
+                            if (!isPit) {
+                                // Remove all non-garage nodes if hitpoints are low
+                                it.remove();
+                            }
+                        } else if (isPit) {
+                            // Remove all garage nodes if hitpoints are high
+                            it.remove();
+                        }
+                    }
+                } else {
+                    final boolean lowHitpoints = player.getHitpoints() <= 4;
+                    final Iterator<Integer> it = bestIndices.iterator();
+                    while (it.hasNext()) {
+                        final int i = it.next();
+                        final Node node = nodeMap.get(moves.get(i).getNodeId());
+                        final boolean isPit = node.getType() == Node.Type.PIT;
+                        if (lowHitpoints) {
+                            if (!isPit) {
+                                // Remove all non-pit nodes if hitpoints are low
+                                it.remove();
+                            }
+                        } else if (isPit) {
+                            // Remove all pit nodes if hitpoints are high
+                            it.remove();
+                        }
+                    }
+                }
+            }
+        }
+
         // Priority 2: Maximize distance
         final int maxDistance = getMaxDistance(bestIndices, moves, distances);
         final Iterator<Integer> it = bestIndices.iterator();
