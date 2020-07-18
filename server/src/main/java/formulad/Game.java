@@ -193,6 +193,8 @@ public abstract class Game extends JPanel {
             g2d.drawString("Turns", x + 190, y + 15);
             g2d.drawString("Grid", x + 230, y + 15);
             g2d.drawString("Time", x + 270, y + 15);
+            g2d.drawString("Stops", x + 310, y + 15);
+            g2d.drawString("Laps", x + 350, y + 15);
             g2d.setFont(statsFont);
             for (int i = 0; i < finalStandings.length; ++i) {
                 final PlayerStats stats = finalStandings[i];
@@ -208,6 +210,8 @@ public abstract class Game extends JPanel {
                 final long timeUsed = stats.timeUsed / 100;
                 final double timeUsedSecs = timeUsed / 10.0;
                 g2d.drawString(Double.toString(timeUsedSecs), x + 270, y + (i + 1) * 15 + 15);
+                g2d.drawString(Integer.toString(stats.pitStops), x + 310, y + (i + 1) * 15 + 15);
+                g2d.drawString(Integer.toString(stats.lapsToGo + 1), x + 350, y + (i + 1) * 15 + 15);
             }
         }
     }

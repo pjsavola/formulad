@@ -28,6 +28,7 @@ public final class LocalPlayer extends Player {
     private int turns;
     private int leeway;
     private int gridPosition;
+    private int pitStops;
 
     public LocalPlayer(String playerId, Node node, double initialAngle, int laps, JPanel panel, int leeway, int color1, int color2) {
         super(playerId, node, initialAngle, panel, color1, color2);
@@ -163,7 +164,7 @@ public final class LocalPlayer extends Player {
         if (node != null && node.getType() != Node.Type.FINISH) {
             for (Node node : route) {
                 if (node.getType() == Node.Type.FINISH) {
-                    lapsToGo--;
+                    --lapsToGo;
                     break;
                 }
             }
@@ -171,7 +172,8 @@ public final class LocalPlayer extends Player {
         if (route.get(route.size() - 1).getType() != Node.Type.PIT) {
             for (int i = route.size() - 2; i >= 0; --i) {
                 if (route.get(i).getType() == Node.Type.PIT) {
-                    lapsToGo--;
+                    --lapsToGo;
+                    ++pitStops;
                     break;
                 }
             }
@@ -359,6 +361,7 @@ public final class LocalPlayer extends Player {
             stats.distance = distanceMap.get(node);
         }
         stats.gridPosition = gridPosition;
+        stats.pitStops = pitStops;
         return stats;
     }
 

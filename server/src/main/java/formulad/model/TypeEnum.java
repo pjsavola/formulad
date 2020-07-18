@@ -3,12 +3,13 @@ package formulad.model;
 import java.io.Serializable;
 
 public enum TypeEnum implements Serializable {
-    START("START"),
+    UNKNOWN("UNKNOWN"),
     STRAIGHT("STRAIGHT"),
-    CURVE_1("CURVE_1"),
     CURVE_2("CURVE_2"),
-    CURVE_3("CURVE_3"),
+    CURVE_1("CURVE_1"),
+    START("START"),
     FINISH("FINISH"),
+    CURVE_3("CURVE_3"),
     PIT("PIT");
 
     private String value;

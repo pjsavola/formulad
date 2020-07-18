@@ -14,6 +14,7 @@ public class PlayerStats implements Serializable {
     public int hitpoints;
     public double distance;
     public int gridPosition;
+    public int pitStops;
 
     @Override
     public String toString() {

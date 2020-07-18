@@ -331,6 +331,7 @@ public class GreatAI implements AI {
                 bestIndices.add(i);
             }
         }
+
         debug("Minimizing damage, candidates left: " + bestIndices);
         if (hasCurve(bestIndices, moves)) {
             final int stopsInNextCurve = getStopsRequiredInNextCurve(location);
@@ -356,12 +357,12 @@ public class GreatAI implements AI {
         }
 
         // Consider pitting
-        boolean canPit = bestIndices.stream().map(i -> nodeMap.get(i)).anyMatch(n -> n.getType() == Node.Type.PIT);
+        boolean canPit = bestIndices.stream().map(i -> nodeMap.get(moves.get(i).getNodeId())).anyMatch(n -> n.getType() == Node.Type.PIT);
         if (canPit) {
-            final boolean mustPit = bestIndices.stream().map(i -> nodeMap.get(i)).noneMatch(n -> n.getType() != Node.Type.PIT);
+            final boolean mustPit = bestIndices.stream().map(i -> nodeMap.get(moves.get(i).getNodeId())).noneMatch(n -> n.getType() != Node.Type.PIT);
             if (!mustPit) {
                 // There is actually a choice
-                final boolean canPitNow = bestIndices.stream().map(i -> nodeMap.get(i)).anyMatch(n -> n.getType() == Node.Type.PIT && garageNodes.contains(n));
+                final boolean canPitNow = bestIndices.stream().map(i -> nodeMap.get(moves.get(i).getNodeId())).anyMatch(n -> n.getType() == Node.Type.PIT && garageNodes.contains(n));
                 if (canPitNow) {
                     final boolean lowHitpoints = player.getHitpoints() <= 12;
                     final Iterator<Integer> it = bestIndices.iterator();

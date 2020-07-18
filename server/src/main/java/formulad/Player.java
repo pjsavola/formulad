@@ -166,7 +166,7 @@ public class Player {
         } else {
             final Integer savedHitpooints = hitpointMap.get(playerId);
             if (savedHitpooints != null && savedHitpooints != hitpoints) {
-                g.setColor(Color.RED);
+                g.setColor(savedHitpooints > hitpoints ? Color.RED : Color.GREEN);
             }
             g.drawString("HP: " + Integer.toString(hitpoints), x + 110, y);
             g.setColor(Color.BLACK);
