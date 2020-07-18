@@ -10,6 +10,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -68,7 +70,16 @@ public abstract class Game extends JPanel {
             throw new RuntimeException("Data file " + dataFile + " is missing or corrupted", e);
         }
         setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
-        frame.setContentPane(this);
+        addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                Rectangle r = new Rectangle(e.getX(), e.getY(), 1, 1);
+                ((JPanel) e.getSource()).scrollRectToVisible(r);
+            }
+        });
+        setAutoscrolls(true);
+        final JScrollPane scrollPane = new JScrollPane(this);
+        frame.setContentPane(scrollPane);
         frame.pack();
         repaint();
     }
