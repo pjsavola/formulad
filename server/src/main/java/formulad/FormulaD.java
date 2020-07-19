@@ -1,10 +1,7 @@
 package formulad;
 
 import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
@@ -64,10 +61,43 @@ public class FormulaD extends Game implements Runnable {
         }
     }
 
+    static WindowListener removeProfileSaver(JFrame frame) {
+        final WindowListener[] listeners = frame.getWindowListeners();
+        for (WindowListener l : listeners) {
+            if (l instanceof ProfileSaver) {
+                frame.removeWindowListener(l);
+                return l;
+            }
+        }
+        return null;
+    }
+
     public FormulaD(Params params, Lobby lobby, JFrame frame, JPanel panel, PlayerSlot[] slots, String trackId) {
         super(frame, panel);
         initTrack(trackId);
         this.lobby = lobby;
+        final WindowListener old = removeProfileSaver(frame);
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                super.windowClosing(e);
+                frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+                final String name = lobby == null ? "race" : "server";
+                final int confirmed = JOptionPane.showConfirmDialog(FormulaD.this,
+                        "Are you sure you want to terminate the " + name + "?", "Confirm",
+                        JOptionPane.YES_NO_OPTION);
+                if (confirmed == JOptionPane.YES_OPTION) {
+                    if (lobby != null) {
+                        lobby.close();
+                    }
+                    exit();
+                    frame.removeWindowListener(this);
+                    if (old != null) {
+                        frame.addWindowListener(old);
+                    }
+                }
+            }
+        });
         prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
         LocalPlayer.animationDelayInMillis = params.animationDelayInMillis;
         final long seed = params.seed == null ? new Random().nextLong() : params.seed;
@@ -586,6 +616,31 @@ public class FormulaD extends Game implements Runnable {
         if (lobby != null) {
             lobby.start();
         }
+        final WindowListener old = removeProfileSaver(frame);
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                super.windowClosing(e);
+                frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+                int confirmed = JOptionPane.YES_OPTION;
+                if (lobby != null) {
+                    confirmed = JOptionPane.showConfirmDialog(lobbyPanel,
+                            "Are you sure you want to terminate the server?", "Confirm",
+                            JOptionPane.YES_NO_OPTION);
+                }
+                if (confirmed == JOptionPane.YES_OPTION) {
+                    if (lobby != null) {
+                        lobby.close();
+                    }
+                    frame.setContentPane(panel);
+                    frame.pack();
+                    frame.removeWindowListener(this);
+                    if (old != null) {
+                        frame.addWindowListener(old);
+                    }
+                }
+            }
+        });
     }
 
     private static void setContent(JFrame f, JPanel p) {
@@ -603,6 +658,28 @@ public class FormulaD extends Game implements Runnable {
         f.pack();
         final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         f.setSize(Math.min(screenSize.width, f.getWidth()), Math.min(screenSize.height, f.getHeight()));
+    }
+
+    static class ProfileSaver extends WindowAdapter {
+        private final JFrame frame;
+        private final List<Profile> profiles;
+        ProfileSaver(JFrame frame, List<Profile> profiles) {
+            this.frame = frame;
+            this.profiles = profiles;
+        }
+        @Override
+        public void windowClosing(WindowEvent e) {
+            frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+            try {
+                final FileOutputStream fos = new FileOutputStream("profiles.dat");
+                final ObjectOutputStream oos = new ObjectOutputStream(fos);
+                for (Profile profile : profiles) {
+                    oos.writeObject(profile);
+                }
+            } catch (IOException ex) {
+                FormulaD.log.log(Level.SEVERE, "Writing of profiles.dat failed");
+            }
+        }
     }
 
     private static void showMenu(JFrame f, Params params, List<Profile> profiles) {
@@ -673,7 +750,26 @@ public class FormulaD extends Game implements Runnable {
         trackEditorButton.addActionListener(e -> {
             final MapEditor editor = new MapEditor(f);
             if (editor.open()) {
-                setContent(f, p);
+                final WindowListener old = FormulaD.removeProfileSaver(f);
+                f.addWindowListener(new WindowAdapter() {
+                    @Override
+                    public void windowClosing(WindowEvent e) {
+                        super.windowClosing(e);
+                        f.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+                        final int confirmed = JOptionPane.showConfirmDialog(editor,
+                                "Are you sure you want to terminate the map editor?", "Confirm",
+                                JOptionPane.YES_NO_OPTION);
+                        if (confirmed == JOptionPane.YES_OPTION) {
+                            f.setContentPane(p);
+                            f.pack();
+                            f.removeWindowListener(this);
+                            if (old != null) {
+                                f.addWindowListener(old);
+                            }
+                        }
+                    }
+                });
+                setContent(f, editor);
             }
         });
         singlePlayerButton.setFont(new Font("Arial", Font.BOLD, 20));
@@ -690,36 +786,7 @@ public class FormulaD extends Game implements Runnable {
         buttonPanel.add(trackEditorButton);
         f.setContentPane(p);
         f.pack();
-
-        f.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                super.windowClosing(e);
-                final String name = f.getContentPane().getName();
-                if (name.equals("Main Menu")) {
-                    f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-                    try {
-                        final FileOutputStream fos = new FileOutputStream("profiles.dat");
-                        final ObjectOutputStream oos = new ObjectOutputStream(fos);
-                        for (Profile profile : profiles) {
-                            oos.writeObject(profile);
-                        }
-                    } catch (IOException ex) {
-                        FormulaD.log.log(Level.SEVERE, "Writing of profiles.dat failed");
-                    }
-                } else {
-                    f.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-                    final int confirmed = JOptionPane.showConfirmDialog(f.getContentPane(),
-                            "Are you sure you want to exit the " + name + "?", "Confirm",
-                            JOptionPane.YES_NO_OPTION);
-                    if (confirmed == JOptionPane.YES_OPTION) {
-                        f.setContentPane(p);
-                        f.pack();
-                    }
-                }
-            }
-        });
-
+        f.addWindowListener(new ProfileSaver(f, profiles));
         f.setVisible(true);
     }
 
@@ -765,10 +832,5 @@ public class FormulaD extends Game implements Runnable {
     @Override
     protected LocalPlayer getCurrent() {
         return current;
-    }
-
-    @Override
-    public String getName() {
-        return lobby == null ? "Race" : "Server";
     }
 }

@@ -7,8 +7,7 @@ import formulad.model.*;
 import javax.annotation.Nullable;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
@@ -39,92 +38,123 @@ public class Client extends Game implements Runnable {
         final AI backupAI = new GreatAI();
         ai = new ManualAI(backupAI, frame, this, profile);
         setPreferredSize(new Dimension(400, 200));
+        final WindowListener old = FormulaD.removeProfileSaver(frame);
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                super.windowClosing(e);
+                frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+                final String name = "client";
+                final int confirmed = JOptionPane.showConfirmDialog(Client.this,
+                        "Are you sure you want to terminate the " + name + "?", "Confirm",
+                        JOptionPane.YES_NO_OPTION);
+                if (confirmed == JOptionPane.YES_OPTION) {
+                    exit();
+                    frame.removeWindowListener(this);
+                    if (old != null) {
+                        frame.addWindowListener(old);
+                    }
+                }
+            }
+        });
     }
 
     @Override
     public void run() {
-        try {
-            while (socket.isConnected()) {
-                try {
-                    Object request = ois.readObject();
-                    if (request instanceof Notification) {
-                        ((Notification) request).notify(this);
-                    } else if (request instanceof Standings) {
-                        final Standings standings = (Standings) request;
-                        this.standings = Arrays.stream(standings.getPlayerIds()).map(immutablePlayerMap::get).collect(Collectors.toList());
-                    } else if (request instanceof FinalStandings) {
-                        final FinalStandings standings = (FinalStandings) request;
-                        if (!initialStandingsReceived) {
-                            profile.standingsReceived(standings.getStats(), trackId);
-                            initialStandingsReceived = true;
-                            immutablePlayerMap = new HashMap<>(playerMap);
-                            this.standings = Arrays.stream(standings.getStats()).map(ps -> ps.playerId).map(immutablePlayerMap::get).collect(Collectors.toList());
-                            waiting = false;
-                            repaint();
-                            continue;
-                        }
-                        finalStandings = standings.getStats();
-                        profile.standingsReceived(finalStandings, null);
+        while (socket.isConnected()) {
+            try {
+                Object request = ois.readObject();
+                if (request instanceof Notification) {
+                    ((Notification) request).notify(this);
+                } else if (request instanceof Standings) {
+                    final Standings standings = (Standings) request;
+                    this.standings = Arrays.stream(standings.getPlayerIds()).map(immutablePlayerMap::get).collect(Collectors.toList());
+                } else if (request instanceof FinalStandings) {
+                    final FinalStandings standings = (FinalStandings) request;
+                    if (!initialStandingsReceived) {
+                        profile.standingsReceived(standings.getStats(), trackId);
+                        initialStandingsReceived = true;
+                        immutablePlayerMap = new HashMap<>(playerMap);
+                        this.standings = Arrays.stream(standings.getStats()).map(ps -> ps.playerId).map(immutablePlayerMap::get).collect(Collectors.toList());
+                        waiting = false;
                         repaint();
-                        break;
-                    } else {
-                        try {
-                            if (request instanceof Track) {
-                                final Track track = (Track) request;
-                                controlledPlayerId = track.getPlayer().getPlayerId();
-                                oos.writeObject(ai.startGame(track));
-                            } else if (request instanceof GameState) {
-                                final GameState gameState = (GameState) request;
-                                roll = null;
-                                setCurrent(controlledPlayer);
-                                repaint();
-                                oos.writeObject(ai.selectGear(gameState));
-                                updateHitpointMap(gameState);
-                            } else if (request instanceof Moves) {
-                                final Moves moves = (Moves) request;
-                                oos.writeObject(ai.selectMove(moves));
-                            } else if (request instanceof ProfileRequest) {
-                                final String trackId = ((ProfileRequest) request).getTrackId();
-                                try {
-                                    waiting = true;
-                                    initTrack(trackId);
-                                } catch (RuntimeException e) {
-                                    FormulaD.log.log(Level.SEVERE, "Track " + trackId + " not found", e);
-                                    JOptionPane.showConfirmDialog(this, "Track " + trackId + " not found", "Error", JOptionPane.DEFAULT_OPTION);
-                                    exit();
-                                    return;
-                                }
-                                oos.writeObject(new ProfileMessage(profile));
-                            } else if (request instanceof Kick) {
-                                JOptionPane.showConfirmDialog(this, "You have been kicked", "Oops", JOptionPane.DEFAULT_OPTION);
+                        continue;
+                    }
+                    finalStandings = standings.getStats();
+                    profile.standingsReceived(finalStandings, null);
+                    repaint();
+                    break;
+                } else {
+                    try {
+                        if (request instanceof Track) {
+                            final Track track = (Track) request;
+                            controlledPlayerId = track.getPlayer().getPlayerId();
+                            oos.writeObject(ai.startGame(track));
+                        } else if (request instanceof GameState) {
+                            final GameState gameState = (GameState) request;
+                            roll = null;
+                            setCurrent(controlledPlayer);
+                            repaint();
+                            oos.writeObject(ai.selectGear(gameState));
+                            updateHitpointMap(gameState);
+                        } else if (request instanceof Moves) {
+                            final Moves moves = (Moves) request;
+                            oos.writeObject(ai.selectMove(moves));
+                        } else if (request instanceof ProfileRequest) {
+                            final String trackId = ((ProfileRequest) request).getTrackId();
+                            try {
+                                waiting = true;
+                                initTrack(trackId);
+                            } catch (RuntimeException e) {
+                                FormulaD.log.log(Level.SEVERE, "Track " + trackId + " not found", e);
+                                JOptionPane.showConfirmDialog(this, "Track " + trackId + " not found", "Error", JOptionPane.DEFAULT_OPTION);
                                 exit();
                                 return;
                             }
-                        } catch (IOException e) {
-                            FormulaD.log.log(Level.SEVERE, "Error when sending response to server", e);
-                            break;
+                            oos.writeObject(new ProfileMessage(profile));
+                        } else if (request instanceof Kick) {
+                            JOptionPane.showConfirmDialog(this, "You have been kicked", "Oops", JOptionPane.DEFAULT_OPTION);
+                            exit();
+                            return;
                         }
+                    } catch (IOException e) {
+                        FormulaD.log.log(Level.SEVERE, "Error when sending response to server", e);
+                        break;
                     }
-                } catch (EOFException e) {
-                    // This is ok, no objects to read
-                } catch (IOException | ClassNotFoundException e) {
-                    FormulaD.log.log(Level.SEVERE, "Error when reading object input from server", e);
-                    break;
                 }
+            } catch (EOFException e) {
+                // This is ok, no objects to read
+            } catch (IOException | ClassNotFoundException e) {
+                FormulaD.log.log(Level.SEVERE, "Error when reading object input from server", e);
+                break;
             }
-            if (finalStandings == null) {
-                JOptionPane.showConfirmDialog(this, "Connection to server lost", "Error", JOptionPane.DEFAULT_OPTION);
-                exit();
-            } else {
-                clickToExit();
-            }
+        }
+        if (finalStandings == null) {
+            JOptionPane.showConfirmDialog(this, "Connection to server lost", "Error", JOptionPane.DEFAULT_OPTION);
+            exit();
+        } else {
+            clickToExit();
+        }
+    }
+
+    @Override
+    protected void exit() {
+        try {
             ois.close();
+        } catch (IOException e) {
+            FormulaD.log.log(Level.WARNING, "Error when closing server connection", e);
+        }
+        try {
             oos.close();
+        } catch (IOException e) {
+            FormulaD.log.log(Level.WARNING, "Error when closing server connection", e);
+        }
+        try {
             socket.close();
         } catch (IOException e) {
             FormulaD.log.log(Level.WARNING, "Error when closing server connection", e);
-            exit();
         }
+        super.exit();
     }
 
     public void notify(MovementNotification notification) {
@@ -206,10 +236,5 @@ public class Client extends Game implements Runnable {
     @Override
     protected Player getCurrent() {
         return current;
-    }
-
-    @Override
-    public String getName() {
-        return "Client";
     }
 }

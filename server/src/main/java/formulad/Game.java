@@ -8,10 +8,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import javax.annotation.Nullable;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionAdapter;
-import java.awt.event.MouseMotionListener;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -100,11 +97,10 @@ public abstract class Game extends JPanel {
         });
     }
 
-    void exit() {
+    protected void exit() {
         frame.setMenuBar(null);
         frame.setContentPane(panel);
         frame.pack();
-        panel.repaint();
     }
 
     @Override

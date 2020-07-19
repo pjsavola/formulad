@@ -171,15 +171,6 @@ public class MapEditor extends JPanel {
         validationMenu.add(validate);
 
         frame.setMenuBar(menuBar);
-
-        addMouseMotionListener(new MouseMotionAdapter() {
-            @Override
-            public void mouseDragged(MouseEvent e) {
-                Rectangle r = new Rectangle(e.getX(), e.getY(), 1, 1);
-                ((JPanel) e.getSource()).scrollRectToVisible(r);
-            }
-        });
-        setAutoscrolls(true);
     }
 
 	private void setStroke(Node.Type stroke) {
