@@ -100,6 +100,7 @@ public class Lobby extends Thread {
 
     public void close() {
         for (RemoteAI client : clients) {
+            client.notify(new Kick("Server closed"));
             client.close();
         }
         try {
