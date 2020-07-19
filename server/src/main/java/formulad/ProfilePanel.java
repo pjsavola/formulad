@@ -10,26 +10,32 @@ import java.util.List;
 
 public class ProfilePanel extends JPanel {
     private class CarPreview extends JPanel {
+        final int width = 100;
+        final int height = 50;
         @Override
         public void paintComponent(Graphics g) {
-            final int x = getWidth() / 2;
-            final int y = getHeight() / 2;
+            super.paintComponent(g);
+            final int x = width / 2;
+            final int y = height / 2;
             Player.draw((Graphics2D) g, x, y, 0, new Color(activeProfile.getColor1()), new Color(activeProfile.getColor2()), 2.5);
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            return new Dimension(width, height);
         }
     }
 
     private class ColorChangeListener implements MouseListener {
         private final JPanel panel;
-        private final boolean mainColor;
-        private ColorChangeListener(JPanel panel, boolean mainColor) {
+        private ColorChangeListener(JPanel panel) {
             this.panel = panel;
-            this.mainColor = mainColor;
         }
         @Override
         public void mouseClicked(MouseEvent e) {
-            if (e.getButton() == MouseEvent.BUTTON1) return;
+            final boolean mainColor = e.getButton() == MouseEvent.BUTTON1;
             final int oldColor = mainColor ? activeProfile.getColor1() : activeProfile.getColor2();
-            final String result = (String) JOptionPane.showInputDialog(ProfilePanel.this, "Set color RGB value", "Set color", JOptionPane.PLAIN_MESSAGE, null, null, Integer.toHexString(oldColor));
+            final String result = (String) JOptionPane.showInputDialog(ProfilePanel.this, "Set color RGB value", "Set color", JOptionPane.PLAIN_MESSAGE, null, null, "#" + Integer.toHexString(oldColor));
             if (result == null) return;
             try {
                 final int color = Color.decode(result).getRGB() & 0x00FFFFFF;
@@ -70,6 +76,8 @@ public class ProfilePanel extends JPanel {
         add(profileName);
         add(carPreview);
 
+        carPreview.addMouseListener(new ColorChangeListener(carPreview));
+
         final JSlider sliderColor1 = new JSlider(JSlider.HORIZONTAL, 0x000000, 0xFFFFFF, activeProfile.getColor1());
         final JSlider sliderColor2 = new JSlider(JSlider.HORIZONTAL, 0x000000, 0xFFFFFF, activeProfile.getColor2());
 
@@ -83,8 +91,6 @@ public class ProfilePanel extends JPanel {
             activeProfile.setColor2(slider.getValue());
             carPreview.repaint();
         });
-        sliderColor1.addMouseListener(new ColorChangeListener(carPreview, true));
-        sliderColor2.addMouseListener(new ColorChangeListener(carPreview, false));
 
         add(sliderColor1);
         add(sliderColor2);
