@@ -14,6 +14,7 @@
 /Users/petri.savola/src/git/formulad/server/src/main/java/formulad/PlayerSlot.java
 /Users/petri.savola/src/git/formulad/server/src/main/java/formulad/LocalPlayer.java
 /Users/petri.savola/src/git/formulad/server/src/main/java/formulad/model/TileType.java
+/Users/petri.savola/src/git/formulad/server/src/main/java/formulad/UIUtil.java
 /Users/petri.savola/src/git/formulad/server/src/main/java/formulad/model/NameAtStart.java
 /Users/petri.savola/src/git/formulad/server/src/main/java/formulad/model/RollNotification.java
 /Users/petri.savola/src/git/formulad/server/src/main/java/formulad/model/Standings.java
@@ -51,3 +52,4 @@
 /Users/petri.savola/src/git/formulad/server/src/main/java/formulad/model/Kick.java
 /Users/petri.savola/src/git/formulad/server/src/main/java/formulad/ai/ManualAI.java
 /Users/petri.savola/src/git/formulad/server/src/main/java/formulad/NodeUtil.java
+/Users/petri.savola/src/git/formulad/server/src/main/java/formulad/TrackPreviewButton.java

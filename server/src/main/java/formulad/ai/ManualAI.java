@@ -65,7 +65,8 @@ public class ManualAI implements AI {
         game.actionMenu.removeAll();
         for (int newGear = 1; newGear <= 6; ++newGear) {
             if (AIUtil.validateGear(hitpoints, gear, newGear, inPits)) {
-                final MenuItem item = new MenuItem("Gear " + newGear);
+                final int[] distribution = formulad.ai.Gear.getDistribution(newGear);
+                final MenuItem item = new MenuItem("Gear " + newGear + " (" + distribution[0] + "-" + distribution[distribution.length -1] + ")");
                 item.setShortcut(new MenuShortcut(KeyEvent.VK_0 + newGear));
                 final int finalNewGear = newGear;
                 item.addActionListener(e -> {
