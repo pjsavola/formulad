@@ -75,6 +75,7 @@ public abstract class Game extends JPanel {
             throw new RuntimeException("Data file " + dataFile + " is missing or corrupted", e);
         }
         setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
+        frame.pack();
     }
 
     void clickToExit() {
