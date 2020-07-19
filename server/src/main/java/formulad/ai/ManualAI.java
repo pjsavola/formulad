@@ -108,6 +108,7 @@ public class ManualAI implements AI {
             final int newGear = selectedGear.getValue();
             if (newGear != 0) {
                 frame.removeKeyListener(keyListener);
+                game.actionMenu.removeAll();
                 return new Gear().gear(newGear);
             }
         }
@@ -221,6 +222,7 @@ public class ManualAI implements AI {
                 game.highlightNodes(null);
                 frame.removeKeyListener(keyListener);
                 game.removeMouseListener(mouseListener);
+                game.actionMenu.removeAll();
                 return new SelectedIndex().index(index);
             }
         }

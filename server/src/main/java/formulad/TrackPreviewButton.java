@@ -9,28 +9,83 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.*;
+import java.security.CodeSource;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
+import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 class TrackPreviewButton extends JButton {
     private final JPanel panel;
     private final Lobby lobby;
     private String trackId;
 
+    public static class ResourceWalker {
+        public static void main(String[] args) throws URISyntaxException, IOException {
+            URI uri = ResourceWalker.class.getResource("/resources").toURI();
+            Path myPath;
+            if (uri.getScheme().equals("jar")) {
+                FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap());
+                myPath = fileSystem.getPath("/resources");
+            } else {
+                myPath = Paths.get(uri);
+            }
+            Stream<Path> walk = Files.walk(myPath, 1);
+            for (Iterator<Path> it = walk.iterator(); it.hasNext();){
+                System.out.println(it.next());
+            }
+        }
+    }
+
     TrackPreviewButton(JFrame frame, JPanel panel, Lobby lobby) {
         this.panel = panel;
         this.lobby = lobby;
         addActionListener(e -> {
             final List<String> filenames = new ArrayList<>();
-            try (InputStream in = FormulaD.class.getResourceAsStream("/"); BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
-                String resource;
-                while ((resource = br.readLine()) != null) {
-                    filenames.add(resource);
+            final boolean ide = false;
+            if (ide) {
+                try (InputStream in = FormulaD.class.getResourceAsStream("/"); BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
+                    String resource;
+                    while ((resource = br.readLine()) != null) {
+                        filenames.add(resource);
+                    }
+                } catch (IOException ex) {
+                    FormulaD.log.log(Level.SEVERE, "Unable to read resource directory", e);
+                    return;
                 }
-            } catch (IOException ex) {
-                FormulaD.log.log(Level.SEVERE, "Unable to read resource directory", e);
-                return;
+            } else {
+                try {
+                    final CodeSource src = FormulaD.class.getProtectionDomain().getCodeSource();
+                    if (src != null) {
+                        URL jar = src.getLocation();
+                        ZipInputStream zip = new ZipInputStream(jar.openStream());
+                        while(true) {
+                            ZipEntry z = zip.getNextEntry();
+                            if (z == null) {
+                                break;
+                            }
+                            final String name = z.getName();
+                            if (name.toLowerCase().endsWith(".dat")) {
+                                filenames.add(name);
+                            }
+                        }
+                    }
+                    else {
+                        FormulaD.log.log(Level.SEVERE, "Unable to read resource directory", e);
+                        return;
+                    }
+                } catch (IOException ex) {
+                    FormulaD.log.log(Level.SEVERE, "Unable to read resource directory", e);
+                    return;
+                }
             }
             final JPanel trackPanel = new JPanel(new GridLayout(0, 2));
             final JDialog trackDialog = new JDialog(frame);

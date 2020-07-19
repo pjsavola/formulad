@@ -32,7 +32,7 @@ public class ProfilePanel extends JPanel {
             final String result = (String) JOptionPane.showInputDialog(ProfilePanel.this, "Set color RGB value", "Set color", JOptionPane.PLAIN_MESSAGE, null, null, Integer.toHexString(oldColor));
             if (result == null) return;
             try {
-                final int color = Color.decode(result).getRGB();
+                final int color = Color.decode(result).getRGB() & 0x00FFFFFF;
                 if (mainColor) activeProfile.setColor1(color);
                 else activeProfile.setColor2(color);
                 panel.repaint();
