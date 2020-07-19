@@ -38,25 +38,7 @@ public class Client extends Game implements Runnable {
         final AI backupAI = new GreatAI();
         ai = new ManualAI(backupAI, frame, this, profile);
         setPreferredSize(new Dimension(400, 200));
-        final WindowListener old = FormulaD.removeProfileSaver(frame);
-        frame.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                super.windowClosing(e);
-                frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-                final String name = "client";
-                final int confirmed = JOptionPane.showConfirmDialog(Client.this,
-                        "Are you sure you want to terminate the " + name + "?", "Confirm",
-                        JOptionPane.YES_NO_OPTION);
-                if (confirmed == JOptionPane.YES_OPTION) {
-                    exit();
-                    frame.removeWindowListener(this);
-                    if (old != null) {
-                        frame.addWindowListener(old);
-                    }
-                }
-            }
-        });
+        frame.addWindowListener(new WindowChanger(frame, this, panel, null, this, "client", true));
     }
 
     @Override

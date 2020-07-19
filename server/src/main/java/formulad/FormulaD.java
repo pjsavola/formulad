@@ -61,43 +61,11 @@ public class FormulaD extends Game implements Runnable {
         }
     }
 
-    static WindowListener removeProfileSaver(JFrame frame) {
-        final WindowListener[] listeners = frame.getWindowListeners();
-        for (WindowListener l : listeners) {
-            if (l instanceof ProfileSaver) {
-                frame.removeWindowListener(l);
-                return l;
-            }
-        }
-        return null;
-    }
-
     public FormulaD(Params params, Lobby lobby, JFrame frame, JPanel panel, PlayerSlot[] slots, String trackId) {
         super(frame, panel);
         initTrack(trackId);
         this.lobby = lobby;
-        final WindowListener old = removeProfileSaver(frame);
-        frame.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                super.windowClosing(e);
-                frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-                final String name = lobby == null ? "race" : "server";
-                final int confirmed = JOptionPane.showConfirmDialog(FormulaD.this,
-                        "Are you sure you want to terminate the " + name + "?", "Confirm",
-                        JOptionPane.YES_NO_OPTION);
-                if (confirmed == JOptionPane.YES_OPTION) {
-                    if (lobby != null) {
-                        lobby.close();
-                    }
-                    exit();
-                    frame.removeWindowListener(this);
-                    if (old != null) {
-                        frame.addWindowListener(old);
-                    }
-                }
-            }
-        });
+        frame.addWindowListener(new WindowChanger(frame, this, panel, lobby, this, lobby == null ? "race" : "server", true));
         prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
         LocalPlayer.animationDelayInMillis = params.animationDelayInMillis;
         final long seed = params.seed == null ? new Random().nextLong() : params.seed;
@@ -616,31 +584,7 @@ public class FormulaD extends Game implements Runnable {
         if (lobby != null) {
             lobby.start();
         }
-        final WindowListener old = removeProfileSaver(frame);
-        frame.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                super.windowClosing(e);
-                frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-                int confirmed = JOptionPane.YES_OPTION;
-                if (lobby != null) {
-                    confirmed = JOptionPane.showConfirmDialog(lobbyPanel,
-                            "Are you sure you want to terminate the server?", "Confirm",
-                            JOptionPane.YES_NO_OPTION);
-                }
-                if (confirmed == JOptionPane.YES_OPTION) {
-                    if (lobby != null) {
-                        lobby.close();
-                    }
-                    frame.setContentPane(panel);
-                    frame.pack();
-                    frame.removeWindowListener(this);
-                    if (old != null) {
-                        frame.addWindowListener(old);
-                    }
-                }
-            }
-        });
+        frame.addWindowListener(new WindowChanger(frame, lobbyPanel, panel, lobby, null, "server", lobby != null));
     }
 
     private static void setContent(JFrame f, JPanel p) {
@@ -750,25 +694,7 @@ public class FormulaD extends Game implements Runnable {
         trackEditorButton.addActionListener(e -> {
             final MapEditor editor = new MapEditor(f);
             if (editor.open()) {
-                final WindowListener old = FormulaD.removeProfileSaver(f);
-                f.addWindowListener(new WindowAdapter() {
-                    @Override
-                    public void windowClosing(WindowEvent e) {
-                        super.windowClosing(e);
-                        f.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-                        final int confirmed = JOptionPane.showConfirmDialog(editor,
-                                "Are you sure you want to terminate the map editor?", "Confirm",
-                                JOptionPane.YES_NO_OPTION);
-                        if (confirmed == JOptionPane.YES_OPTION) {
-                            f.setContentPane(p);
-                            f.pack();
-                            f.removeWindowListener(this);
-                            if (old != null) {
-                                f.addWindowListener(old);
-                            }
-                        }
-                    }
-                });
+                f.addWindowListener(new WindowChanger(f, editor, p, null, null, "Track Editor", true));
                 setContent(f, editor);
             }
         });
