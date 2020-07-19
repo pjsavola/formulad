@@ -1,16 +1,7 @@
 package formulad;
 
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Point;
-import java.awt.Stroke;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.*;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
@@ -30,11 +21,7 @@ import java.util.Map;
 import java.util.logging.Level;
 
 import javax.annotation.Nullable;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.WindowConstants;
+import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
 
 import formulad.ai.AIUtil;
@@ -113,64 +100,87 @@ public class MapEditor extends JPanel {
             public void mouseExited(MouseEvent e) {
             }
         });
-        frame.addKeyListener(new KeyListener() {
+        final MenuBar menuBar = new MenuBar();
+        final Menu fileMenu = new Menu("File");
+        final Menu editMenu = new Menu("Edit");
+        final Menu strokeMenu = new Menu("Stroke");
+        final Menu validationMenu = new Menu("Validation");
+
+        menuBar.add(fileMenu);
+        final MenuItem loadBackgroundImage = new MenuItem("Load Background Image");
+        loadBackgroundImage.addActionListener(e -> open());
+        loadBackgroundImage.setShortcut(new MenuShortcut(KeyEvent.VK_O));
+        fileMenu.add(loadBackgroundImage);
+        final MenuItem loadTrackData = new MenuItem("Load Track Data");
+        loadTrackData.addActionListener(e -> load());
+        loadTrackData.setShortcut(new MenuShortcut(KeyEvent.VK_L));
+        fileMenu.add(loadTrackData);
+        final MenuItem saveTrackData = new MenuItem("Save Track Data as ...");
+        saveTrackData.addActionListener(e -> save());
+        saveTrackData.setShortcut(new MenuShortcut(KeyEvent.VK_S));
+        fileMenu.add(saveTrackData);
+
+        menuBar.add(editMenu);
+        final MenuItem autoSelectMode = new MenuItem("Auto-select mode");
+        autoSelectMode.addActionListener(e -> toggleSelectMode());
+        autoSelectMode.setShortcut(new MenuShortcut(KeyEvent.VK_A));
+        editMenu.add(autoSelectMode);
+        final MenuItem setAttribute = new MenuItem("Set Attribute");
+        setAttribute.addActionListener(e -> setAttribute());
+        setAttribute.setShortcut(new MenuShortcut(KeyEvent.VK_Z));
+        editMenu.add(setAttribute);
+        final MenuItem moveInfoBox = new MenuItem("Move Info Box");
+        moveInfoBox.addActionListener(e -> switchInfoBoxCorner());
+        moveInfoBox.setShortcut(new MenuShortcut(KeyEvent.VK_I));
+        editMenu.add(moveInfoBox);
+
+        menuBar.add(strokeMenu);
+        final MenuItem strokeStraight = new MenuItem("Straight");
+        strokeStraight.addActionListener(e -> setStroke(Node.Type.STRAIGHT));
+        strokeStraight.setShortcut(new MenuShortcut(KeyEvent.VK_S));
+        strokeMenu.add(strokeStraight);
+        final MenuItem strokeCurve1 = new MenuItem("1 Stop Curve");
+        strokeCurve1.addActionListener(e -> setStroke(Node.Type.CURVE_1));
+        strokeCurve1.setShortcut(new MenuShortcut(KeyEvent.VK_1));
+        strokeMenu.add(strokeCurve1);
+        final MenuItem strokeCurve2 = new MenuItem("2 Stop Curve");
+        strokeCurve2.addActionListener(e -> setStroke(Node.Type.CURVE_2));
+        strokeCurve2.setShortcut(new MenuShortcut(KeyEvent.VK_2));
+        strokeMenu.add(strokeCurve2);
+        final MenuItem strokeCurve3 = new MenuItem("3 Stop Curve");
+        strokeCurve3.addActionListener(e -> setStroke(Node.Type.CURVE_3));
+        strokeCurve3.setShortcut(new MenuShortcut(KeyEvent.VK_3));
+        strokeMenu.add(strokeCurve3);
+        final MenuItem strokeStartingGrid = new MenuItem("Starting Grid");
+        strokeStartingGrid.addActionListener(e -> setStroke(Node.Type.START));
+        strokeStartingGrid.setShortcut(new MenuShortcut(KeyEvent.VK_G));
+        strokeMenu.add(strokeStartingGrid);
+        final MenuItem strokeFinishLine = new MenuItem("Finish Line");
+        strokeFinishLine.addActionListener(e -> setStroke(Node.Type.FINISH));
+        strokeFinishLine.setShortcut(new MenuShortcut(KeyEvent.VK_F));
+        strokeMenu.add(strokeFinishLine);
+        final MenuItem strokePitLane = new MenuItem("Pit Lane");
+        strokePitLane.addActionListener(e -> setStroke(Node.Type.PIT));
+        strokePitLane.setShortcut(new MenuShortcut(KeyEvent.VK_P));
+        strokeMenu.add(strokePitLane);
+
+        menuBar.add(validationMenu);
+        final MenuItem validate = new MenuItem("Validate Track");
+        validate.addActionListener(e -> validateTrack());
+        validate.setShortcut(new MenuShortcut(KeyEvent.VK_V));
+        validationMenu.add(validate);
+
+        frame.setMenuBar(menuBar);
+
+        addMouseMotionListener(new MouseMotionAdapter() {
             @Override
-            public void keyTyped(KeyEvent e) {
-                final char c = e.getKeyChar();
-                switch (c) {
-                    case '1':
-                        setStroke(Node.Type.STRAIGHT);
-                        break;
-                    case '2':
-                        setStroke(Node.Type.CURVE_2);
-                        break;
-                    case '3':
-                        setStroke(Node.Type.CURVE_1);
-                        break;
-                    case '4':
-                        setStroke(Node.Type.START);
-                        break;
-                    case '5':
-                        setStroke(Node.Type.FINISH);
-                        break;
-                    case '6':
-                        setStroke(Node.Type.CURVE_3);
-                        break;
-                    case '7':
-                        setStroke(Node.Type.PIT);
-                        break;
-                    case 'a':
-                        toggleSelectMode();
-                        break;
-                    case 'o':
-                        open();
-                        frame.pack();
-                        break;
-                    case 's':
-                        save();
-                        break;
-                    case 'l':
-                        load();
-                        break;
-                    case 'z':
-                        setAttribute();
-                        break;
-                    case 'v':
-                        validateTrack();
-                        break;
-                    case 'i':
-                        switchInfoBoxCorner();
-                        break;
-                }
-            }
-            @Override
-            public void keyPressed(KeyEvent e) {
-            }
-            @Override
-            public void keyReleased(KeyEvent e) {
+            public void mouseDragged(MouseEvent e) {
+                Rectangle r = new Rectangle(e.getX(), e.getY(), 1, 1);
+                ((JPanel) e.getSource()).scrollRectToVisible(r);
             }
         });
-	}
+        setAutoscrolls(true);
+    }
 
 	private void setStroke(Node.Type stroke) {
 	    this.stroke = stroke;
@@ -374,8 +384,8 @@ public class MapEditor extends JPanel {
             }
             if (autoSelectMode) {
                 selectedNode = null;
-                repaint();
             }
+            repaint();
         }
     }
 

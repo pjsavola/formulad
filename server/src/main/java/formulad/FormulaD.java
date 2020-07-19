@@ -650,8 +650,11 @@ public class FormulaD extends Game implements Runnable {
         trackEditorButton.addActionListener(e -> {
             final MapEditor editor = new MapEditor(f);
             if (editor.open()) {
-                f.setContentPane(editor);
+                final JScrollPane scrollPane = new JScrollPane(editor);
+                f.setContentPane(scrollPane);
                 f.pack();
+                final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+                f.setSize(Math.min(screenSize.width, f.getWidth()), Math.min(screenSize.height, f.getHeight()));
             }
         });
         singlePlayerButton.setFont(new Font("Arial", Font.BOLD, 20));
