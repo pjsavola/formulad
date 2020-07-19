@@ -1,6 +1,8 @@
 package formulad;
 
 import java.awt.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
@@ -557,6 +559,7 @@ public class FormulaD extends Game implements Runnable {
             }
             params.randomizeStartingOrder = randomStartingOrder.isSelected();
             final FormulaD server = new FormulaD(params, lobby, frame, panel, slots, changeTrackButton.getTrack());
+            setContent(frame, server);
             new Thread(server).start();
         });
         final JPanel gridPanel = new JPanel(new GridLayout(2, 2));
@@ -582,6 +585,22 @@ public class FormulaD extends Game implements Runnable {
         if (lobby != null) {
             lobby.start();
         }
+    }
+
+    private static void setContent(JFrame f, JPanel p) {
+        p.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                Rectangle r = new Rectangle(e.getX(), e.getY(), 1, 1);
+                ((JPanel) e.getSource()).scrollRectToVisible(r);
+            }
+        });
+        p.setAutoscrolls(true);
+        final JScrollPane scrollPane = new JScrollPane(p);
+        f.setContentPane(scrollPane);
+        f.pack();
+        final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        f.setSize(Math.min(screenSize.width, f.getWidth()), Math.min(screenSize.height, f.getHeight()));
     }
 
     private static void showMenu(JFrame f, Params params, List<Profile> profiles) {
@@ -636,6 +655,7 @@ public class FormulaD extends Game implements Runnable {
                     final int port = Integer.parseInt(addressAndPort[1]);
                     Socket socket = new Socket(addressAndPort[0], port);
                     final Client client = new Client(f, socket, p, profilePanel.getActiveProfile());
+                    setContent(f, client);
                     new Thread(client).start();
                 } else {
                     JOptionPane.showConfirmDialog(p, "Please specify server IP address and port (for example 123.456.7.8:1277)", "Error", JOptionPane.DEFAULT_OPTION);
@@ -650,11 +670,7 @@ public class FormulaD extends Game implements Runnable {
         trackEditorButton.addActionListener(e -> {
             final MapEditor editor = new MapEditor(f);
             if (editor.open()) {
-                final JScrollPane scrollPane = new JScrollPane(editor);
-                f.setContentPane(scrollPane);
-                f.pack();
-                final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-                f.setSize(Math.min(screenSize.width, f.getWidth()), Math.min(screenSize.height, f.getHeight()));
+                setContent(f, p);
             }
         });
         singlePlayerButton.setFont(new Font("Arial", Font.BOLD, 20));
@@ -672,6 +688,23 @@ public class FormulaD extends Game implements Runnable {
         f.setContentPane(p);
         f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         f.pack();
+
+        f.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                super.windowClosing(e);
+                try {
+                    final FileOutputStream fos = new FileOutputStream("profiles.dat");
+                    final ObjectOutputStream oos = new ObjectOutputStream(fos);
+                    for (Profile profile : profiles) {
+                        oos.writeObject(profile);
+                    }
+                } catch (IOException ex) {
+                    FormulaD.log.log(Level.SEVERE, "Writing of profiles.dat failed");
+                }
+            }
+        });
+
         f.setVisible(true);
     }
 
@@ -698,21 +731,7 @@ public class FormulaD extends Game implements Runnable {
                 profiles.add(defaultProfile);
             }
         }
-        f.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                super.windowClosing(e);
-                try {
-                    final FileOutputStream fos = new FileOutputStream("profiles.dat");
-                    final ObjectOutputStream oos = new ObjectOutputStream(fos);
-                    for (Profile profile : profiles) {
-                        oos.writeObject(profile);
-                    }
-                } catch (IOException ex) {
-                    FormulaD.log.log(Level.SEVERE, "Writing of profiles.dat failed");
-                }
-            }
-        });
+
         boolean activeFound = false;
         for (Profile profile : profiles) {
             if (profile.isActive()) {

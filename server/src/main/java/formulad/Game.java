@@ -75,18 +75,6 @@ public abstract class Game extends JPanel {
             throw new RuntimeException("Data file " + dataFile + " is missing or corrupted", e);
         }
         setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
-        addMouseMotionListener(new MouseMotionAdapter() {
-            @Override
-            public void mouseDragged(MouseEvent e) {
-                Rectangle r = new Rectangle(e.getX(), e.getY(), 1, 1);
-                ((JPanel) e.getSource()).scrollRectToVisible(r);
-            }
-        });
-        setAutoscrolls(true);
-        final JScrollPane scrollPane = new JScrollPane(this);
-        frame.setContentPane(scrollPane);
-        frame.pack();
-        repaint();
     }
 
     void clickToExit() {
