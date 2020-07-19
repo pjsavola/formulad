@@ -38,7 +38,6 @@ public class Client extends Game implements Runnable {
         final AI backupAI = new GreatAI();
         ai = new ManualAI(backupAI, frame, this, profile);
         setPreferredSize(new Dimension(400, 200));
-        frame.addWindowListener(new WindowChanger(frame, this, panel, null, this, "client", true));
     }
 
     @Override
@@ -110,6 +109,9 @@ public class Client extends Game implements Runnable {
                 FormulaD.log.log(Level.SEVERE, "Error when reading object input from server", e);
                 break;
             }
+        }
+        if (socket.isClosed()) {
+            return;
         }
         if (finalStandings == null) {
             JOptionPane.showConfirmDialog(this, "Connection to server lost", "Error", JOptionPane.DEFAULT_OPTION);

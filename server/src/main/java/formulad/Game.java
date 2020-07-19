@@ -98,6 +98,11 @@ public abstract class Game extends JPanel {
     }
 
     protected void exit() {
+        for (WindowListener listener : frame.getWindowListeners()) {
+            if (listener instanceof WindowChanger) {
+                ((WindowChanger) listener).reset();
+            }
+        }
         frame.setMenuBar(null);
         frame.setContentPane(panel);
         frame.pack();

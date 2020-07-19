@@ -468,16 +468,6 @@ public class MapEditor extends JPanel {
         g2d.setStroke(tmpS);
     }
 
-    public static void main(String[] args) {
-        final JFrame f = new JFrame();
-        final MapEditor p = new MapEditor(f);
-        f.setContentPane(p);
-        f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        f.pack();
-        f.setLocation(0, 0);
-        f.setVisible(true);
-    }
-
     @Nullable
     public static Node getNode(Collection<Node> nodes, Map<Node, Point> coordinates, int x, int y, int threshold) {
         for (Node node : nodes) {

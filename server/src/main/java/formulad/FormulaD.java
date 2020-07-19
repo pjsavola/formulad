@@ -65,7 +65,6 @@ public class FormulaD extends Game implements Runnable {
         super(frame, panel);
         initTrack(trackId);
         this.lobby = lobby;
-        frame.addWindowListener(new WindowChanger(frame, this, panel, lobby, this, lobby == null ? "race" : "server", true));
         prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
         LocalPlayer.animationDelayInMillis = params.animationDelayInMillis;
         final long seed = params.seed == null ? new Random().nextLong() : params.seed;
@@ -494,7 +493,7 @@ public class FormulaD extends Game implements Runnable {
         private int laps = 1;
     }
 
-    private static void showGameSettings(JFrame frame, JPanel panel, Lobby lobby, List<Profile> profiles, Params params, String trackId) {
+    private static void showGameSettings(JFrame frame, JPanel panel, Lobby lobby, List<Profile> profiles, Params params, String trackId, WindowChanger listener) {
         final List<ProfileMessage> localProfiles = profiles.stream().map(ProfileMessage::new).collect(Collectors.toList());
         final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
         final PlayerSlot[] slots = new PlayerSlot[10];
@@ -558,6 +557,7 @@ public class FormulaD extends Game implements Runnable {
             }
             params.randomizeStartingOrder = randomStartingOrder.isSelected();
             final FormulaD server = new FormulaD(params, lobby, frame, panel, slots, changeTrackButton.getTrack());
+            listener.contentChanged(server, lobby, server, lobby == null ? "race" : "server", true);
             setContent(frame, server);
             new Thread(server).start();
         });
@@ -579,12 +579,12 @@ public class FormulaD extends Game implements Runnable {
         gridPanel.add(settings);
         gridPanel.add(startButton);
         lobbyPanel.add(gridPanel);
+        listener.contentChanged(lobbyPanel, lobby, null, "server", lobby != null);
         frame.setContentPane(lobbyPanel);
         frame.pack();
         if (lobby != null) {
             lobby.start();
         }
-        frame.addWindowListener(new WindowChanger(frame, lobbyPanel, panel, lobby, null, "server", lobby != null));
     }
 
     private static void setContent(JFrame f, JPanel p) {
@@ -628,6 +628,8 @@ public class FormulaD extends Game implements Runnable {
 
     private static void showMenu(JFrame f, Params params, List<Profile> profiles) {
         final JPanel p = new JPanel();
+        final WindowChanger listener = new WindowChanger(f, p);
+        f.addWindowListener(listener);
         p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
         final JPanel title = new JPanel();
         final JLabel titleText = new JLabel("FORMULA D ONLINE");
@@ -646,7 +648,7 @@ public class FormulaD extends Game implements Runnable {
 
         final JButton singlePlayerButton = new JButton("Single Player");
         singlePlayerButton.addActionListener(e -> {
-            showGameSettings(f, p, null, profiles, params, profilePanel.getActiveProfile().getLastTrack());
+            showGameSettings(f, p, null, profiles, params, profilePanel.getActiveProfile().getLastTrack(), listener);
         });
         final JButton hostMultiplayerButton = new JButton("Host Multiplayer");
         hostMultiplayerButton.addActionListener(e -> {
@@ -658,7 +660,7 @@ public class FormulaD extends Game implements Runnable {
                 final int port = Integer.parseInt(result);
                 final Lobby lobby = new Lobby(port);
                 final String trackId = profilePanel.getActiveProfile().getLastTrack();
-                showGameSettings(f, p, lobby, profiles, params, trackId);
+                showGameSettings(f, p, lobby, profiles, params, trackId, listener);
             } catch (NumberFormatException exception) {
                 JOptionPane.showConfirmDialog(p, "Invalid port: '" + result + "'", "Error", JOptionPane.DEFAULT_OPTION);
             } catch (IOException exception) {
@@ -679,6 +681,7 @@ public class FormulaD extends Game implements Runnable {
                     final int port = Integer.parseInt(addressAndPort[1]);
                     Socket socket = new Socket(addressAndPort[0], port);
                     final Client client = new Client(f, socket, p, profilePanel.getActiveProfile());
+                    listener.contentChanged(client, null, client, "client", true);
                     setContent(f, client);
                     new Thread(client).start();
                 } else {
@@ -694,7 +697,7 @@ public class FormulaD extends Game implements Runnable {
         trackEditorButton.addActionListener(e -> {
             final MapEditor editor = new MapEditor(f);
             if (editor.open()) {
-                f.addWindowListener(new WindowChanger(f, editor, p, null, null, "Track Editor", true));
+                listener.contentChanged(editor, null, null, "track editor", true);
                 setContent(f, editor);
             }
         });
@@ -712,7 +715,7 @@ public class FormulaD extends Game implements Runnable {
         buttonPanel.add(trackEditorButton);
         f.setContentPane(p);
         f.pack();
-        f.addWindowListener(new ProfileSaver(f, profiles));
+        //f.addWindowListener(new ProfileSaver(f, profiles));
         f.setVisible(true);
     }
 

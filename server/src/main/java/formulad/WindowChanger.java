@@ -7,36 +7,31 @@ import java.awt.event.WindowListener;
 
 public class WindowChanger extends WindowAdapter {
     private final JFrame frame;
-    private final JPanel panel;
-    private final JPanel oldPanel;
-    private final Lobby lobby;
-    private final Game game;
-    private final String name;
-    private final boolean confirm;
-    private final WindowListener old;
-    WindowChanger(JFrame frame, JPanel panel, JPanel oldPanel, Lobby lobby, Game game, String name, boolean confirm) {
+    private final JPanel mainMenu;
+    private JPanel panel;
+    private Lobby lobby;
+    private Game game;
+    private String name;
+    private boolean confirm;
+    WindowChanger(JFrame frame, JPanel mainMenu) {
         this.frame = frame;
+        this.mainMenu = mainMenu;
+    }
+
+    public void reset() {
+        this.panel = null;
+        this.lobby = null;
+        this.game = null;
+        this.name = null;
+        this.confirm = false;
+    }
+
+    public void contentChanged(JPanel panel, Lobby lobby, Game game, String name, boolean confirm) {
         this.panel = panel;
-        this.oldPanel = oldPanel;
         this.lobby = lobby;
         this.game = game;
         this.name = name;
         this.confirm = confirm;
-        this.old = removeProfileSaver(frame);
-    }
-
-    private static WindowListener removeProfileSaver(JFrame frame) {
-        final WindowListener[] listeners = frame.getWindowListeners();
-        for (WindowListener l : listeners) {
-            if (l instanceof FormulaD.ProfileSaver) {
-                frame.removeWindowListener(l);
-                return l;
-            } else if (l instanceof WindowChanger) {
-                frame.removeWindowListener(l);
-                return ((WindowChanger) l).old;
-            }
-        }
-        return null;
     }
 
     @Override
@@ -52,13 +47,13 @@ public class WindowChanger extends WindowAdapter {
             }
             if (game != null) {
                 game.exit();
-            } else {
-                frame.setContentPane(oldPanel);
+            } else if (panel != null) {
+                frame.setMenuBar(null);
+                frame.setContentPane(mainMenu);
                 frame.pack();
-            }
-            frame.removeWindowListener(this);
-            if (old != null) {
-                frame.addWindowListener(old);
+                reset();
+            } else {
+                frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
             }
         }
     }
