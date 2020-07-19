@@ -38,6 +38,7 @@ public class Client extends Game implements Runnable {
         ois = new ObjectInputStream(socket.getInputStream()); // This may block if connection cannot be established!
         final AI backupAI = new GreatAI();
         ai = new ManualAI(backupAI, frame, this, profile);
+        setPreferredSize(new Dimension(400, 200));
     }
 
     @Override
@@ -205,5 +206,10 @@ public class Client extends Game implements Runnable {
     @Override
     protected Player getCurrent() {
         return current;
+    }
+
+    @Override
+    public String getName() {
+        return "Client";
     }
 }

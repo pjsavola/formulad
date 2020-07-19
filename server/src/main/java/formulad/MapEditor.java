@@ -541,4 +541,9 @@ public class MapEditor extends JPanel {
             return ext;
         }
     }
+
+    @Override
+    public String getName() {
+	    return "Map Editor";
+    }
 }

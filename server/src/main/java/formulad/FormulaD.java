@@ -513,6 +513,7 @@ public class FormulaD extends Game implements Runnable {
             return;
         }
         final JPanel lobbyPanel = new JPanel();
+        lobbyPanel.setName(lobby == null ? "Game Settings" : "Multiplayer Game Settings");
         lobbyPanel.setLayout(new BoxLayout(lobbyPanel, BoxLayout.PAGE_AXIS));
         lobbyPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
@@ -597,6 +598,7 @@ public class FormulaD extends Game implements Runnable {
         });
         p.setAutoscrolls(true);
         final JScrollPane scrollPane = new JScrollPane(p);
+        scrollPane.setName(p.getName());
         f.setContentPane(scrollPane);
         f.pack();
         final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -612,6 +614,7 @@ public class FormulaD extends Game implements Runnable {
         title.add(titleText);
         final JPanel contents = new JPanel(new GridLayout(0, 2));
         p.add(title);
+        p.setName("Main Menu");
         p.add(contents);
         p.setBorder(new EmptyBorder(10, 10, 10, 10));
         final JPanel buttonPanel = new JPanel(new GridLayout(4, 0));
@@ -686,21 +689,33 @@ public class FormulaD extends Game implements Runnable {
         buttonPanel.add(joinMultiplayerButton);
         buttonPanel.add(trackEditorButton);
         f.setContentPane(p);
-        f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         f.pack();
 
         f.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
                 super.windowClosing(e);
-                try {
-                    final FileOutputStream fos = new FileOutputStream("profiles.dat");
-                    final ObjectOutputStream oos = new ObjectOutputStream(fos);
-                    for (Profile profile : profiles) {
-                        oos.writeObject(profile);
+                final String name = f.getContentPane().getName();
+                if (name.equals("Main Menu")) {
+                    f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+                    try {
+                        final FileOutputStream fos = new FileOutputStream("profiles.dat");
+                        final ObjectOutputStream oos = new ObjectOutputStream(fos);
+                        for (Profile profile : profiles) {
+                            oos.writeObject(profile);
+                        }
+                    } catch (IOException ex) {
+                        FormulaD.log.log(Level.SEVERE, "Writing of profiles.dat failed");
                     }
-                } catch (IOException ex) {
-                    FormulaD.log.log(Level.SEVERE, "Writing of profiles.dat failed");
+                } else {
+                    f.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+                    final int confirmed = JOptionPane.showConfirmDialog(f.getContentPane(),
+                            "Are you sure you want to exit the " + name + "?", "Confirm",
+                            JOptionPane.YES_NO_OPTION);
+                    if (confirmed == JOptionPane.YES_OPTION) {
+                        f.setContentPane(p);
+                        f.pack();
+                    }
                 }
             }
         });
@@ -750,5 +765,10 @@ public class FormulaD extends Game implements Runnable {
     @Override
     protected LocalPlayer getCurrent() {
         return current;
+    }
+
+    @Override
+    public String getName() {
+        return lobby == null ? "Race" : "Server";
     }
 }
