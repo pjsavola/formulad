@@ -606,22 +606,17 @@ public class FormulaD extends Game implements Runnable {
 
     static class ProfileSaver extends WindowAdapter {
         private final JFrame frame;
-        private final List<Profile> profiles;
+        private final Profile.Manager profileManager;
+
         ProfileSaver(JFrame frame, List<Profile> profiles) {
             this.frame = frame;
-            this.profiles = profiles;
+            this.profileManager = profiles.isEmpty() ? null : profiles.get(0).getManager();
         }
+
         @Override
         public void windowClosing(WindowEvent e) {
-            frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-            try {
-                final FileOutputStream fos = new FileOutputStream("profiles.dat");
-                final ObjectOutputStream oos = new ObjectOutputStream(fos);
-                for (Profile profile : profiles) {
-                    oos.writeObject(profile);
-                }
-            } catch (IOException ex) {
-                FormulaD.log.log(Level.SEVERE, "Writing of profiles.dat failed");
+            if (profileManager != null) {
+                profileManager.saveProfiles();
             }
         }
     }
@@ -715,13 +710,14 @@ public class FormulaD extends Game implements Runnable {
         buttonPanel.add(trackEditorButton);
         f.setContentPane(p);
         f.pack();
-        //f.addWindowListener(new ProfileSaver(f, profiles));
+        f.addWindowListener(new ProfileSaver(f, profiles));
         f.setVisible(true);
     }
 
     public static void main(String[] args) {
         final JFrame f = new JFrame();
         final Params params = new Params();
+        final Profile.Manager profileManager = new Profile.Manager();
         final List<Profile> profiles = new ArrayList<>();
         try {
             final FileInputStream fileIn = new FileInputStream("profiles.dat");
@@ -731,13 +727,15 @@ public class FormulaD extends Game implements Runnable {
                 if (obj == null) {
                     break;
                 } else if (obj instanceof Profile) {
-                    profiles.add((Profile) obj);
+                    final Profile profile = (Profile) obj;
+                    profiles.add(profile);
+                    profile.setManager(profileManager);
                 }
             }
             objectIn.close();
         } catch (IOException | ClassNotFoundException e) {
             if (profiles.isEmpty()) {
-                final Profile defaultProfile = new Profile("Player");
+                final Profile defaultProfile = new Profile(profileManager, "Player");
                 defaultProfile.setActive(true);
                 profiles.add(defaultProfile);
             }

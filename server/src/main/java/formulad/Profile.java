@@ -5,9 +5,7 @@ import formulad.model.PlayerStats;
 import formulad.model.Standings;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Serializable;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -22,6 +20,23 @@ public class Profile implements Serializable {
     private int color2;
     private boolean active;
     private List<Result> results = new ArrayList<>();
+    private transient Manager manager;
+
+    public static class Manager {
+        private final List<Profile> profiles = new ArrayList<>();
+
+        public void saveProfiles() {
+            try {
+                final FileOutputStream fos = new FileOutputStream("profiles.dat");
+                final ObjectOutputStream oos = new ObjectOutputStream(fos);
+                for (Profile profile : profiles) {
+                    oos.writeObject(profile);
+                }
+            } catch (IOException ex) {
+                FormulaD.log.log(Level.SEVERE, "Writing of profiles.dat failed");
+            }
+        }
+    }
 
     private static class Result implements Serializable {
         private static final long serialVersionUID = -299482035708790406L;
@@ -56,9 +71,11 @@ public class Profile implements Serializable {
         }
     }
 
-    public Profile(String name) {
+    public Profile(Manager manager, String name) {
         id = UUID.randomUUID();
         this.name = name;
+        this.manager = manager;
+        manager.profiles.add(this);
     }
 
     public UUID getId() {
@@ -95,6 +112,15 @@ public class Profile implements Serializable {
 
     public boolean isActive() {
         return active;
+    }
+
+    public void setManager(Profile.Manager manager) {
+        this.manager = manager;
+        manager.profiles.add(this);
+    }
+
+    public Manager getManager() {
+        return manager;
     }
 
     public void standingsReceived(PlayerStats[] standings, String trackId) {

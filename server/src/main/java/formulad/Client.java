@@ -54,6 +54,7 @@ public class Client extends Game implements Runnable {
                     final FinalStandings standings = (FinalStandings) request;
                     if (!initialStandingsReceived) {
                         profile.standingsReceived(standings.getStats(), trackId);
+                        profile.getManager().saveProfiles();
                         initialStandingsReceived = true;
                         immutablePlayerMap = new HashMap<>(playerMap);
                         this.standings = Arrays.stream(standings.getStats()).map(ps -> ps.playerId).map(immutablePlayerMap::get).collect(Collectors.toList());
@@ -63,6 +64,7 @@ public class Client extends Game implements Runnable {
                     }
                     finalStandings = standings.getStats();
                     profile.standingsReceived(finalStandings, null);
+                    profile.getManager().saveProfiles();
                     repaint();
                     break;
                 } else {

@@ -121,7 +121,7 @@ public class ProfilePanel extends JPanel {
                     String result = (String) JOptionPane.showInputDialog(dialog, "New profile name", "New profile", JOptionPane.PLAIN_MESSAGE, null, null, null);
                     if (result != null && !result.isEmpty()) {
                         if (profiles.stream().noneMatch(p -> p.getName().equals(result))) {
-                            final Profile newProfile = new Profile(result);
+                            final Profile newProfile = new Profile(activeProfile.getManager(), result);
                             newProfile.setActive(true);
                             profiles.add(newProfile);
                             activeProfile.setActive(false);

@@ -239,9 +239,11 @@ public class ManualAI implements AI {
             final FinalStandings standings = (FinalStandings) notification;
             if (!initialStandingsReceived) {
                 profile.standingsReceived(standings.getStats(), trackId);
+                profile.getManager().saveProfiles();
                 initialStandingsReceived = true;
             } else {
                 profile.standingsReceived(standings.getStats(), null);
+                profile.getManager().saveProfiles();
             }
         }
     }
