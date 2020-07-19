@@ -66,7 +66,11 @@ public class ManualAI implements AI {
         for (int newGear = 1; newGear <= 6; ++newGear) {
             if (AIUtil.validateGear(hitpoints, gear, newGear, inPits)) {
                 final int[] distribution = formulad.ai.Gear.getDistribution(newGear);
-                final MenuItem item = new MenuItem("Gear " + newGear + " (" + distribution[0] + "-" + distribution[distribution.length -1] + ")");
+                String label = "Gear " + newGear + " (" + distribution[0] + "-" + distribution[distribution.length -1] + ")";
+                if (gear > newGear + 1) {
+                    label += " -" + (gear - newGear - 1) + " HP";
+                }
+                final MenuItem item = new MenuItem(label);
                 item.setShortcut(new MenuShortcut(KeyEvent.VK_0 + newGear));
                 final int finalNewGear = newGear;
                 item.addActionListener(e -> {
