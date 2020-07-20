@@ -134,7 +134,8 @@ public abstract class Game extends JPanel {
         }
         final Graphics2D g2d = (Graphics2D) g;
         // Circle for dice rolls
-        MapEditor.drawOval(g2d, 40, 40, 50, 50, true, true, Color.BLACK, 1);
+        final int x = infoBoxCorner == MapEditor.Corner.NW ? getWidth() - 40 : 40;
+        MapEditor.drawOval(g2d, x, 40, 50, 50, true, true, Color.BLACK, 1);
         drawTargets(g2d);
         drawInfoBox(g2d);
         drawRetiredPlayers(g2d);
@@ -192,7 +193,8 @@ public abstract class Game extends JPanel {
         if (current != null) {
             final Integer roll = this.roll;
             if (roll != null) {
-                current.drawRoll(g2d, roll);
+                final int circleX = infoBoxCorner == MapEditor.Corner.NW ? getWidth() - 40 : 40;
+                current.drawRoll(g2d, roll, circleX);
             } else {
                 // TODO: Highlight only manual AI?
                 immutablePlayerMap.values().stream().filter(p -> p == current && !p.isStopped()).forEach(p -> p.highlight(g2d, coordinates));

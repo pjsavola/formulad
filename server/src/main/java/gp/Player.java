@@ -32,7 +32,7 @@ public class Player {
         this.color1 = new Color(color1);
         this.color2 = new Color(color2);
         this.node = node;
-        this.angle = initialAngle;
+        this.angle = initialAngle / 180 * Math.PI;
         this.panel = panel;
     }
 
@@ -56,12 +56,12 @@ public class Player {
         return stopped;
     }
 
-    public void drawRoll(Graphics2D g2d, @Nullable Integer roll) {
+    public void drawRoll(Graphics2D g2d, @Nullable Integer roll, int circleX) {
         if (roll != null && gear != 0) {
             final Color color = getGearColor(gear);
             g2d.setColor(color);
             g2d.setFont(rollFont);
-            final int x = (roll >= 10) ? 30 : 36;
+            final int x = circleX - (roll >= 10 ? 10 : 4);
             g2d.drawString(Integer.toString(roll), x, 48);
         }
     }
@@ -121,7 +121,7 @@ public class Player {
     }
 
     public void draw(Graphics2D g, int x, int y, double angle) {
-        draw(g, x, y, angle / 180 * Math.PI, color1, color2, 1.0);
+        draw(g, x, y, angle, color1, color2, 1.0);
     }
 
     public static void draw(Graphics2D g, int x, int y, double angle, Color color1, Color color2, double scale) {
