@@ -78,9 +78,9 @@ public abstract class AIUtil {
     public static boolean validateGear(int hitpoints, int oldGear, int newGear, boolean inPits) {
         if (newGear < 1 || newGear > 6) return false;
 
-        if (Math.abs(newGear - oldGear) <= 1) return true;
-
         if (inPits && newGear > 4) return false;
+
+        if (Math.abs(newGear - oldGear) <= 1) return true;
 
         final int damage = oldGear - newGear - 1;
         return damage > 0 && damage < 4 && hitpoints > damage;
