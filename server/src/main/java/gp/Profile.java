@@ -24,13 +24,13 @@ public class Profile implements Serializable {
 
         public void saveProfiles() {
             try {
-                final FileOutputStream fos = new FileOutputStream("profiles.dat");
+                final FileOutputStream fos = new FileOutputStream("profiles.sav");
                 final ObjectOutputStream oos = new ObjectOutputStream(fos);
                 for (Profile profile : profiles) {
                     oos.writeObject(profile);
                 }
             } catch (IOException ex) {
-                Main.log.log(Level.SEVERE, "Writing of profiles.dat failed");
+                Main.log.log(Level.SEVERE, "Writing of profiles.sav failed");
             }
         }
     }

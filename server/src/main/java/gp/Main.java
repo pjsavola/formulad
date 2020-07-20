@@ -727,7 +727,7 @@ public class Main extends Game implements Runnable {
         final Profile.Manager profileManager = new Profile.Manager();
         final List<Profile> profiles = new ArrayList<>();
         try {
-            final FileInputStream fileIn = new FileInputStream("profiles.dat");
+            final FileInputStream fileIn = new FileInputStream("profiles.sav");
             final ObjectInputStream objectIn = new ObjectInputStream(fileIn);
             while (true) {
                 final Object obj = objectIn.readObject();

@@ -238,6 +238,7 @@ public class MapEditor extends JPanel {
         }
         final JFileChooser fileChooser = new JFileChooser();
         fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
+        fileChooser.addChoosableFileFilter(new Filter(Filter.dataExtensions, "Data file"));
         final int result = fileChooser.showSaveDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             final File selectedFile = fileChooser.getSelectedFile();
