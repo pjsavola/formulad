@@ -51,7 +51,7 @@ public abstract class Game extends JPanel {
 
     String trackId;
     private MapEditor.Corner infoBoxCorner;
-    private final Thread keepAlive;
+    private volatile boolean keepAlive = true;
 
     Game(JFrame frame, JPanel panel) {
         this.frame = frame;
@@ -60,11 +60,11 @@ public abstract class Game extends JPanel {
         final MenuBar menuBar = new MenuBar();
         menuBar.add(actionMenu);
         frame.setMenuBar(menuBar);
-        keepAlive = new Thread(() -> {
+        new Thread(() -> {
             Robot hal = null;
             try {
                 hal = new Robot();
-                while (true) {
+                while (keepAlive) {
                     hal.delay(1000 * 30);
                     Point pObj = MouseInfo.getPointerInfo().getLocation();
                     hal.mouseMove(pObj.x + 1, pObj.y + 1);
@@ -74,8 +74,7 @@ public abstract class Game extends JPanel {
             } catch (AWTException e) {
                 Main.log.log(Level.WARNING, "Failed to start keep-alive thread", e);
             }
-        });
-        keepAlive.start();
+        }).start();
     }
 
     void initTrack(String trackId) {
@@ -116,7 +115,7 @@ public abstract class Game extends JPanel {
     }
 
     protected void exit() {
-        keepAlive.interrupt();
+        keepAlive = false;
         for (WindowListener listener : frame.getWindowListeners()) {
             if (listener instanceof WindowChanger) {
                 ((WindowChanger) listener).reset();
