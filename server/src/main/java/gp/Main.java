@@ -203,14 +203,13 @@ public class Main extends Game implements Runnable {
 
     @Override
     public void run() {
-        final boolean hasManualAI = aiMap.values().stream().anyMatch(ai -> ai instanceof ManualAI);
         while (!stopped) {
             current.beginTurn();
             final AI ai = aiMap.get(current);
             final GameState gameState = ApiHelper.buildGameState(trackId, players);
             log.info("Querying gear input from AI " + current.getNameAndId());
             final Gear gearResponse = getAiInput(() -> ai.selectGear(gameState), gearTimeoutInMillis);
-            if (!hasManualAI || ai instanceof ManualAI) {
+            if (ai instanceof ManualAI || allPlayers.stream().filter(pl -> !pl.isStopped()).map(aiMap::get).noneMatch(p -> p instanceof ManualAI)) {
                 updateHitpointMap(gameState);
             }
             final Integer selectedGear = gearResponse == null ? null : gearResponse.getGear();
