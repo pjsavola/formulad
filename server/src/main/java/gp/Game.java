@@ -12,10 +12,9 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
+import java.util.logging.Level;
 
 public abstract class Game extends JPanel {
     // Parent JFrame and main menu JPanel, used when returning back to the main menu after the race is over.
@@ -52,6 +51,7 @@ public abstract class Game extends JPanel {
 
     String trackId;
     private MapEditor.Corner infoBoxCorner;
+    private final Thread keepAlive;
 
     Game(JFrame frame, JPanel panel) {
         this.frame = frame;
@@ -60,6 +60,22 @@ public abstract class Game extends JPanel {
         final MenuBar menuBar = new MenuBar();
         menuBar.add(actionMenu);
         frame.setMenuBar(menuBar);
+        keepAlive = new Thread(() -> {
+            Robot hal = null;
+            try {
+                hal = new Robot();
+                while (true) {
+                    hal.delay(1000 * 30);
+                    Point pObj = MouseInfo.getPointerInfo().getLocation();
+                    hal.mouseMove(pObj.x + 1, pObj.y + 1);
+                    hal.mouseMove(pObj.x - 1, pObj.y - 1);
+                    pObj = MouseInfo.getPointerInfo().getLocation();
+                }
+            } catch (AWTException e) {
+                Main.log.log(Level.WARNING, "Failed to start keep-alive thread", e);
+            }
+        });
+        keepAlive.start();
     }
 
     void initTrack(String trackId) {
@@ -100,6 +116,7 @@ public abstract class Game extends JPanel {
     }
 
     protected void exit() {
+        keepAlive.interrupt();
         for (WindowListener listener : frame.getWindowListeners()) {
             if (listener instanceof WindowChanger) {
                 ((WindowChanger) listener).reset();
