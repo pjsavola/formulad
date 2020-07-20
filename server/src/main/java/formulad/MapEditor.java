@@ -39,6 +39,7 @@ public class MapEditor extends JPanel {
     private int nextNodeId;
     private final List<Node> nodes = new ArrayList<>();
     private final Map<Node, Double> attributes = new HashMap<>();
+    private final Map<Node, Double> gridAngles = new HashMap<>();
     private final Map<Node, Point> coordinates = new HashMap<>();
     private Node selectedNode;
     private BufferedImage backgroundImage;
@@ -129,6 +130,10 @@ public class MapEditor extends JPanel {
         setAttribute.addActionListener(e -> setAttribute());
         setAttribute.setShortcut(new MenuShortcut(KeyEvent.VK_Z));
         editMenu.add(setAttribute);
+        final MenuItem setGridAngle = new MenuItem("Set Grid Angle");
+        setGridAngle.addActionListener(e -> setGridAngle());
+        setGridAngle.setShortcut(new MenuShortcut(KeyEvent.VK_G));
+        editMenu.add(setGridAngle);
         final MenuItem moveInfoBox = new MenuItem("Move Info Box");
         moveInfoBox.addActionListener(e -> switchInfoBoxCorner());
         moveInfoBox.setShortcut(new MenuShortcut(KeyEvent.VK_I));
@@ -151,10 +156,10 @@ public class MapEditor extends JPanel {
         strokeCurve3.addActionListener(e -> setStroke(Node.Type.CURVE_3));
         strokeCurve3.setShortcut(new MenuShortcut(KeyEvent.VK_3));
         strokeMenu.add(strokeCurve3);
-        final MenuItem strokeStartingGrid = new MenuItem("Starting Grid");
-        strokeStartingGrid.addActionListener(e -> setStroke(Node.Type.START));
-        strokeStartingGrid.setShortcut(new MenuShortcut(KeyEvent.VK_G));
-        strokeMenu.add(strokeStartingGrid);
+        //final MenuItem strokeStartingGrid = new MenuItem("Starting Grid");
+        //strokeStartingGrid.addActionListener(e -> setStroke(Node.Type.START));
+        //strokeStartingGrid.setShortcut(new MenuShortcut(KeyEvent.VK_G));
+        //strokeMenu.add(strokeStartingGrid);
         final MenuItem strokeFinishLine = new MenuItem("Finish Line");
         strokeFinishLine.addActionListener(e -> setStroke(Node.Type.FINISH));
         strokeFinishLine.setShortcut(new MenuShortcut(KeyEvent.VK_F));
@@ -195,7 +200,10 @@ public class MapEditor extends JPanel {
         if (selectedNode != null) {
             final Point p = coordinates.get(selectedNode);
             drawOval(g2d, p.x, p.y, DIAMETER + 2, DIAMETER + 2, true, false, Color.WHITE, 1);
-            final Double attr = attributes.get(selectedNode);
+            Double attr = attributes.get(selectedNode);
+            if (attr == null) {
+                attr = gridAngles.get(selectedNode);
+            }
             if (attr != null) {
                 drawOval(g2d, 40, 40, 50, 50, true, true, Color.BLACK, 1);
                 final String attrStr = Double.toString(attr);
@@ -211,7 +219,7 @@ public class MapEditor extends JPanel {
     boolean open() {
         final JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Select background image");
-        fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+        fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
         fileChooser.addChoosableFileFilter(new Filter(Filter.imageExtensions, "Image only"));
         fileChooser.setAcceptAllFileFilterUsed(true);
         final int result = fileChooser.showOpenDialog(this);
@@ -230,7 +238,7 @@ public class MapEditor extends JPanel {
 	        return;
         }
         final JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+        fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
         final int result = fileChooser.showSaveDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             final File selectedFile = fileChooser.getSelectedFile();
@@ -259,9 +267,17 @@ public class MapEditor extends JPanel {
                         writer.println(idMap.get(child));
                     });
                 }
+                writer.println();
                 if (!attributes.isEmpty()) {
-                    writer.println();
                     for (Map.Entry<Node, Double> entry : attributes.entrySet()) {
+                        writer.print(idMap.get(entry.getKey()));
+                        writer.print(" ");
+                        writer.println(entry.getValue());
+                    }
+                }
+                if (!gridAngles.isEmpty()) {
+                    writer.println();
+                    for (Map.Entry<Node, Double> entry : gridAngles.entrySet()) {
                         writer.print(idMap.get(entry.getKey()));
                         writer.print(" ");
                         writer.println(entry.getValue());
@@ -277,7 +293,7 @@ public class MapEditor extends JPanel {
     private void load() {
         final JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Load track data");
-        fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+        fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
         fileChooser.addChoosableFileFilter(new Filter(Filter.dataExtensions, "Data file"));
         fileChooser.setAcceptAllFileFilterUsed(true);
         fileChooser.setAcceptAllFileFilterUsed(true);
@@ -285,7 +301,7 @@ public class MapEditor extends JPanel {
         if (result == JFileChooser.APPROVE_OPTION) {
             final File selectedFile = fileChooser.getSelectedFile();
             try (FileInputStream fis = new FileInputStream(selectedFile)) {
-                final Pair<String, Corner> p = loadNodes(fis, nodes, attributes, coordinates);
+                final Pair<String, Corner> p = loadNodes(fis, nodes, attributes, gridAngles, coordinates);
                 infoBoxCorner = p.getRight();
                 nextNodeId += nodes.size();
                 repaint();
@@ -308,7 +324,7 @@ public class MapEditor extends JPanel {
         return null;
     }
 
-    public static Pair<String, Corner> loadNodes(InputStream map, Collection<Node> nodes, Map<Node, Double> attributes, Map<Node, Point> coordinates) {
+    public static Pair<String, Corner> loadNodes(InputStream map, Collection<Node> nodes, Map<Node, Double> attributes, Map<Node, Double> gridAngles, Map<Node, Point> coordinates) {
 	    Pair<String, Corner> result = null;
         try (InputStreamReader ir = new InputStreamReader(map); final BufferedReader br = new BufferedReader(ir)) {
             final String headerLine = br.readLine();
@@ -320,6 +336,7 @@ public class MapEditor extends JPanel {
             // then a single empty line and then attributes.
             final Map<Integer, Node> idMap = new HashMap<>();
             final Map<Node, Double> attrMap = new HashMap<>();
+            final Map<Node, Double> gridAngleMap = new HashMap<>();
             final Map<Node, Point> coordMap = new HashMap<>();
             int emptyLines = 0;
             String line;
@@ -339,10 +356,14 @@ public class MapEditor extends JPanel {
                     final Node node = new Node(id, type);
                     idMap.put(id, node);
                     coordMap.put(node, new Point(x, y));
-                } else {
+                } else if (emptyLines == 2) {
                     final int id = Integer.parseInt(parts[0]);
                     final double attribute = Double.parseDouble(parts[1]);
                     attrMap.put(idMap.get(id), attribute);
+                } else {
+                    final int id = Integer.parseInt(parts[0]);
+                    final double attribute = Double.parseDouble(parts[1]);
+                    gridAngleMap.put(idMap.get(id), attribute);
                 }
             }
             // The file format was appraently good.
@@ -350,6 +371,8 @@ public class MapEditor extends JPanel {
             nodes.addAll(idMap.values());
             attributes.clear();
             attributes.putAll(attrMap);
+            gridAngles.clear();
+            gridAngles.putAll(gridAngleMap);
             coordinates.clear();
             coordinates.putAll(coordMap);
         } catch (IOException e) {
@@ -381,11 +404,34 @@ public class MapEditor extends JPanel {
         }
     }
 
+    private void setGridAngle() {
+        if (selectedNode != null) {
+            final Object attr = JOptionPane.showInputDialog(
+                    this,
+                    "Set Grid Angle:",
+                    "Set Grid Angle",
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    null,
+                    gridAngles.get(selectedNode)
+            );
+            if (attr != null && !attr.toString().isEmpty()) {
+                gridAngles.put(selectedNode, Double.valueOf(attr.toString()));
+            } else {
+                gridAngles.remove(selectedNode);
+            }
+            if (autoSelectMode) {
+                selectedNode = null;
+            }
+            repaint();
+        }
+    }
+
     private void validateTrack() {
 	    try {
             final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
             final Map<Node, Double> distanceMap = new HashMap<>();
-            final List<Node> grid = FormulaD.findGrid(nodes, attributes, distanceMap, prevNodeMap);
+            final List<Node> grid = FormulaD.findGrid(nodes, attributes, gridAngles, distanceMap, prevNodeMap);
             if (grid.size() < 10) {
                 JOptionPane.showConfirmDialog(this, "Track validation failed: Starting grid has less than 10 spots", "Validation Error", JOptionPane.DEFAULT_OPTION);
             }
@@ -402,7 +448,7 @@ public class MapEditor extends JPanel {
     }
 
     private void drawNode(Graphics2D g2d, Node node) {
-        final Color color;
+        Color color;
         switch (node.getType()) {
             case STRAIGHT:
                 color = Color.GREEN;
@@ -429,6 +475,9 @@ public class MapEditor extends JPanel {
                 throw new RuntimeException("Unknown node type");
         }
         final Point p = coordinates.get(node);
+        if (gridAngles.containsKey(node)) {
+            color = Color.WHITE;
+        }
         drawOval(g2d, p.x, p.y, DIAMETER, DIAMETER, true, true, color, 0);
     }
 

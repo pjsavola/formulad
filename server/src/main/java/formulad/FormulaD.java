@@ -109,8 +109,7 @@ public class FormulaD extends Game implements Runnable {
             }
         }
         final int playerCount = aiToProfile.size();
-        final List<Node> grid = findGrid(nodes, attributes, distanceMap, prevNodeMap).subList(0, playerCount);
-        grid.sort((n1, n2) -> (int) (100 * (distanceMap.get(n2) - distanceMap.get(n1))));
+        final List<Node> grid = findGrid(nodes, attributes, gridAngles, distanceMap, prevNodeMap).subList(0, playerCount);
 
         final List<Integer> startingOrder = IntStream.range(0, playerCount).boxed().collect(Collectors.toList());
         if (params.randomizeStartingOrder) {
@@ -132,7 +131,7 @@ public class FormulaD extends Game implements Runnable {
         final String playerId = "p" + (playerCount + 1);
         final Track track = ApiHelper.buildTrack(trackId, playerId, nodes, attributes);
         final Node startNode = grid.get(startingOrder.get(playerCount));
-        final LocalPlayer player = new LocalPlayer(playerId, startNode, attributes.get(startNode), laps, this, leeway, ai.getValue().getColor1(), ai.getValue().getColor2());
+        final LocalPlayer player = new LocalPlayer(playerId, startNode, gridAngles.get(startNode), laps, this, leeway, ai.getValue().getColor1(), ai.getValue().getColor2());
         current = player;
         log.info("Initializing player " + playerId);
         NameAtStart nameResponse = getAiInput(() -> ai.getKey().startGame(track), initTimeoutInMillis);
@@ -266,7 +265,7 @@ public class FormulaD extends Game implements Runnable {
         clickToExit();
     }
 
-    static List<Node> findGrid(List<Node> nodes, Map<Node, Double> attributes, Map<Node, Double> distanceMap, Map<Node, List<Node>> prevNodeMap) {
+    static List<Node> findGrid(List<Node> nodes, Map<Node, Double> attributes, Map<Node, Double> gridAngles, Map<Node, Double> distanceMap, Map<Node, List<Node>> prevNodeMap) {
 	    final Set<Node> visited = new HashSet<>();
         final List<Node> grid = new ArrayList<>();
         final List<Node> work = new ArrayList<>();
@@ -282,12 +281,12 @@ public class FormulaD extends Game implements Runnable {
                     edges.add(node);
                 }
             }
+            if (node.isCurve() && !attributes.containsKey(node)) {
+                throw new RuntimeException("There is a curve without distance attribute");
+            }
         }
         while (!work.isEmpty()) {
             final Node node = work.remove(0);
-            if (node.getType() == Node.Type.START) {
-                grid.add(0, node);
-            }
             node.forEachChild(next -> {
                 if (visited.add(next)) {
                     work.add(next);
@@ -400,22 +399,25 @@ public class FormulaD extends Game implements Runnable {
                 });
             }
         }
+        gridAngles.keySet().forEach(grid::add);
+        grid.sort((n1, n2) -> (int) (100 * (distanceMap.get(n2) - distanceMap.get(n1))));
         return grid;
     }
 
     public static boolean validateTrack(String trackId) {
         final List<Node> nodes = new ArrayList<>();
         final Map<Node, Double> attributes = new HashMap<>();
+        final Map<Node, Double> gridAngleMap = new HashMap<>();
         final Map<Node, Double> distanceMap = new HashMap<>();
         final Map<Node, Point> coordinates = new HashMap<>();
         try (InputStream is = FormulaD.class.getResourceAsStream("/" + trackId)) {
-            final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes, coordinates);
+            final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes, gridAngleMap, coordinates);
             if (result == null) {
                 log.log(Level.SEVERE, "Track validation failed: Proper header is missing from " + trackId);
                 return false;
             }
             final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
-            final List<Node> grid = findGrid(nodes, attributes, distanceMap, prevNodeMap);
+            final List<Node> grid = findGrid(nodes, attributes, gridAngleMap, distanceMap, prevNodeMap);
             if (grid.size() < 10) {
                 log.log(Level.SEVERE, "Track validation failed: Starting grid has less than 10 spots");
                 return false;

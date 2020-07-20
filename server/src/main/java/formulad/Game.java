@@ -29,8 +29,10 @@ public abstract class Game extends JPanel {
     final List<Node> nodes = new ArrayList<>();
     // Contains coordinates for all nodes
     final Map<Node, Point> coordinates = new HashMap<>();
-    // Contains angles for start nodes and distance information for curves
+    // Contains pit lane garage locations and distance information for curves
     final Map<Node, Double> attributes = new HashMap<>();
+    // Contains grid starting angles
+    final Map<Node, Double> gridAngles = new HashMap<>();
 
     // Used when selecting where to move. Maps node index to damage taken if that node is selected.
     private Map<Integer, Integer> highlightedNodeToDamage;
@@ -64,7 +66,7 @@ public abstract class Game extends JPanel {
         this.trackId = trackId;
         final String dataFile = "/" + trackId;
         try (InputStream is = FormulaD.class.getResourceAsStream(dataFile)) {
-            final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes, coordinates);
+            final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes, gridAngles, coordinates);
             final String imageFile = "/" + result.getLeft();
             infoBoxCorner = result.getRight();
             backgroundImage = ImageCache.getImage(imageFile);
