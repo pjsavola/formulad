@@ -171,8 +171,10 @@ public abstract class Game extends JPanel {
             if (player == getCurrent()) {
                 UIUtil.drawTurnMarker(g2d, this, standings.size(), infoBoxCorner, i);
             }
-            player.draw(g2d, getWidth() - 235, i * 15 + 10, 0);
-            player.drawStats(g2d, getWidth() - 220, i * 15 + 15, hitpointMap);
+            final int x = UIUtil.getX(infoBoxCorner, this, 250);
+            final int y = UIUtil.getY(infoBoxCorner, this, 5 + 15 * standings.size());
+            player.draw(g2d, x + 15, y + i * 15 + 10, 0);
+            player.drawStats(g2d, x + 30, y + i * 15 + 15, hitpointMap);
             ++i;
         }
     }

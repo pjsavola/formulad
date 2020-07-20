@@ -5,7 +5,7 @@ import java.awt.*;
 
 class UIUtil {
 
-    private static int getX(MapEditor.Corner corner, JPanel panel, int w) {
+    static int getX(MapEditor.Corner corner, JPanel panel, int w) {
         switch (corner) {
             case NE: return panel.getWidth() - w;
             case SE: return panel.getWidth() - w;
@@ -15,7 +15,7 @@ class UIUtil {
         return 0;
     }
 
-    private static int getY(MapEditor.Corner corner, JPanel panel, int h) {
+    static int getY(MapEditor.Corner corner, JPanel panel, int h) {
         switch (corner) {
             case NE: return 0;
             case SE: return panel.getHeight() - h;
