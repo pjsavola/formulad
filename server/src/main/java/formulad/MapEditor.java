@@ -191,6 +191,7 @@ public class MapEditor extends JPanel {
         for (Node node : nodes) {
             drawNode(g2d, node);
         }
+        UIUtil.drawInfoBox(g2d, this, 10, infoBoxCorner);
         if (selectedNode != null) {
             final Point p = coordinates.get(selectedNode);
             drawOval(g2d, p.x, p.y, DIAMETER + 2, DIAMETER + 2, true, false, Color.WHITE, 1);
@@ -205,7 +206,6 @@ public class MapEditor extends JPanel {
             }
         }
         drawArcs(g2d, nodes);
-        UIUtil.drawInfoBox(g2d, this, 10, infoBoxCorner);
     }
 
     boolean open() {

@@ -31,7 +31,7 @@ class UIUtil {
         final int x = getX(corner, panel, w);
         final int y = getY(corner, panel, h);
         g2d.setColor(Color.GRAY);
-        g2d.fillRect(x, y, w - 1, h);
+        g2d.fillRect(x, y, w, h);
         g2d.setColor(Color.BLACK);
         g2d.drawRect(x, y, w, h);
     }
