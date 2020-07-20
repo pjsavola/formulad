@@ -130,7 +130,8 @@ public class Main extends Game implements Runnable {
         final int playerCount = allPlayers.size();
         final String playerId = "p" + (playerCount + 1);
         final Track track = ApiHelper.buildTrack(trackId, playerId, nodes, attributes);
-        final Node startNode = grid.get(startingOrder.get(playerCount));
+        final int gridPosition = startingOrder.get(playerCount);
+        final Node startNode = grid.get(gridPosition);
         final LocalPlayer player = new LocalPlayer(playerId, startNode, gridAngles.get(startNode), laps, this, leeway, ai.getValue().getColor1(), ai.getValue().getColor2());
         current = player;
         log.info("Initializing player " + playerId);
@@ -153,7 +154,7 @@ public class Main extends Game implements Runnable {
         player.setId(id);
         players.add(player);
         allPlayers.add(player);
-        player.setGridPosition(allPlayers.size());
+        player.setGridPosition(gridPosition + 1);
         aiMap.put(player, ai.getKey());
         return new CreatedPlayerNotification(current.getId(), name, startNode.getId(), 18, 1, ai.getValue().getColor1(), ai.getValue().getColor2());
     }
