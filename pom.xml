@@ -3,18 +3,18 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>fi.bogus</groupId>
-    <artifactId>formulad</artifactId>
+    <artifactId>gp-online</artifactId>
     <version>0.1</version>
     <packaging>pom</packaging>
 
-    <name>formulad-super</name>
+    <name>gp-online-super</name>
     <description>Add project description here</description>
 
     <properties>
         <common-version>0.1</common-version>
         <quickcheck.version>0.8</quickcheck.version>
         <used.java.version>1.8</used.java.version>
-        <uberjar.name>formulad</uberjar.name>
+        <uberjar.name>gp-online</uberjar.name>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 

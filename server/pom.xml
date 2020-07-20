@@ -3,16 +3,16 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>fi.bogus</groupId>
-    <artifactId>formulad-server</artifactId>
+    <artifactId>gp-online-server</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <name>formulad-server</name>
-    <description>Coordinating server for FormulaD</description>
+    <name>gp-online-server</name>
+    <description>GP Online</description>
 
     <properties>
         <quickcheck.version>0.8</quickcheck.version>
         <used.java.version>1.8</used.java.version>
-        <uberjar.name>formulad</uberjar.name>
+        <uberjar.name>gp-online</uberjar.name>
         <resources.dir>resources</resources.dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -43,7 +43,7 @@
                             <transformers>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>formulad.FormulaD</mainClass>
+                                    <mainClass>gp.Main</mainClass>
                                 </transformer>
                             </transformers>
                             <filters>
