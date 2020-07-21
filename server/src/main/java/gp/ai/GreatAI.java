@@ -400,6 +400,25 @@ public class GreatAI implements AI {
             }
         }
 
+        // Can access curve and need to stop more than once after this move -> enter curve but minimize distance
+        if (hasCurve(bestIndices, moves)) {
+            final Node curve = recurseUntil(nodeMap.get(player.getNodeId()), false);
+            final int stopCount = curve.getStopCount();
+            if (stopCount > player.getStops() + 1) {
+                removeNonCurves(bestIndices, moves);
+                final int minDistance = getMinDistance(bestIndices, moves, distances);
+                final Iterator<Integer> it = bestIndices.iterator();
+                while (it.hasNext()) {
+                    final int i = it.next();
+                    final Node node = nodeMap.get(moves.get(i).getNodeId());
+                    final int distance = distances.get(node);
+                    if (distance > minDistance) {
+                        it.remove();
+                    }
+                }
+            }
+        }
+
         // Priority 2: Maximize distance
         final int maxDistance = getMaxDistance(bestIndices, moves, distances);
         final Iterator<Integer> it = bestIndices.iterator();
