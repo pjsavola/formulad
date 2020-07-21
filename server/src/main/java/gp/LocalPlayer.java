@@ -30,6 +30,9 @@ public final class LocalPlayer extends Player {
         lapsToGo = laps;
         this.panel = panel;
         this.leeway = leeway;
+        if (node.isCurve()) {
+            ++curveStops;
+        }
     }
 
     public void setId(UUID id) {
@@ -315,7 +318,7 @@ public final class LocalPlayer extends Player {
             }
             if (player != this && node.isCloseTo(player.node, prevNodeMap)) {
                 Main.log.info(getNameAndId() + " is close to " + player.getNameAndId() + " and may collide");
-                if (rng.nextInt(20) < 4) {
+                if (!isStopped() && rng.nextInt(20) < 4) {
                     adjustHitpoints(1);
                     if (hitpoints <= 0) {
                         stop();

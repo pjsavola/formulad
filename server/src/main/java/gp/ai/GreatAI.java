@@ -407,6 +407,7 @@ public class GreatAI implements AI {
             if (stopCount > player.getStops() + 1) {
                 removeNonCurves(bestIndices, moves);
                 final int minDistance = getMinDistance(bestIndices, moves, distances);
+                final int oldSize = bestIndices.size();
                 final Iterator<Integer> it = bestIndices.iterator();
                 while (it.hasNext()) {
                     final int i = it.next();
@@ -415,6 +416,9 @@ public class GreatAI implements AI {
                     if (distance > minDistance) {
                         it.remove();
                     }
+                }
+                if (bestIndices.size() < oldSize) {
+                    debug("Removed " + (oldSize - bestIndices.size()) + " candidates because of stop counts.");
                 }
             }
         }
