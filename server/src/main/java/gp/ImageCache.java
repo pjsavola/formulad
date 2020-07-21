@@ -1,16 +1,17 @@
 package gp;
 
-import java.awt.Graphics;
-import java.awt.GraphicsConfiguration;
-import java.awt.GraphicsEnvironment;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
+import javax.swing.*;
 
 public abstract class ImageCache {
     private static Map<String, BufferedImage> imageCache = new HashMap<>();
@@ -59,5 +60,19 @@ public abstract class ImageCache {
     private static GraphicsConfiguration getConfiguration() {
         return GraphicsEnvironment.getLocalGraphicsEnvironment().
                 getDefaultScreenDevice().getDefaultConfiguration();
+    }
+
+    public static List<BufferedImage> getCarIcons() {
+        final List<BufferedImage> icons = new ArrayList<>();
+        GraphicsConfiguration gc = getConfiguration();
+        int[] sizes = { 16, 32, 64, 128 };
+        for (int size : sizes) {
+            BufferedImage compatibleImage = gc.createCompatibleImage(size, size, BufferedImage.TYPE_INT_ARGB_PRE);
+            Graphics g = compatibleImage.getGraphics();
+            Player.draw((Graphics2D) g, size / 2, size / 2, 0, Color.RED, Color.BLACK, 1.0);
+            g.dispose();
+            icons.add(compatibleImage);
+        }
+        return icons;
     }
 }

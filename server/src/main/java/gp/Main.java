@@ -22,6 +22,7 @@ import java.util.stream.IntStream;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
+import com.apple.eawt.Application;
 import gp.ai.*;
 
 import gp.ai.Node;
@@ -756,6 +757,10 @@ public class Main extends Game implements Runnable {
         }
         if (!activeFound) {
             profiles.get(0).setActive(true);
+        }
+        f.setIconImages(ImageCache.getCarIcons());
+        if (Application.getApplication() != null) {
+            Application.getApplication().setDockIconImage(f.getIconImage());
         }
         showMenu(f, params, profiles);
     }
