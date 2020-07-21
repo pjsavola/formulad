@@ -52,7 +52,7 @@ public class WindowChanger extends WindowAdapter {
             if (game != null) {
                 game.exit();
             } else if (panel != null) {
-                frame.setMenuBar(null);
+                frame.setMenuBar(new MainMenuBar(frame, mainMenu));
                 frame.setContentPane(mainMenu);
                 frame.pack();
                 reset();

@@ -625,6 +625,7 @@ public class Main extends Game implements Runnable {
 
     private static void showMenu(JFrame f, Params params, List<Profile> profiles) {
         final JPanel p = new JPanel();
+        f.setMenuBar(new MainMenuBar(f, p));
         final WindowChanger listener = new WindowChanger(f, p);
         f.addWindowListener(listener);
         p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));

@@ -109,7 +109,7 @@ public abstract class Game extends JPanel {
                 ((WindowChanger) listener).reset();
             }
         }
-        frame.setMenuBar(null);
+        frame.setMenuBar(new MainMenuBar(frame, panel));
         frame.setContentPane(panel);
         frame.pack();
     }
