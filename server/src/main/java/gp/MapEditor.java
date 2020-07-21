@@ -169,6 +169,7 @@ public class MapEditor extends JPanel {
         strokes.put(Node.Type.PIT, strokePitLane);
 
         setStroke(Node.Type.STRAIGHT);
+        select(null);
 
         menuBar.add(validationMenu);
         final MenuItem validate = new MenuItem("Validate Track");
@@ -260,6 +261,10 @@ public class MapEditor extends JPanel {
         if (result == JFileChooser.APPROVE_OPTION) {
             final File selectedFile = fileChooser.getSelectedFile();
             backgroundImage = ImageCache.getImageFromPath(selectedFile.getAbsolutePath());
+            if (backgroundImage == null) {
+                JOptionPane.showConfirmDialog(this, "Unable to open image " + selectedFile.getName(), "Error", JOptionPane.DEFAULT_OPTION);
+                return false;
+            }
             backgroundImageFileName = selectedFile.getName();
             setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
             return true;
@@ -274,6 +279,7 @@ public class MapEditor extends JPanel {
         final JFileChooser fileChooser = new JFileChooser();
         fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
         fileChooser.addChoosableFileFilter(new Filter(Filter.dataExtensions, "Data file"));
+        fileChooser.setAcceptAllFileFilterUsed(true);
         final int result = fileChooser.showSaveDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             final File selectedFile = fileChooser.getSelectedFile();
@@ -330,7 +336,6 @@ public class MapEditor extends JPanel {
         fileChooser.setDialogTitle("Load track data");
         fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
         fileChooser.addChoosableFileFilter(new Filter(Filter.dataExtensions, "Data file"));
-        fileChooser.setAcceptAllFileFilterUsed(true);
         fileChooser.setAcceptAllFileFilterUsed(true);
         final int result = fileChooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
