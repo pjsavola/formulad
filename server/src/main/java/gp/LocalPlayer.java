@@ -51,6 +51,9 @@ public final class LocalPlayer extends Player {
     // 2. covered distance of current lap
     // 3. higher gear
     // 4. inside line in curve
+    //       curve vs. no-curve -> no-curve is assumed to have inside line and gets player order
+    //       curve vs.    curve -> shorter distance to next area is assumed to have inside line and gets player order
+    //    no-curve vs. no-curve -> longer distance to next area is assumed to have inside line and gets player order
     // 5. order of arrival
     public int compareTo(LocalPlayer player, Map<Node, Double> distanceMap, List<LocalPlayer> stoppedPlayers) {
         if (lapsToGo == player.lapsToGo) {
@@ -76,7 +79,8 @@ public final class LocalPlayer extends Player {
                     if (index2 == -1) return -1;
                     return index1 > index2 ? 1 : -1;
                 }
-                return distanceToNextArea2 - distanceToNextArea1;
+                final int delta = distanceToNextArea1 - distanceToNextArea2;
+                return node.isCurve() ? delta : -delta;
             }
             return player.gear - gear;
         }
