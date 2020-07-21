@@ -64,10 +64,15 @@ public class MapEditor extends JPanel {
                 if (e.getButton() == MouseEvent.BUTTON1) {
                     final Node node = getNode(nodes, coordinates, e.getX(), e.getY(), DIAMETER);
                     if (node == null) {
-                        select(null);
                         final Node newNode = new Node(nextNodeId++, stroke);
                         nodes.add(newNode);
                         coordinates.put(newNode, new Point(e.getX(), e.getY()));
+                        if (autoSelectMode && selectedNode != null) {
+                            selectedNode.addChild(newNode);
+                            select(newNode);
+                        } else {
+                            select(null);
+                        }
                     } else if (selectedNode == null) {
                         select(node);
                     } else if (selectedNode != node) {
