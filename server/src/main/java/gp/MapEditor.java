@@ -50,6 +50,11 @@ public class MapEditor extends JPanel {
     // After drawing an edge, automatically select the target node.
     private boolean autoSelectMode = true;
 
+    private final HashMap<Node.Type, MenuItem> strokes = new HashMap<>();
+    private final MenuItem setGarage;
+    private final MenuItem setCurveDistance;
+    private final MenuItem setGridAngle;
+
     public enum Corner { NE, SE, SW, NW };
 
 	public MapEditor(JFrame frame) {
@@ -59,24 +64,24 @@ public class MapEditor extends JPanel {
                 if (e.getButton() == MouseEvent.BUTTON1) {
                     final Node node = getNode(nodes, coordinates, e.getX(), e.getY(), DIAMETER);
                     if (node == null) {
-                        selectedNode = null;
+                        select(null);
                         final Node newNode = new Node(nextNodeId++, stroke);
                         nodes.add(newNode);
                         coordinates.put(newNode, new Point(e.getX(), e.getY()));
                     } else if (selectedNode == null) {
-                        selectedNode = node;
+                        select(node);
                     } else if (selectedNode != node) {
                         selectedNode.addChild(node);
-                        selectedNode = autoSelectMode ? node : (node.childCount(null) == 0 ? node : null);
+                        select(autoSelectMode ? node : (node.childCount(null) == 0 ? node : null));
                     } else {
-                        selectedNode = null;
+                        select(null);
                     }
                     repaint();
                 } else if (e.getButton() == MouseEvent.BUTTON3) {
                     final Node node = getNode(nodes, coordinates, e.getX(), e.getY(), DIAMETER / 2 + 1);
                     if (node != null) {
                         if (selectedNode == node) {
-                            selectedNode = null;
+                            select(null);
                         }
                         nodes.remove(node);
                         for (Node n : nodes) {
@@ -114,11 +119,15 @@ public class MapEditor extends JPanel {
         autoSelectMode.addActionListener(e -> toggleSelectMode());
         autoSelectMode.setShortcut(new MenuShortcut(KeyEvent.VK_A));
         editMenu.add(autoSelectMode);
-        final MenuItem setAttribute = new MenuItem("Set Attribute");
-        setAttribute.addActionListener(e -> setAttribute());
-        setAttribute.setShortcut(new MenuShortcut(KeyEvent.VK_Z));
-        editMenu.add(setAttribute);
-        final MenuItem setGridAngle = new MenuItem("Set Grid Angle");
+        setGarage = new MenuItem("Set Garage");
+        setGarage.addActionListener(e -> setAttribute());
+        setGarage.setShortcut(new MenuShortcut(KeyEvent.VK_Z));
+        editMenu.add(setGarage);
+        setCurveDistance = new MenuItem("Set Curve Distance");
+        setCurveDistance.addActionListener(e -> setAttribute());
+        setCurveDistance.setShortcut(new MenuShortcut(KeyEvent.VK_Z));
+        editMenu.add(setCurveDistance);
+        setGridAngle = new MenuItem("Set Grid Angle");
         setGridAngle.addActionListener(e -> setGridAngle());
         setGridAngle.setShortcut(new MenuShortcut(KeyEvent.VK_G));
         editMenu.add(setGridAngle);
@@ -132,30 +141,34 @@ public class MapEditor extends JPanel {
         strokeStraight.addActionListener(e -> setStroke(Node.Type.STRAIGHT));
         strokeStraight.setShortcut(new MenuShortcut(KeyEvent.VK_S));
         strokeMenu.add(strokeStraight);
+        strokes.put(Node.Type.STRAIGHT, strokeStraight);
         final MenuItem strokeCurve1 = new MenuItem("1 Stop Curve");
         strokeCurve1.addActionListener(e -> setStroke(Node.Type.CURVE_1));
         strokeCurve1.setShortcut(new MenuShortcut(KeyEvent.VK_1));
         strokeMenu.add(strokeCurve1);
+        strokes.put(Node.Type.CURVE_1, strokeCurve1);
         final MenuItem strokeCurve2 = new MenuItem("2 Stop Curve");
         strokeCurve2.addActionListener(e -> setStroke(Node.Type.CURVE_2));
         strokeCurve2.setShortcut(new MenuShortcut(KeyEvent.VK_2));
         strokeMenu.add(strokeCurve2);
+        strokes.put(Node.Type.CURVE_2, strokeCurve2);
         final MenuItem strokeCurve3 = new MenuItem("3 Stop Curve");
         strokeCurve3.addActionListener(e -> setStroke(Node.Type.CURVE_3));
         strokeCurve3.setShortcut(new MenuShortcut(KeyEvent.VK_3));
         strokeMenu.add(strokeCurve3);
-        //final MenuItem strokeStartingGrid = new MenuItem("Starting Grid");
-        //strokeStartingGrid.addActionListener(e -> setStroke(Node.Type.START));
-        //strokeStartingGrid.setShortcut(new MenuShortcut(KeyEvent.VK_G));
-        //strokeMenu.add(strokeStartingGrid);
+        strokes.put(Node.Type.CURVE_3, strokeCurve3);
         final MenuItem strokeFinishLine = new MenuItem("Finish Line");
         strokeFinishLine.addActionListener(e -> setStroke(Node.Type.FINISH));
         strokeFinishLine.setShortcut(new MenuShortcut(KeyEvent.VK_F));
         strokeMenu.add(strokeFinishLine);
+        strokes.put(Node.Type.FINISH, strokeFinishLine);
         final MenuItem strokePitLane = new MenuItem("Pit Lane");
         strokePitLane.addActionListener(e -> setStroke(Node.Type.PIT));
         strokePitLane.setShortcut(new MenuShortcut(KeyEvent.VK_P));
         strokeMenu.add(strokePitLane);
+        strokes.put(Node.Type.PIT, strokePitLane);
+
+        setStroke(Node.Type.STRAIGHT);
 
         menuBar.add(validationMenu);
         final MenuItem validate = new MenuItem("Validate Track");
@@ -194,8 +207,16 @@ public class MapEditor extends JPanel {
         });
     }
 
+    private void select(Node node) {
+	    selectedNode = node;
+	    setGarage.setEnabled(selectedNode != null && selectedNode.getType() == Node.Type.PIT);
+        setCurveDistance.setEnabled(selectedNode != null && selectedNode.isCurve());
+	    setGridAngle.setEnabled(selectedNode != null && selectedNode.getType() != Node.Type.PIT);
+    }
+
 	private void setStroke(Node.Type stroke) {
 	    this.stroke = stroke;
+	    strokes.forEach((type, item) -> item.setEnabled(stroke != type));
     }
 
     private void toggleSelectMode() {
@@ -397,22 +418,32 @@ public class MapEditor extends JPanel {
 
     private void setAttribute() {
 	    if (selectedNode != null) {
-            final Object attr = JOptionPane.showInputDialog(
-                this,
-                "Set attribute:",
-                "Set attribute",
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                null,
-                attributes.get(selectedNode)
-            );
-            if (attr != null && !attr.toString().isEmpty()) {
-                attributes.put(selectedNode, Double.valueOf(attr.toString()));
+	        if (selectedNode.getType() == Node.Type.PIT) {
+	            if (attributes.containsKey(selectedNode)) {
+	                attributes.remove(selectedNode);
+                } else {
+	                attributes.put(selectedNode, 1.0);
+                }
             } else {
-                attributes.remove(selectedNode);
-            }
+                final Object attr = JOptionPane.showInputDialog(
+                        this,
+                        "Set Curve Distance:",
+                        "Set Curve Distance",
+                        JOptionPane.PLAIN_MESSAGE,
+                        null,
+                        null,
+                        attributes.get(selectedNode)
+                );
+                if (attr != null) {
+                    if (!attr.toString().isEmpty()) {
+                        attributes.put(selectedNode, Double.valueOf(attr.toString()));
+                    } else {
+                        attributes.remove(selectedNode);
+                    }
+                }
+	        }
             if (autoSelectMode) {
-                selectedNode = null;
+                select(null);
             }
             repaint();
         }
@@ -435,7 +466,7 @@ public class MapEditor extends JPanel {
                 gridAngles.remove(selectedNode);
             }
             if (autoSelectMode) {
-                selectedNode = null;
+                select(null);
             }
             repaint();
         }

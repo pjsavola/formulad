@@ -717,12 +717,8 @@ public class Main extends Game implements Runnable {
     }
 
     public static void main(String[] args) {
-        Frame[] frames = Frame.getFrames();
-        for (Frame frame : frames) {
-            frame.setMenuBar(null);
-            frame.pack();
-        }
         final JFrame f = new JFrame();
+        f.setResizable(false);
         final Params params = new Params();
         final Profile.Manager profileManager = new Profile.Manager();
         final List<Profile> profiles = new ArrayList<>();
