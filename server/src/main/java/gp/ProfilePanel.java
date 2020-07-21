@@ -4,6 +4,7 @@ package gp;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.List;
@@ -26,7 +27,7 @@ public class ProfilePanel extends JPanel {
         }
     }
 
-    private class ColorChangeListener implements MouseListener {
+    private class ColorChangeListener extends MouseAdapter {
         private final JPanel panel;
         private ColorChangeListener(JPanel panel) {
             this.panel = panel;
@@ -45,18 +46,6 @@ public class ProfilePanel extends JPanel {
             } catch (NumberFormatException ex) {
                 JOptionPane.showConfirmDialog(ProfilePanel.this, "Please provide valid RGB value between #000000 and #FFFFFF", "Error", JOptionPane.DEFAULT_OPTION);
             }
-        }
-        @Override
-        public void mousePressed(MouseEvent e) {
-        }
-        @Override
-        public void mouseReleased(MouseEvent e) {
-        }
-        @Override
-        public void mouseEntered(MouseEvent e) {
-        }
-        @Override
-        public void mouseExited(MouseEvent e) {
         }
     }
 
@@ -95,7 +84,7 @@ public class ProfilePanel extends JPanel {
         add(sliderColor1);
         add(sliderColor2);
 
-        profileTitle.addMouseListener(new MouseListener() {
+        profileTitle.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 JFrame frame = null;
@@ -199,12 +188,6 @@ public class ProfilePanel extends JPanel {
                 dialog.setVisible(true);
             }
             @Override
-            public void mousePressed(MouseEvent e) {
-            }
-            @Override
-            public void mouseReleased(MouseEvent e) {
-            }
-            @Override
             public void mouseEntered(MouseEvent e) {
                 profileTitle.setForeground(Color.RED);
             }
@@ -214,7 +197,7 @@ public class ProfilePanel extends JPanel {
             }
         });
 
-        profileName.addMouseListener(new MouseListener() {
+        profileName.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 String result = (String) JOptionPane.showInputDialog(ProfilePanel.this, "Change name", "Change name", JOptionPane.PLAIN_MESSAGE,  null, null, activeProfile.getName());
@@ -226,12 +209,6 @@ public class ProfilePanel extends JPanel {
                         JOptionPane.showConfirmDialog(ProfilePanel.this, "Profile with name " + result + " already exists", "Error", JOptionPane.DEFAULT_OPTION);
                     }
                 }
-            }
-            @Override
-            public void mousePressed(MouseEvent e) {
-            }
-            @Override
-            public void mouseReleased(MouseEvent e) {
             }
             @Override
             public void mouseEntered(MouseEvent e) {

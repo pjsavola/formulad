@@ -93,23 +93,11 @@ public abstract class Game extends JPanel {
     }
 
     void clickToExit() {
-        addMouseListener(new MouseListener() {
+        addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 removeMouseListener(this);
                 exit();
-            }
-            @Override
-            public void mousePressed(MouseEvent e) {
-            }
-            @Override
-            public void mouseReleased(MouseEvent e) {
-            }
-            @Override
-            public void mouseEntered(MouseEvent e) {
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
             }
         });
     }

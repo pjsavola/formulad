@@ -25,6 +25,7 @@ import javax.swing.filechooser.FileFilter;
 
 import gp.ai.AIUtil;
 import gp.ai.Node;
+import gp.model.Gear;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class MapEditor extends JPanel {
@@ -52,7 +53,7 @@ public class MapEditor extends JPanel {
     public enum Corner { NE, SE, SW, NW };
 
 	public MapEditor(JFrame frame) {
-        addMouseListener(new MouseListener() {
+        addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getButton() == MouseEvent.BUTTON1) {
@@ -86,18 +87,6 @@ public class MapEditor extends JPanel {
                         repaint();
                     }
                 }
-            }
-            @Override
-            public void mousePressed(MouseEvent e) {
-            }
-            @Override
-            public void mouseReleased(MouseEvent e) {
-            }
-            @Override
-            public void mouseEntered(MouseEvent e) {
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
             }
         });
         final MenuBar menuBar = new MenuBar();
@@ -175,6 +164,34 @@ public class MapEditor extends JPanel {
         validationMenu.add(validate);
 
         frame.setMenuBar(menuBar);
+        frame.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                if (selectedNode != null) {
+                    Point delta;
+                    switch (e.getKeyCode()) {
+                        case KeyEvent.VK_UP:
+                            delta = new Point(0, -1);
+                            break;
+                        case KeyEvent.VK_DOWN:
+                            delta = new Point(0, 1);
+                            break;
+                        case KeyEvent.VK_LEFT:
+                            delta = new Point(-1, 0);
+                            break;
+                        case KeyEvent.VK_RIGHT:
+                            delta = new Point(1, 0);
+                            break;
+                        default:
+                            return;
+                    }
+                    final Point p = coordinates.get(selectedNode);
+                    p.x += delta.x;
+                    p.y += delta.y;
+                    repaint();
+                }
+            }
+        });
     }
 
 	private void setStroke(Node.Type stroke) {
@@ -199,10 +216,7 @@ public class MapEditor extends JPanel {
         if (selectedNode != null) {
             final Point p = coordinates.get(selectedNode);
             drawOval(g2d, p.x, p.y, DIAMETER + 2, DIAMETER + 2, true, false, Color.WHITE, 1);
-            Double attr = attributes.get(selectedNode);
-            if (attr == null) {
-                attr = gridAngles.get(selectedNode);
-            }
+            final Double attr = attributes.get(selectedNode);
             if (attr != null) {
                 drawOval(g2d, 40, 40, 50, 50, true, true, Color.BLACK, 1);
                 final String attrStr = Double.toString(attr);
@@ -448,7 +462,7 @@ public class MapEditor extends JPanel {
     }
 
     private void drawNode(Graphics2D g2d, Node node) {
-        Color color;
+        final Color color;
         switch (node.getType()) {
             case STRAIGHT:
                 color = Color.GREEN;
@@ -475,10 +489,17 @@ public class MapEditor extends JPanel {
                 throw new RuntimeException("Unknown node type");
         }
         final Point p = coordinates.get(node);
-        if (gridAngles.containsKey(node)) {
-            color = Color.WHITE;
+        final Double angle = gridAngles.get(node);
+        if (angle == null) {
+            drawOval(g2d, p.x, p.y, DIAMETER, DIAMETER, true, true, color, 0);
+        } else {
+            Player.draw(g2d, p.x, p.y, angle / 180 * Math.PI, Color.BLUE, Color.BLACK, 1.0);
         }
-        drawOval(g2d, p.x, p.y, DIAMETER, DIAMETER, true, true, color, 0);
+        final Double attr = attributes.get(node);
+        if (attr != null) {
+            // Draw attribute indicator
+            drawOval(g2d, p.x, p.y, 4, 4, true, true, Color.YELLOW, 0);
+        }
     }
 
     private void drawArcs(Graphics2D g2d, Collection<Node> nodes) {

@@ -1,10 +1,7 @@
 package gp.ai;
 
 import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.event.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -79,13 +76,7 @@ public class ManualAI implements AI {
                 game.actionMenu.add(item);
             }
         }
-        final KeyListener keyListener = new KeyListener() {
-            @Override
-            public void keyTyped(KeyEvent e) {
-            }
-            @Override
-            public void keyPressed(KeyEvent e) {
-            }
+        final KeyListener keyListener = new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
                 final char c = e.getKeyChar();
@@ -166,13 +157,7 @@ public class ManualAI implements AI {
         });
         game.actionMenu.add(item1);
         game.actionMenu.add(item2);
-        final KeyListener keyListener = new KeyListener() {
-            @Override
-            public void keyTyped(KeyEvent e) {
-            }
-            @Override
-            public void keyPressed(KeyEvent e) {
-            }
+        final KeyListener keyListener = new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
                 final char c = e.getKeyChar();
@@ -188,7 +173,7 @@ public class ManualAI implements AI {
         };
         frame.addKeyListener(keyListener);
         final MutableInt selectedIndex = new MutableInt(-1);
-        final MouseListener mouseListener = new MouseListener() {
+        final MouseListener mouseListener = new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 final Map<Integer, Integer> nodeToIndex = indexMap.get(braking.getValue());
@@ -201,18 +186,6 @@ public class ManualAI implements AI {
                         }
                     }
                 }
-            }
-            @Override
-            public void mousePressed(MouseEvent e) {
-            }
-            @Override
-            public void mouseReleased(MouseEvent e) {
-            }
-            @Override
-            public void mouseEntered(MouseEvent e) {
-            }
-            @Override
-            public void mouseExited(MouseEvent e) {
             }
         };
         game.addMouseListener(mouseListener);

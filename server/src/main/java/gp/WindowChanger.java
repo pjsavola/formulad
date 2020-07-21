@@ -1,8 +1,10 @@
 package gp;
 
 import javax.swing.*;
+import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 
 public class WindowChanger extends WindowAdapter {
     private final JFrame frame;
@@ -41,6 +43,9 @@ public class WindowChanger extends WindowAdapter {
                 "Are you sure you want to terminate the " + name + "?", "Confirm",
                 JOptionPane.YES_NO_OPTION) : JOptionPane.YES_OPTION;
         if (confirmed == JOptionPane.YES_OPTION) {
+            for (KeyListener listener : frame.getKeyListeners()) {
+                frame.removeKeyListener(listener);
+            }
             if (lobby != null) {
                 lobby.close();
             }
