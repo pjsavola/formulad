@@ -319,11 +319,7 @@ public class Main extends Game implements Runnable {
                 }
                 if (next.getType() == Node.Type.PIT) {
                     pit.setValue(next);
-                    final Double pitEntryDistance = distanceMap.get(next);
-                    final double pitStartDistance = distanceMap.get(node) - 0.4;
-                    if (pitEntryDistance == null || pitStartDistance < pitEntryDistance) {
-                        distanceMap.put(next, pitStartDistance);
-                    }
+                    distanceMap.put(next, distanceMap.get(node) - 0.4);
                     return;
                 }
                 final long nextChildCount = next.childCount(Node.Type.PIT);
@@ -379,6 +375,10 @@ public class Main extends Game implements Runnable {
                 work.add(center);
                 distanceMap.put(center, newMaxDistance + 0.5);
             }
+        }
+        final Node pitEntry = pit.getValue();
+        if (pitEntry != null) {
+            prevNodeMap.get(pitEntry).stream().map(distanceMap::get).min(Double::compareTo).ifPresent(min -> distanceMap.put(pitEntry, min - 0.4));
         }
         while (pit.getValue() != null) {
             final Node node = pit.getValue();
