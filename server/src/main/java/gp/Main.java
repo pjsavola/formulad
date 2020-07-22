@@ -222,6 +222,7 @@ public class Main extends Game implements Runnable {
                 previous.clearRoute();
             }
             roll = current.roll(rng);
+            repaint();
             final Moves allMoves = current.findAllTargets(roll, trackId, players);
             if (current.getLeeway() <= 0) {
                 log.info("Player " + current.getNameAndId() + " used his timeout leeway and was dropped from the game");
