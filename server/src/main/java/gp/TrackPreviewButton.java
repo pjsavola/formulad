@@ -50,7 +50,7 @@ class TrackPreviewButton extends JButton {
         this.lobby = lobby;
         addActionListener(e -> {
             final List<String> filenames = new ArrayList<>();
-            final boolean ide = false;
+            final boolean ide = true;
             if (ide) {
                 try (InputStream in = Main.class.getResourceAsStream("/"); BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
                     String resource;

@@ -449,7 +449,11 @@ public class Main extends Game implements Runnable {
             final int posY = p.y + 3;
             g2d.setFont(new Font("Arial", Font.PLAIN, 8));
             g2d.setColor(Color.BLUE);
-            g2d.drawString(entry.getValue().toString(), posX, posY);
+            final int distance = (int) (100 * entry.getValue() + 0.5);
+            final int part1 = distance / 100;
+            int part2 = distance % 100;
+            if (part2 % 10 == 0) part2 = part2 / 10;
+            g2d.drawString(part1 + "." + part2, posX, posY);
         }
     }
 
