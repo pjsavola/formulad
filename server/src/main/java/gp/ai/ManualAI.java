@@ -176,7 +176,7 @@ public class ManualAI implements AI {
         };
         frame.addKeyListener(keyListener);
         final MutableInt selectedIndex = new MutableInt(-1);
-        final MouseListener mouseListener = new MouseAdapter() {
+        final MouseAdapter mouseListener = new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 final Map<Integer, Integer> nodeToIndex = indexMap.get(braking.getValue());
@@ -190,8 +190,14 @@ public class ManualAI implements AI {
                     }
                 }
             }
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                final Integer nodeId = game.getNodeId(e.getX(), e.getY());
+                game.setMouseOverHighlightNodeIndex(nodeId == null ? -1 : nodeId);
+            }
         };
         game.addMouseListener(mouseListener);
+        game.addMouseMotionListener(mouseListener);
         while (true) {
             try {
                 Thread.sleep(listenerDelay);
@@ -201,8 +207,10 @@ public class ManualAI implements AI {
             final int index = selectedIndex.getValue();
             if (index != -1) {
                 game.highlightNodes(null);
+                game.setMouseOverHighlightNodeIndex(-1);
                 frame.removeKeyListener(keyListener);
                 game.removeMouseListener(mouseListener);
+                game.removeMouseMotionListener(mouseListener);
                 game.actionMenu.removeAll();
                 return new SelectedIndex().index(index);
             }

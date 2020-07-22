@@ -36,6 +36,7 @@ public abstract class Game extends JPanel {
 
     // Used when selecting where to move. Maps node index to damage taken if that node is selected.
     private Map<Integer, Integer> highlightedNodeToDamage;
+    private int mouseOverHighlightNodeIndex = -1;
 
     Integer roll;
     List<Player> standings;
@@ -46,6 +47,7 @@ public abstract class Game extends JPanel {
     PlayerStats[] finalStandings;
 
     private Font damageFont = new Font("Arial", Font.PLAIN, 9);
+    private Font bigDamageFont = new Font("Arial", Font.BOLD, 11);
     private Font titleFont = new Font("Arial", Font.BOLD, 20);
     private Font headerFont = new Font("Arial", Font.BOLD, 12);
     private Font statsFont = new Font("Arial", Font.PLAIN, 12);
@@ -142,13 +144,23 @@ public abstract class Game extends JPanel {
                 final Node node = nodes.get(nodeId);
                 final int damage = entry.getValue();
                 final Point p = coordinates.get(node);
-                if (damage > 0) {
-                    g2d.setFont(damageFont);
-                    g2d.setColor(Color.RED);
-                    final int x = p.x - (damage >= 10 ? 5 : 2);
-                    g2d.drawString(Integer.toString(damage), x, p.y + 3);
+                if (nodeId == mouseOverHighlightNodeIndex) {
+                    MapEditor.drawOval(g2d, p.x, p.y, 15, 15, true, true, Color.YELLOW, 1);
+                    if (damage > 0) {
+                        g2d.setFont(bigDamageFont);
+                        g2d.setColor(Color.BLACK);
+                        final int x = p.x - (damage >= 10 ? 5 : 2);
+                        g2d.drawString(Integer.toString(damage), x, p.y + 4);
+                    }
+                } else {
+                    MapEditor.drawOval(g2d, p.x, p.y, 12, 12, true, false, Color.YELLOW, 1);
+                    if (damage > 0) {
+                        g2d.setFont(damageFont);
+                        g2d.setColor(Color.RED);
+                        final int x = p.x - (damage >= 10 ? 5 : 2);
+                        g2d.drawString(Integer.toString(damage), x, p.y + 3);
+                    }
                 }
-                MapEditor.drawOval(g2d, p.x, p.y, 12, 12, true, false, Color.YELLOW, 1);
             }
         }
     }
@@ -243,6 +255,16 @@ public abstract class Game extends JPanel {
     public void highlightNodes(@Nullable Map<Integer, Integer> nodeToDamage) {
         this.highlightedNodeToDamage = nodeToDamage;
         repaint();
+    }
+
+    public void setMouseOverHighlightNodeIndex(int nodeId) {
+        if (highlightedNodeToDamage != null) {
+            int id = highlightedNodeToDamage.containsKey(nodeId) ? nodeId : -1;
+            if (id != mouseOverHighlightNodeIndex) {
+                mouseOverHighlightNodeIndex = id;
+                repaint();
+            }
+        }
     }
 
     /**
