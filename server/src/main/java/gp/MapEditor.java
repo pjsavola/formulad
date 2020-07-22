@@ -215,6 +215,7 @@ public class MapEditor extends JPanel {
 
     private void select(Node node) {
 	    selectedNode = node;
+	    if (selectedNode != null) System.out.println(selectedNode.getId());
 	    setGarage.setEnabled(selectedNode != null && selectedNode.getType() == Node.Type.PIT);
         setCurveDistance.setEnabled(selectedNode != null && selectedNode.isCurve());
 	    setGridAngle.setEnabled(selectedNode != null && selectedNode.getType() != Node.Type.PIT);

@@ -408,6 +408,23 @@ public class Main extends Game implements Runnable {
         }
         gridAngles.keySet().forEach(grid::add);
         grid.sort((n1, n2) -> (int) (100 * (distanceMap.get(n2) - distanceMap.get(n1))));
+
+        nodes.forEach(node -> {
+            final boolean isPit = node.getType() == Node.Type.PIT;
+            final double distance = distanceMap.get(node);
+            node.forEachChild(next -> {
+                if (next.getType() == Node.Type.FINISH) {
+                    return;
+                }
+                final boolean nextIsPit = next.getType() == Node.Type.PIT;
+                if (isPit && !nextIsPit) return;
+                if (nextIsPit && !isPit) return;
+                final double childDistance = distanceMap.get(next);
+                if (childDistance <= distance) {
+                    throw new RuntimeException("Track might contain a cycle: " + node.getId() + " -> " + next.getId());
+                }
+            });
+        });
         return grid;
     }
 
