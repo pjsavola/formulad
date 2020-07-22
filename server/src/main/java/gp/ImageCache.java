@@ -30,11 +30,16 @@ public abstract class ImageCache {
     }
 
     public static BufferedImage getImageFromPath(String absolutePath) {
+        BufferedImage image = imageCache.get(absolutePath);
+        if (image != null) {
+            return image;
+        }
         try (InputStream is = new FileInputStream(absolutePath)) {
-            return ImageIO.read(is);
+            image = ImageIO.read(is);
         } catch (IOException e) {
             throw new RuntimeException("Image " + absolutePath + " is missing");
         }
+        return updateCache(image, absolutePath, imageCache);
     }
 
     private static <T> BufferedImage updateCache(BufferedImage image, T key, Map<T, BufferedImage> cache) {

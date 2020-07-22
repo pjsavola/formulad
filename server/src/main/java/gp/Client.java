@@ -81,12 +81,14 @@ public class Client extends Game implements Runnable {
                             oos.writeObject(ai.selectMove(moves));
                         } else if (request instanceof ProfileRequest) {
                             final String trackId = ((ProfileRequest) request).getTrackId();
+                            final boolean external = ((ProfileRequest) request).isTrackExternal();
                             try {
                                 waiting = true;
-                                initTrack(trackId);
+                                initTrack(trackId, external);
                             } catch (RuntimeException e) {
-                                Main.log.log(Level.SEVERE, "Track " + trackId + " not found", e);
-                                JOptionPane.showConfirmDialog(this, "Track " + trackId + " not found", "Error", JOptionPane.DEFAULT_OPTION);
+                                final String msg = (external ? "External track " : "Track ") + trackId + " not found";
+                                Main.log.log(Level.SEVERE, msg, e);
+                                JOptionPane.showConfirmDialog(this, msg, "Error", JOptionPane.DEFAULT_OPTION);
                                 exit();
                                 return;
                             }

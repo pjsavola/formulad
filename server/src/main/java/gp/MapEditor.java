@@ -357,8 +357,8 @@ public class MapEditor extends JPanel {
         }
     }
 
-    public static Pair<String, Corner> loadHeader(String trackId) {
-        try (InputStream is = Main.class.getResourceAsStream("/" + trackId); InputStreamReader ir = new InputStreamReader(is); final BufferedReader br = new BufferedReader(ir)) {
+    public static Pair<String, Corner> loadHeader(String trackId, boolean external) {
+        try (InputStream is = external ? new FileInputStream(trackId) : Main.class.getResourceAsStream("/" + trackId); InputStreamReader ir = new InputStreamReader(is); final BufferedReader br = new BufferedReader(ir)) {
             final String headerLine = br.readLine();
             if (headerLine != null && !headerLine.isEmpty()) {
                 final String[] parts = headerLine.split(" ");

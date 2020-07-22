@@ -10,6 +10,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -79,14 +80,14 @@ public abstract class Game extends JPanel {
         }).start();
     }
 
-    void initTrack(String trackId) {
+    void initTrack(String trackId, boolean external) {
         this.trackId = trackId;
         final String dataFile = "/" + trackId;
-        try (InputStream is = Main.class.getResourceAsStream(dataFile)) {
+        try (InputStream is = external ? new FileInputStream(trackId) : Main.class.getResourceAsStream(dataFile)) {
             final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes, gridAngles, coordinates);
             final String imageFile = "/" + result.getLeft();
             infoBoxCorner = result.getRight();
-            backgroundImage = ImageCache.getImage(imageFile);
+            backgroundImage = external ? ImageCache.getImageFromPath(result.getLeft()) : ImageCache.getImage(imageFile);
         } catch (IOException e) {
             throw new RuntimeException("Data file " + dataFile + " is missing or corrupted", e);
         }

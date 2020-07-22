@@ -150,13 +150,13 @@ public class Profile implements Serializable {
         if (!results.isEmpty()) {
             trackId = results.get(results.size() - 1).trackId;
             try {
-                if (Main.validateTrack(trackId)) {
+                if (Main.validateTrack(trackId, false)) {
                     return trackId;
                 }
             } catch (Exception e) {
                 // TODO: Better exception handling
             }
         }
-        return "sebring.dat";
+        return "singapore.dat";
     }
 }

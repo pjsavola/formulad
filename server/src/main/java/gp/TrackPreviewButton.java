@@ -5,18 +5,13 @@ import org.apache.commons.lang3.tuple.Pair;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.*;
 import java.security.CodeSource;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
+import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.stream.Stream;
@@ -27,6 +22,7 @@ class TrackPreviewButton extends JButton {
     private final JPanel panel;
     private final Lobby lobby;
     private String trackId;
+    private boolean external;
 
     public static class ResourceWalker {
         public static void main(String[] args) throws URISyntaxException, IOException {
@@ -87,10 +83,25 @@ class TrackPreviewButton extends JButton {
                     return;
                 }
             }
+            final Set<String> internalTracks = new HashSet<>(filenames);
+            // Try to search for custom tracks
+            final File file = new File(".");
+            final File[] dataFiles = file.listFiles(f -> f.getName().toLowerCase().endsWith(".dat"));
+            if (dataFiles != null) {
+                for (File f : dataFiles) {
+                    if (!internalTracks.contains(f.getName())) {
+                        filenames.add(f.getName());
+                    }
+                }
+            }
             final JPanel trackPanel = new JPanel(new GridLayout(0, 2));
             final JDialog trackDialog = new JDialog(frame);
-            filenames.stream().filter(name -> name.endsWith(".dat")).filter(Main::validateTrack).forEach(f -> {
-                final BufferedImage image = getImage(f);
+            filenames.stream().filter(name -> name.endsWith(".dat")).forEach(f -> {
+                final boolean external = !internalTracks.contains(f);
+                if (!Main.validateTrack(f, external)) {
+                    return;
+                }
+                final BufferedImage image = getImage(f, external);
                 if (image == null) {
                     return;
                 }
@@ -98,7 +109,7 @@ class TrackPreviewButton extends JButton {
                 final ImageIcon icon = createIcon(image);
                 selectTrackButton.addActionListener(l -> {
                     setIcon(icon);
-                    setTrack(f);
+                    setTrack(f, external);
                     trackDialog.setVisible(false);
                 });
                 selectTrackButton.setIcon(icon);
@@ -114,16 +125,17 @@ class TrackPreviewButton extends JButton {
         });
     }
 
-    boolean setTrack(String trackId) {
-        final BufferedImage image = getImage(trackId);
+    boolean setTrack(String trackId, boolean external) {
+        final BufferedImage image = getImage(trackId, external);
         if (image == null) {
             return false;
         }
         setIcon(createIcon(image));
         if (lobby != null && !trackId.equals(this.trackId)) {
-            lobby.setTrack(trackId);
+            lobby.setTrack(trackId, external);
         }
         this.trackId = trackId;
+        this.external = external;
         return true;
     }
 
@@ -131,12 +143,16 @@ class TrackPreviewButton extends JButton {
         return trackId;
     }
 
-    private BufferedImage getImage(String trackId) {
-        final Pair<String, MapEditor.Corner> header = MapEditor.loadHeader(trackId);
+    boolean isTrackExternal() {
+        return external;
+    }
+
+    private BufferedImage getImage(String trackId, boolean external) {
+        final Pair<String, MapEditor.Corner> header = MapEditor.loadHeader(trackId, external);
         if (header == null) {
             JOptionPane.showConfirmDialog(panel, "Invalid track " + trackId, "Error", JOptionPane.DEFAULT_OPTION);
         } else {
-            return ImageCache.getImage("/" + header.getLeft());
+            return external ? ImageCache.getImageFromPath(header.getLeft()) : ImageCache.getImage("/" + header.getLeft());
         }
         return null;
     }

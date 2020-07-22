@@ -61,9 +61,9 @@ public class Main extends Game implements Runnable {
         }
     }
 
-    public Main(Params params, Lobby lobby, JFrame frame, JPanel panel, PlayerSlot[] slots, String trackId) {
+    public Main(Params params, Lobby lobby, JFrame frame, JPanel panel, PlayerSlot[] slots, String trackId, boolean external) {
         super(frame, panel);
-        initTrack(trackId);
+        initTrack(trackId, external);
         this.lobby = lobby;
         prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
         LocalPlayer.animationDelayInMillis = params.animationDelayInMillis;
@@ -428,13 +428,17 @@ public class Main extends Game implements Runnable {
         return grid;
     }
 
-    public static boolean validateTrack(String trackId) {
+    public static boolean validateTrack(String trackId, boolean external) {
+        if (external && !new File(trackId).exists()) {
+            log.log(Level.WARNING, "Track validation failed: External data file " + trackId + " not found");
+            return false;
+        }
         final List<Node> nodes = new ArrayList<>();
         final Map<Node, Double> attributes = new HashMap<>();
         final Map<Node, Double> gridAngleMap = new HashMap<>();
         final Map<Node, Double> distanceMap = new HashMap<>();
         final Map<Node, Point> coordinates = new HashMap<>();
-        try (InputStream is = Main.class.getResourceAsStream("/" + trackId)) {
+        try (InputStream is = external ? new FileInputStream(trackId) : Main.class.getResourceAsStream("/" + trackId)) {
             final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes, gridAngleMap, coordinates);
             if (result == null) {
                 log.log(Level.SEVERE, "Track validation failed: Proper header is missing from " + trackId);
@@ -446,10 +450,14 @@ public class Main extends Game implements Runnable {
                 log.log(Level.SEVERE, "Track validation failed: Starting grid has less than 10 spots");
                 return false;
             }
-            final String imageFile = "/" + result.getLeft();
-            final BufferedImage image = ImageCache.getImage(imageFile);
+            final String imageFile = result.getLeft();
+            if (external && !new File(imageFile).exists()) {
+                log.log(Level.WARNING, "Track validation failed: External background image " + imageFile + " not found");
+                return false;
+            }
+            final BufferedImage image = external ? ImageCache.getImageFromPath(imageFile) : ImageCache.getImage("/" + imageFile);
             if (image == null) {
-                log.log(Level.SEVERE, "Track validation failed: Background image " + result.getLeft() + " not found");
+                log.log(Level.SEVERE, "Track validation failed: Background image " + imageFile + " not found");
                 return false;
             }
         } catch (IOException e) {
@@ -538,7 +546,7 @@ public class Main extends Game implements Runnable {
             lobby.setSlots(slots);
         }
         final TrackPreviewButton changeTrackButton = new TrackPreviewButton(frame, panel, lobby);
-        if (!changeTrackButton.setTrack(trackId)) {
+        if (!changeTrackButton.setTrack(trackId, false)) {
             return;
         }
         final JPanel lobbyPanel = new JPanel();
@@ -588,7 +596,7 @@ public class Main extends Game implements Runnable {
                 lobby.interrupt();
             }
             params.randomizeStartingOrder = randomStartingOrder.isSelected();
-            final Main server = new Main(params, lobby, frame, panel, slots, changeTrackButton.getTrack());
+            final Main server = new Main(params, lobby, frame, panel, slots, changeTrackButton.getTrack(), changeTrackButton.isTrackExternal());
             listener.contentChanged(server, lobby, server, lobby == null ? "race" : "server", true);
             setContent(frame, server);
             new Thread(server).start();
