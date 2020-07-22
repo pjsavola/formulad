@@ -234,6 +234,7 @@ public final class LocalPlayer extends Player {
         while (counter-- > 0) {
             hitpoints--;
             ((Main) panel).notifyAll(new HitpointNotification(playerId, hitpoints));
+            ((Game) panel).scheduleHitpointAnimation(true);
             panel.repaint();
             try {
                 Thread.sleep(animationDelayInMillis);
@@ -249,6 +250,7 @@ public final class LocalPlayer extends Player {
         while (hitpoints < 18) {
             hitpoints++;
             ((Main) panel).notifyAll(new HitpointNotification(playerId, hitpoints));
+            ((Game) panel).scheduleHitpointAnimation(false);
             panel.repaint();
             try {
                 Thread.sleep(animationDelayInMillis);

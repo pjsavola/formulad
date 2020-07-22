@@ -161,6 +161,9 @@ public class Client extends Game implements Runnable {
     public void notify(HitpointNotification notification) {
         final Player player = immutablePlayerMap.get(notification.getPlayerId());
         if (player != null) {
+            if (player.hitpoints != notification.getHitpoints()) {
+                scheduleHitpointAnimation(player.hitpoints > notification.getHitpoints());
+            }
             player.setHitpoints(notification.getHitpoints());
         }
     }

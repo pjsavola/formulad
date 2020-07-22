@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.List;
+import java.util.Timer;
 import java.util.logging.Level;
 
 public abstract class Game extends JPanel {
@@ -57,6 +58,33 @@ public abstract class Game extends JPanel {
     private volatile boolean keepAlive = true;
 
     public boolean debug;
+
+    private Timer timer = new Timer();
+    private List<HitpointAnimation> animations = Collections.synchronizedList(new ArrayList<>());
+
+    private class HitpointAnimation {
+        private final Color color;
+        private final int x;
+        private final int y;
+        private int size;
+        private HitpointAnimation(boolean loss, int x, int y) {
+            color = loss ? Color.RED : Color.GREEN;
+            this.x = x;
+            this.y = y;
+        }
+        private boolean increaseSize() {
+            if (size > 30) {
+                return false;
+            } else {
+                size += 4;
+                repaint();
+                return true;
+            }
+        }
+        private void draw(Graphics2D g) {
+            MapEditor.drawOval(g, x, y, size, size, true, false, color, 1);
+        }
+    }
 
     Game(JFrame frame, JPanel panel) {
         this.frame = frame;
@@ -134,6 +162,7 @@ public abstract class Game extends JPanel {
         drawRetiredPlayers(g2d);
         drawPlayers(g2d);
         drawStandings(g2d);
+        animations.forEach(a -> a.draw(g2d));
     }
 
     private void drawTargets(Graphics2D g2d) {
@@ -286,6 +315,21 @@ public abstract class Game extends JPanel {
         gameState.getPlayers().forEach(p -> {
             hitpointMap.put(p.getPlayerId(), p.getHitpoints());
         });
+    }
+
+    void scheduleHitpointAnimation(boolean loss) {
+        final Point p = coordinates.get(getCurrent().node);
+        final HitpointAnimation a = new HitpointAnimation(loss, p.x, p.y);
+        animations.add(a);
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (!a.increaseSize()) {
+                    animations.remove(a);
+                    repaint();
+                }
+            }
+        }, 0, 50); // TODO: Use param
     }
 
     protected abstract Player getCurrent();
