@@ -53,6 +53,8 @@ public abstract class Game extends JPanel {
     private MapEditor.Corner infoBoxCorner;
     private volatile boolean keepAlive = true;
 
+    public boolean debug;
+
     Game(JFrame frame, JPanel panel) {
         this.frame = frame;
         this.panel = panel;

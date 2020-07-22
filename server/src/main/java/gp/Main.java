@@ -285,6 +285,9 @@ public class Main extends Game implements Runnable {
             if (node.isCurve() && !attributes.containsKey(node)) {
                 throw new RuntimeException("There is a curve without distance attribute");
             }
+            if (node.childCount(null) == 0) {
+                throw new RuntimeException("Track contains a dead-end");
+            }
         }
         while (!work.isEmpty()) {
             final Node node = work.remove(0);
@@ -293,6 +296,9 @@ public class Main extends Game implements Runnable {
                     work.add(next);
                 }
             });
+        }
+        if (nodes.size() != visited.size()) {
+            throw new RuntimeException("Track contains unreachable nodes");
         }
         if (center == null) {
             throw new RuntimeException("Finish line must have width 3");
@@ -439,7 +445,9 @@ public class Main extends Game implements Runnable {
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        //drawDistances((Graphics2D) g); // For debugging
+        if (debug) {
+            drawDistances((Graphics2D) g);
+        }
     }
 
     private void drawDistances(Graphics2D g2d) {

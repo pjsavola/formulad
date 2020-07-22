@@ -90,6 +90,9 @@ public class ManualAI implements AI {
                     if (AIUtil.validateGear(hitpoints, gear, c - '0', inPits)) {
                         selectedGear.setValue(c - '0');
                     }
+                } else if (c == 'd') {
+                    game.debug = !game.debug;
+                    game.repaint();
                 }
             }
         };
