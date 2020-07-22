@@ -209,16 +209,16 @@ public abstract class Game extends JPanel {
     protected void drawStandings(Graphics2D g2d) {
         if (finalStandings != null) {
             final int height = 5 + 15 * (finalStandings.length + 1);
-            final int x = getWidth() / 2 - 200;
+            final int x = getWidth() / 2 - 220;
             final int y = getHeight() / 2 - height / 2;
             g2d.setColor(Color.BLACK);
             g2d.setFont(titleFont);
             final int titleWidth = g2d.getFontMetrics().stringWidth("STANDINGS");
-            g2d.drawString("STANDINGS", x + 200 - titleWidth / 2, y - 20);
+            g2d.drawString("STANDINGS", x + 220 - titleWidth / 2, y - 20);
             g2d.setColor(Color.GRAY);
-            g2d.fillRect(x, y, 400, height);
+            g2d.fillRect(x, y, 440, height);
             g2d.setColor(Color.BLACK);
-            g2d.drawRect(x, y, 400, height);
+            g2d.drawRect(x, y, 440, height);
             g2d.setColor(Color.BLACK);
             g2d.setFont(headerFont);
             g2d.drawString("Name", x + 30, y + 15);
@@ -228,6 +228,7 @@ public abstract class Game extends JPanel {
             g2d.drawString("Time", x + 270, y + 15);
             g2d.drawString("Stops", x + 310, y + 15);
             g2d.drawString("Laps", x + 350, y + 15);
+            g2d.drawString("Distance", x + 390, y + 15);
             g2d.setFont(statsFont);
             for (int i = 0; i < finalStandings.length; ++i) {
                 final PlayerStats stats = finalStandings[i];
@@ -244,7 +245,10 @@ public abstract class Game extends JPanel {
                 final double timeUsedSecs = timeUsed / 10.0;
                 g2d.drawString(Double.toString(timeUsedSecs), x + 270, y + (i + 1) * 15 + 15);
                 g2d.drawString(Integer.toString(stats.pitStops), x + 310, y + (i + 1) * 15 + 15);
-                g2d.drawString(Integer.toString(stats.lapsToGo + 1), x + 350, y + (i + 1) * 15 + 15);
+                if (stats.lapsToGo >= 0) {
+                    g2d.drawString(Integer.toString(stats.lapsToGo), x + 350, y + (i + 1) * 15 + 15);
+                    g2d.drawString(Main.getDistanceString(stats.distance), x + 390, y + (i + 1) * 15 + 15);
+                }
             }
         }
     }

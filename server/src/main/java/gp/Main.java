@@ -475,6 +475,14 @@ public class Main extends Game implements Runnable {
         }
     }
 
+    static String getDistanceString(double distance) {
+        final int distanceInt = (int) (100 * distance + 0.5);
+        final int part1 = distanceInt / 100;
+        int part2 = distanceInt % 100;
+        if (part2 % 10 == 0) part2 = part2 / 10;
+        return part1 + "." + part2;
+    }
+
     private void drawDistances(Graphics2D g2d) {
         for (Map.Entry<Node, Double> entry : distanceMap.entrySet()) {
             final Point p = coordinates.get(entry.getKey());
@@ -482,11 +490,7 @@ public class Main extends Game implements Runnable {
             final int posY = p.y + 3;
             g2d.setFont(new Font("Arial", Font.PLAIN, 8));
             g2d.setColor(Color.BLUE);
-            final int distance = (int) (100 * entry.getValue() + 0.5);
-            final int part1 = distance / 100;
-            int part2 = distance % 100;
-            if (part2 % 10 == 0) part2 = part2 / 10;
-            g2d.drawString(part1 + "." + part2, posX, posY);
+            g2d.drawString(getDistanceString(entry.getValue()), posX, posY);
         }
     }
 
