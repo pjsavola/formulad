@@ -106,7 +106,10 @@ public class Player {
             final Point p = coordinates.get(node);
             g2d.setColor(color1);
             g2d.drawLine(p.x - 2, p.y - 2, p.x + 2, p.y + 2);
+            g2d.setColor(color2);
             g2d.drawLine(p.x + 2, p.y - 2, p.x - 2, p.y + 2);
+            g2d.setColor(Color.BLACK);
+            g2d.drawLine(p.x, p.y, p.x, p.y);
         }
     }
 

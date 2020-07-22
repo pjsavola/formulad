@@ -46,11 +46,11 @@ public abstract class Game extends JPanel {
 
     PlayerStats[] finalStandings;
 
-    private Font damageFont = new Font("Arial", Font.PLAIN, 9);
-    private Font bigDamageFont = new Font("Arial", Font.BOLD, 11);
-    private Font titleFont = new Font("Arial", Font.BOLD, 20);
-    private Font headerFont = new Font("Arial", Font.BOLD, 12);
-    private Font statsFont = new Font("Arial", Font.PLAIN, 12);
+    static Font damageFont = new Font("Arial", Font.PLAIN, 9);
+    static Font bigDamageFont = new Font("Arial", Font.BOLD, 11);
+    static Font titleFont = new Font("Arial", Font.BOLD, 20);
+    static Font headerFont = new Font("Arial", Font.BOLD, 12);
+    static Font statsFont = new Font("Arial", Font.PLAIN, 12);
 
     String trackId;
     private MapEditor.Corner infoBoxCorner;
