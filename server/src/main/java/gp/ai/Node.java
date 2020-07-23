@@ -98,11 +98,18 @@ public final class Node {
         return nextNodes.contains(node) || node.nextNodes.contains(this);
     }
 
-    public boolean isInFrontOf(Node node) {
+    private boolean isInFrontOf(Node node) {
+        if (!node.nextNodes.contains(this)) {
+            return false;
+        }
         // If there's a path of length 2 to this node, this node must be in front of the given node.
-        for (Node next : node.nextNodes) {
+        final Set<Node> moreDistantNodes = new HashSet<>(node.nextNodes);
+        moreDistantNodes.addAll(node.adjacentNodes);
+        for (Node next : moreDistantNodes) {
             if (next != this) {
-                for (Node nextOfNext : next.nextNodes) {
+                final Set<Node> nextMoreDistantNodes = new HashSet<>(next.nextNodes);
+                nextMoreDistantNodes.addAll(next.adjacentNodes);
+                for (Node nextOfNext : nextMoreDistantNodes) {
                     if (nextOfNext == this) {
                         return true;
                     }
@@ -116,7 +123,10 @@ public final class Node {
         final Map<Node, Set<Node>> adjacentNodes = new HashMap<>();
         nodes.forEach(node -> {
             node.forEachChild(next -> adjacentNodes.computeIfAbsent(node, _key -> new HashSet<>()).add(next));
-            node.forEachAdjacentNode(next -> adjacentNodes.computeIfAbsent(node, _key -> new HashSet<>()).add(next));
+            node.forEachAdjacentNode(next -> {
+                adjacentNodes.computeIfAbsent(node, _key -> new HashSet<>()).add(next);
+                adjacentNodes.computeIfAbsent(next, _key -> new HashSet<>()).add(node);
+            });
             prevNodeMap.get(node).forEach(prev -> adjacentNodes.computeIfAbsent(node, _key -> new HashSet<>()).add(prev));
         });
         for (Map.Entry<Node, Set<Node>> e : adjacentNodes.entrySet()) {
