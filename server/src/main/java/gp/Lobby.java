@@ -78,7 +78,7 @@ public class Lobby extends Thread {
                 // The game is full :(
                 socket.close();
             } catch (IOException e) {
-                Main.log.log(Level.SEVERE, "Server IOException", e);
+                Main.log.log(Level.WARNING, "Server IOException", e);
             }
         }
     }

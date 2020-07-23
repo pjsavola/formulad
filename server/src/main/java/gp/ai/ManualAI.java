@@ -28,6 +28,7 @@ public class ManualAI implements AI {
     private boolean initialStandingsReceived;
     private String trackId;
     private Map<Integer, Node> nodeMap;
+    public volatile boolean interrupted;
 
     public ManualAI(AI ai, JFrame frame, Game game, Profile profile) {
         this.ai = ai;
@@ -98,7 +99,7 @@ public class ManualAI implements AI {
         };
         frame.addKeyListener(keyListener);
         frame.requestFocus();
-        while (true) {
+        while (!interrupted) {
             try {
                 Thread.sleep(listenerDelay);
             } catch (InterruptedException e) {
@@ -111,6 +112,7 @@ public class ManualAI implements AI {
                 return new Gear().gear(newGear);
             }
         }
+        return new Gear().gear(gear);
     }
 
     @Override
@@ -198,7 +200,7 @@ public class ManualAI implements AI {
         };
         game.addMouseListener(mouseListener);
         game.addMouseMotionListener(mouseListener);
-        while (true) {
+        while (!interrupted) {
             try {
                 Thread.sleep(listenerDelay);
             } catch (InterruptedException e) {
@@ -215,6 +217,7 @@ public class ManualAI implements AI {
                 return new SelectedIndex().index(index);
             }
         }
+        return new SelectedIndex().index(0);
     }
 
     @Override

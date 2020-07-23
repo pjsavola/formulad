@@ -7,10 +7,7 @@ import java.io.*;
 import java.net.Socket;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -264,6 +261,18 @@ public class Main extends Game implements Runnable {
         }
         repaint();
         clickToExit();
+    }
+
+    @Override
+    protected void exit() {
+        // This will terminate loop waiting for player input
+        stopped = true;
+        aiMap.values().forEach(ai -> {
+            if (ai instanceof ManualAI) {
+                ((ManualAI) ai).interrupted = true;
+            }
+        });
+        super.exit();
     }
 
     static List<Node> findGrid(List<Node> nodes, Map<Node, Double> attributes, Map<Node, Double> gridAngles, Map<Node, Double> distanceMap, Map<Node, List<Node>> prevNodeMap) {
