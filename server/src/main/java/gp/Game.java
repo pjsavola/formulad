@@ -66,9 +66,11 @@ public abstract class Game extends JPanel {
         private final Color color;
         private final int x;
         private final int y;
+        private final int thickness;
         private int size;
-        private HitpointAnimation(boolean loss, int x, int y) {
-            color = loss ? Color.RED : Color.GREEN;
+        private HitpointAnimation(int loss, int x, int y) {
+            color = loss > 0 ? Color.RED : Color.GREEN;
+            thickness = Math.abs(loss);
             this.x = x;
             this.y = y;
         }
@@ -82,7 +84,7 @@ public abstract class Game extends JPanel {
             }
         }
         private void draw(Graphics2D g) {
-            MapEditor.drawOval(g, x, y, size, size, true, false, color, 1);
+            MapEditor.drawOval(g, x, y, size + thickness, size + thickness, true, false, color, thickness);
         }
     }
 
@@ -317,7 +319,7 @@ public abstract class Game extends JPanel {
         });
     }
 
-    void scheduleHitpointAnimation(boolean loss) {
+    void scheduleHitpointAnimation(int loss) {
         final Point p = coordinates.get(getCurrent().node);
         final HitpointAnimation a = new HitpointAnimation(loss, p.x, p.y);
         animations.add(a);
@@ -329,7 +331,7 @@ public abstract class Game extends JPanel {
                     repaint();
                 }
             }
-        }, 0, 50); // TODO: Use param
+        }, 0, 50); // 20 FPS
     }
 
     protected abstract Player getCurrent();

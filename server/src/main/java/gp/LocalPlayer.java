@@ -230,34 +230,18 @@ public final class LocalPlayer extends Player {
     private void adjustHitpoints(int loss) {
         Main.log.info("Player " + getNameAndId() + " loses " + loss + " hitpoints");
         // Show animation
-        int counter = loss;
-        while (counter-- > 0) {
-            hitpoints--;
-            ((Main) panel).notifyAll(new HitpointNotification(playerId, hitpoints));
-            ((Game) panel).scheduleHitpointAnimation(true);
-            panel.repaint();
-            try {
-                Thread.sleep(animationDelayInMillis);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        hitpoints -= loss;
+        ((Main) panel).notifyAll(new HitpointNotification(playerId, hitpoints));
+        ((Game) panel).scheduleHitpointAnimation(loss);
     }
 
     private void recoverHitpoints() {
         Main.log.info("Player " + getNameAndId() + " pits and recovers full hitpoints");
         // Show animation
-        while (hitpoints < 18) {
-            hitpoints++;
-            ((Main) panel).notifyAll(new HitpointNotification(playerId, hitpoints));
-            ((Game) panel).scheduleHitpointAnimation(false);
-            panel.repaint();
-            try {
-                Thread.sleep(animationDelayInMillis);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        final int gain = 18 - hitpoints;
+        hitpoints += gain;
+        ((Main) panel).notifyAll(new HitpointNotification(playerId, hitpoints));
+        ((Game) panel).scheduleHitpointAnimation(-gain);
     }
 
     public Moves findAllTargets(int roll, String gameId, List<LocalPlayer> players) {
