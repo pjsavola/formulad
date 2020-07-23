@@ -55,6 +55,8 @@ public class MapEditor extends JPanel {
     private final MenuItem setCurveDistance;
     private final MenuItem setGridAngle;
 
+    private final List<Node> debugNeighbors = new ArrayList<>();
+
     public enum Corner { NE, SE, SW, NW };
 
 	public MapEditor(JFrame frame) {
@@ -95,6 +97,7 @@ public class MapEditor extends JPanel {
                             n.removeChild(node);
                         }
                         attributes.remove(node);
+                        gridAngles.remove(node);
                         coordinates.remove(node);
                         repaint();
                     }
@@ -203,6 +206,16 @@ public class MapEditor extends JPanel {
                         case KeyEvent.VK_RIGHT:
                             delta = new Point(1, 0);
                             break;
+                        case KeyEvent.VK_D:
+                            debugNeighbors.clear();
+                            final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
+                            nodes.forEach(node -> {
+                                if (selectedNode.isCloseTo(node, prevNodeMap)) {
+                                    debugNeighbors.add(node);
+                                }
+                            });
+                            repaint();
+                            return;
                         default:
                             return;
                     }
@@ -210,6 +223,8 @@ public class MapEditor extends JPanel {
                     p.x += delta.x;
                     p.y += delta.y;
                     repaint();
+                } else if (e.getKeyCode() == KeyEvent.VK_D) {
+                    debugNeighbors.clear();
                 }
             }
         });
@@ -264,6 +279,10 @@ public class MapEditor extends JPanel {
         final String modeStr = autoSelectMode ? "Mode: Draw edges" : "Mode: Select nodes";
         g.drawString(modeStr, x + 20, y + 15);
         drawArcs(g2d, nodes);
+        for (Node neighbor : debugNeighbors) {
+            final Point p = coordinates.get(neighbor);
+            drawOval(g2d, p.x, p.y, DIAMETER, DIAMETER, true, true, Color.BLUE, 1);
+        }
     }
 
     boolean open() {
