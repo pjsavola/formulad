@@ -91,10 +91,16 @@ public class MapEditor extends JPanel {
                     if (node != null) {
                         if (selectedNode == node) {
                             select(null);
+                        } else if (autoSelectMode && selectedNode != null) {
+                            selectedNode.addAdjacenNode(node);
+                            select(null);
+                            repaint();
+                            return;
                         }
                         nodes.remove(node);
                         for (Node n : nodes) {
                             n.removeChild(node);
+                            n.removeAdjacentNode(node);
                         }
                         attributes.remove(node);
                         gridAngles.remove(node);
@@ -598,6 +604,19 @@ public class MapEditor extends JPanel {
                 g2d.drawLine(p.x, p.y, midX, midY);
                 g2d.setColor(ARC_END);
                 g2d.drawLine(midX, midY, np.x, np.y);
+            });
+            node.forEachAdjacentNode(child -> {
+                final Point np = coordinates.get(child);
+                final int midX = (p.x + np.x) / 2;
+                final int midY = (p.y + np.y) / 2;
+                final Stroke old = g2d.getStroke();
+                final Stroke dashed = new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{3}, 0);
+                g2d.setStroke(dashed);
+                g2d.setColor(Color.BLACK);
+                g2d.drawLine(p.x, p.y, midX, midY);
+                g2d.setColor(Color.BLUE);
+                g2d.drawLine(midX, midY, np.x, np.y);
+                g2d.setStroke(old);
             });
         }
         g2d.setColor(tmpC);

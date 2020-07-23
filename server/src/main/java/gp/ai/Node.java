@@ -16,6 +16,7 @@ public final class Node {
     private final int id;
     private final Type type;
     private final Set<Node> nextNodes = new HashSet<>();
+    private final Set<Node> adjacentNodes = new HashSet<>();
 
     public Node(int id, int type) {
         this(id, Type.values()[type]);
@@ -46,6 +47,18 @@ public final class Node {
         if (node != this) {
             nextNodes.add(node);
             node.nextNodes.remove(this); // prevent cycles of length 2
+            adjacentNodes.remove(node);
+            node.adjacentNodes.remove(this);
+        }
+    }
+
+    /**
+     * Used only in map editor and when loading nodes.
+     */
+    public void addAdjacenNode(Node node) {
+        if (node != this && !nextNodes.contains(node) && !node.nextNodes.contains(this)) {
+            adjacentNodes.add(node);
+            node.adjacentNodes.remove(this); // prevent cycles of length 2
         }
     }
 
@@ -56,8 +69,19 @@ public final class Node {
         return nextNodes.remove(node);
     }
 
+    /**
+     * Used only by the map editor.
+     */
+    public boolean removeAdjacentNode(Node node) {
+        return adjacentNodes.remove(node);
+    }
+
     public void forEachChild(Consumer<Node> consumer) {
         nextNodes.forEach(consumer);
+    }
+
+    public void forEachAdjacentNode(Consumer<Node> consumer) {
+        adjacentNodes.forEach(consumer);
     }
 
     public long childCount(Type excludeType) {
