@@ -12,11 +12,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 
 import javax.annotation.Nullable;
@@ -25,7 +22,6 @@ import javax.swing.filechooser.FileFilter;
 
 import gp.ai.AIUtil;
 import gp.ai.Node;
-import gp.model.Gear;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class MapEditor extends JPanel {
@@ -92,7 +88,7 @@ public class MapEditor extends JPanel {
                         if (selectedNode == node) {
                             select(null);
                         } else if (autoSelectMode && selectedNode != null) {
-                            selectedNode.addAdjacenNode(node);
+                            selectedNode.addAdjacentNode(node);
                             select(null);
                             repaint();
                             return;
@@ -215,11 +211,8 @@ public class MapEditor extends JPanel {
                         case KeyEvent.VK_D:
                             debugNeighbors.clear();
                             final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
-                            nodes.forEach(node -> {
-                                if (selectedNode.isCloseTo(node, prevNodeMap)) {
-                                    debugNeighbors.add(node);
-                                }
-                            });
+                            final Map<Node, Set<Node>> adjacencyMap = Node.buildAdjacencyMap(nodes, prevNodeMap);
+                            debugNeighbors.addAll(adjacencyMap.get(selectedNode));
                             repaint();
                             return;
                         default:
@@ -231,6 +224,7 @@ public class MapEditor extends JPanel {
                     repaint();
                 } else if (e.getKeyCode() == KeyEvent.VK_D) {
                     debugNeighbors.clear();
+                    repaint();
                 }
             }
         });
@@ -351,6 +345,13 @@ public class MapEditor extends JPanel {
                         writer.print(" ");
                         writer.println(idMap.get(child));
                     });
+                    node.forEachAdjacentNode(child -> {
+                        writer.print(idMap.get(node));
+                        writer.print(" ");
+                        writer.print(idMap.get(child));
+                        writer.print(" ");
+                        writer.println(1);
+                    });
                 }
                 writer.println();
                 if (!attributes.isEmpty()) {
@@ -447,7 +448,12 @@ public class MapEditor extends JPanel {
                 } else if (emptyLines == 1) {
                     final int fromId = Integer.parseInt(parts[0]);
                     final int toId = Integer.parseInt(parts[1]);
-                    idMap.get(fromId).addChild(idMap.get(toId));
+                    if (parts.length > 2 && Integer.parseInt(parts[2]) == 1) {
+                        // Adjacency edge
+                        idMap.get(fromId).addAdjacentNode(idMap.get(toId));
+                    } else {
+                        idMap.get(fromId).addChild(idMap.get(toId));
+                    }
                 } else if (emptyLines == 0) {
                     final int id = Integer.parseInt(parts[0]);
                     final int x = Integer.parseInt(parts[1]);

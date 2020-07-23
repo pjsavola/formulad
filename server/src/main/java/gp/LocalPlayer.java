@@ -301,12 +301,12 @@ public final class LocalPlayer extends Player {
         }
     }
 
-    public void collide(List<LocalPlayer> players, Map<Node, List<Node>> prevNodeMap, Random rng) {
+    public void collide(List<LocalPlayer> players, Map<Node, Set<Node>> adjacentNodes, Random rng) {
         for (LocalPlayer player : players) {
             if (player.isStopped()) {
                 continue;
             }
-            if (player != this && node.isCloseTo(player.node, prevNodeMap)) {
+            if (player != this && adjacentNodes.get(node).contains(player.node)) {
                 Main.log.info(getNameAndId() + " is close to " + player.getNameAndId() + " and may collide");
                 if (!isStopped() && rng.nextInt(20) < 4) {
                     adjustHitpoints(1);

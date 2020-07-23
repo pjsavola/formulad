@@ -1,12 +1,6 @@
 package gp.ai;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -55,7 +49,7 @@ public final class Node {
     /**
      * Used only in map editor and when loading nodes.
      */
-    public void addAdjacenNode(Node node) {
+    public void addAdjacentNode(Node node) {
         if (node != this && !nextNodes.contains(node) && !node.nextNodes.contains(this)) {
             adjacentNodes.add(node);
             node.adjacentNodes.remove(this); // prevent cycles of length 2
@@ -100,67 +94,37 @@ public final class Node {
         return nextNodes.stream();
     }
 
-    /**
-     * Returns true if this node is close enough to the given node to cause
-     * possible collision damage if cars are in these two nodes.
-     */
-    public boolean isCloseTo(Node node, Map<Node, List<Node>> prevNodeMap) {
-        if (type == Type.PIT && node.type == Type.PIT) {
-            // If both cars are in pits, don't cause collision damage
-            return false;
-        }
-        if (isAdjacentOf(node))
-        {
-            return !isInFrontOf(node);
-        }
-
-        // Nodes can still be close to each other if there's no link between them.
-        // One generic rule for this would be that if they have common parent or common child,
-        // then the nodes are close to each other, unless common parent is parent of the common child.
-        Node commonParent = null;
-        for (Node previousNode : prevNodeMap.get(this)) {
-            if (prevNodeMap.get(node).contains(previousNode)) {
-                commonParent = previousNode;
-                break;
-            }
-        }
-        Node commonChild = null;
-        for (Node nextNode : nextNodes) {
-            if (node.nextNodes.contains(nextNode)) {
-                commonChild = nextNode;
-                break;
-            }
-        }
-        if (commonParent != null && commonChild != null) {
-            return !commonParent.nextNodes.contains(commonChild);
-        }
-        return commonParent != null || commonChild != null;
-    }
-
     public boolean isAdjacentOf(Node node) {
         return nextNodes.contains(node) || node.nextNodes.contains(this);
     }
 
-    // NOTE: Currently returns false for curve nodes which are in front of another curve node with 2 exits,
-    // but only 1 path between the nodes. This does not matter if this method is used only for adjacency checks
-    // as then the node in front would be unreachaable.
     public boolean isInFrontOf(Node node) {
-        if (node.nextNodes.contains(this)) {
-            if (node.nextNodes.size() == 1) {
-                return true;
-            }
-            // If there's a path of length 2 to this node, this node must be in front of the given node.
-            for (Node next : node.nextNodes) {
-                if (next != this) {
-                    for (Node nextOfNext : next.nextNodes) {
-                        if (nextOfNext == this) {
-                            return true;
-                        }
+        // If there's a path of length 2 to this node, this node must be in front of the given node.
+        for (Node next : node.nextNodes) {
+            if (next != this) {
+                for (Node nextOfNext : next.nextNodes) {
+                    if (nextOfNext == this) {
+                        return true;
                     }
                 }
             }
         }
         return false;
+    }
+
+    public static Map<Node, Set<Node>> buildAdjacencyMap(List<Node> nodes, Map<Node, List<Node>> prevNodeMap) {
+        final Map<Node, Set<Node>> adjacentNodes = new HashMap<>();
+        nodes.forEach(node -> {
+            node.forEachChild(next -> adjacentNodes.computeIfAbsent(node, _key -> new HashSet<>()).add(next));
+            node.forEachAdjacentNode(next -> adjacentNodes.computeIfAbsent(node, _key -> new HashSet<>()).add(next));
+            prevNodeMap.get(node).forEach(prev -> adjacentNodes.computeIfAbsent(node, _key -> new HashSet<>()).add(prev));
+        });
+        for (Map.Entry<Node, Set<Node>> e : adjacentNodes.entrySet()) {
+            final Node node = e.getKey();
+            e.getValue().removeIf(node::isInFrontOf);
+            e.getValue().removeIf(neighbor -> neighbor.type == Type.PIT && node.type == Type.PIT);
+        }
+        return adjacentNodes;
     }
 
     /**
