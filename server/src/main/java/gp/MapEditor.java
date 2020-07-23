@@ -76,8 +76,10 @@ public class MapEditor extends JPanel {
                     } else if (selectedNode == null) {
                         select(node);
                     } else if (selectedNode != node) {
-                        selectedNode.addChild(node);
-                        select(autoSelectMode ? node : (node.childCount(null) == 0 ? node : null));
+                        if (autoSelectMode) {
+                            selectedNode.addChild(node);
+                        }
+                        select(node);
                     } else {
                         select(null);
                     }
@@ -120,7 +122,7 @@ public class MapEditor extends JPanel {
         fileMenu.add(saveTrackData);
 
         menuBar.add(editMenu);
-        final MenuItem autoSelectMode = new MenuItem("Auto-select mode");
+        final MenuItem autoSelectMode = new MenuItem("Switch Mode");
         autoSelectMode.addActionListener(e -> toggleSelectMode());
         autoSelectMode.setShortcut(new MenuShortcut(KeyEvent.VK_A));
         editMenu.add(autoSelectMode);
@@ -241,19 +243,25 @@ public class MapEditor extends JPanel {
             drawNode(g2d, node);
         }
         UIUtil.drawInfoBox(g2d, this, 10, infoBoxCorner);
+        final int x = UIUtil.getX(infoBoxCorner, this, 250);
+        final int y = UIUtil.getY(infoBoxCorner, this, 5 + 15 * 10);
         if (selectedNode != null) {
             final Point p = coordinates.get(selectedNode);
-            drawOval(g2d, p.x, p.y, DIAMETER + 2, DIAMETER + 2, true, false, Color.WHITE, 1);
+            drawOval(g2d, p.x, p.y, DIAMETER + 2, DIAMETER + 2, true, false, Color.YELLOW, 1);
             final Double attr = attributes.get(selectedNode);
             if (attr != null) {
-                drawOval(g2d, 40, 40, 50, 50, true, true, Color.BLACK, 1);
+                drawOval(g2d, x + 210, y + 40, 50, 50, true, true, Color.BLACK, 1);
                 final String attrStr = Double.toString(attr);
                 g2d.setColor(Color.WHITE);
                 g2d.setFont(Player.rollFont);
                 final int width = g2d.getFontMetrics().stringWidth(attrStr);
-                g2d.drawString(attrStr, 40 - width / 2, 48);
+                g2d.drawString(attrStr, x + 210 - width / 2, y + 48);
             }
         }
+        g.setColor(Color.BLACK);
+        g.setFont(Game.headerFont);
+        final String modeStr = autoSelectMode ? "Mode: Draw edges" : "Mode: Select nodes";
+        g.drawString(modeStr, x + 20, y + 15);
         drawArcs(g2d, nodes);
     }
 
@@ -289,6 +297,10 @@ public class MapEditor extends JPanel {
         final int result = fileChooser.showSaveDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             final File selectedFile = fileChooser.getSelectedFile();
+            if (!selectedFile.getName().toLowerCase().endsWith(".dat")) {
+                JOptionPane.showConfirmDialog(this, "Track data file must end with .dat. Track data is NOT saved!", "Wrong File Extension", JOptionPane.DEFAULT_OPTION);
+                return;
+            }
             try (final PrintWriter writer = new PrintWriter(selectedFile, "UTF-8")) {
                 writer.print(backgroundImageFileName);
                 writer.print(" ");
@@ -334,6 +346,7 @@ public class MapEditor extends JPanel {
             } catch (FileNotFoundException | UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
+            JOptionPane.showConfirmDialog(this, "Track data saved successfully", "Success", JOptionPane.DEFAULT_OPTION);
         }
     }
 
@@ -468,9 +481,6 @@ public class MapEditor extends JPanel {
                     }
                 }
 	        }
-            if (autoSelectMode) {
-                select(null);
-            }
             repaint();
         }
     }
@@ -490,9 +500,6 @@ public class MapEditor extends JPanel {
                 gridAngles.put(selectedNode, Double.valueOf(attr.toString()));
             } else {
                 gridAngles.remove(selectedNode);
-            }
-            if (autoSelectMode) {
-                select(null);
             }
             repaint();
         }
