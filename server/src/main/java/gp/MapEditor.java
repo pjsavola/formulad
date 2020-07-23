@@ -87,16 +87,10 @@ public class MapEditor extends JPanel {
                     if (node != null) {
                         if (selectedNode == node) {
                             select(null);
-                        } else if (autoSelectMode && selectedNode != null) {
-                            selectedNode.addAdjacentNode(node);
-                            select(null);
-                            repaint();
-                            return;
                         }
                         nodes.remove(node);
                         for (Node n : nodes) {
                             n.removeChild(node);
-                            n.removeAdjacentNode(node);
                         }
                         attributes.remove(node);
                         gridAngles.remove(node);
@@ -345,13 +339,6 @@ public class MapEditor extends JPanel {
                         writer.print(" ");
                         writer.println(idMap.get(child));
                     });
-                    node.forEachAdjacentNode(child -> {
-                        writer.print(idMap.get(node));
-                        writer.print(" ");
-                        writer.print(idMap.get(child));
-                        writer.print(" ");
-                        writer.println(1);
-                    });
                 }
                 writer.println();
                 if (!attributes.isEmpty()) {
@@ -448,12 +435,7 @@ public class MapEditor extends JPanel {
                 } else if (emptyLines == 1) {
                     final int fromId = Integer.parseInt(parts[0]);
                     final int toId = Integer.parseInt(parts[1]);
-                    if (parts.length > 2 && Integer.parseInt(parts[2]) == 1) {
-                        // Adjacency edge
-                        idMap.get(fromId).addAdjacentNode(idMap.get(toId));
-                    } else {
-                        idMap.get(fromId).addChild(idMap.get(toId));
-                    }
+                    idMap.get(fromId).addChild(idMap.get(toId));
                 } else if (emptyLines == 0) {
                     final int id = Integer.parseInt(parts[0]);
                     final int x = Integer.parseInt(parts[1]);
@@ -610,19 +592,6 @@ public class MapEditor extends JPanel {
                 g2d.drawLine(p.x, p.y, midX, midY);
                 g2d.setColor(ARC_END);
                 g2d.drawLine(midX, midY, np.x, np.y);
-            });
-            node.forEachAdjacentNode(child -> {
-                final Point np = coordinates.get(child);
-                final int midX = (p.x + np.x) / 2;
-                final int midY = (p.y + np.y) / 2;
-                final Stroke old = g2d.getStroke();
-                final Stroke dashed = new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{3}, 0);
-                g2d.setStroke(dashed);
-                g2d.setColor(Color.BLACK);
-                g2d.drawLine(p.x, p.y, midX, midY);
-                g2d.setColor(Color.BLUE);
-                g2d.drawLine(midX, midY, np.x, np.y);
-                g2d.setStroke(old);
             });
         }
         g2d.setColor(tmpC);

@@ -29,7 +29,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class Main extends Game implements Runnable {
     private final Map<Node, List<Node>> prevNodeMap;
-    private final Map<Node, Set<Node>> adjacentNodes = new HashMap<>();
+    private final Map<Node, Set<Node>> adjacentNodes;
     private LocalPlayer current;
     private LocalPlayer previous;
     private List<LocalPlayer> waitingPlayers = new ArrayList<>();
@@ -64,11 +64,7 @@ public class Main extends Game implements Runnable {
         initTrack(trackId, external);
         this.lobby = lobby;
         prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
-        nodes.forEach(node -> {
-            node.forEachChild(next -> adjacentNodes.computeIfAbsent(node, _key -> new HashSet<>()).add(next));
-            node.forEachAdjacentNode(next -> adjacentNodes.computeIfAbsent(node, _key -> new HashSet<>()).add(next));
-            prevNodeMap.get(node).forEach(prev -> adjacentNodes.computeIfAbsent(node, _key -> new HashSet<>()).add(prev));
-        });
+        adjacentNodes = Node.buildAdjacencyMap(nodes, prevNodeMap);
         LocalPlayer.animationDelayInMillis = params.animationDelayInMillis;
         final long seed = params.seed == null ? new Random().nextLong() : params.seed;
         this.rng = new Random(seed);

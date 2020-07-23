@@ -10,7 +10,6 @@ public final class Node {
     private final int id;
     private final Type type;
     private final Set<Node> nextNodes = new HashSet<>();
-    private final Set<Node> adjacentNodes = new HashSet<>();
 
     public Node(int id, int type) {
         this(id, Type.values()[type]);
@@ -41,18 +40,6 @@ public final class Node {
         if (node != this) {
             nextNodes.add(node);
             node.nextNodes.remove(this); // prevent cycles of length 2
-            adjacentNodes.remove(node);
-            node.adjacentNodes.remove(this);
-        }
-    }
-
-    /**
-     * Used only in map editor and when loading nodes.
-     */
-    public void addAdjacentNode(Node node) {
-        if (node != this && !nextNodes.contains(node) && !node.nextNodes.contains(this)) {
-            adjacentNodes.add(node);
-            node.adjacentNodes.remove(this); // prevent cycles of length 2
         }
     }
 
@@ -63,19 +50,8 @@ public final class Node {
         return nextNodes.remove(node);
     }
 
-    /**
-     * Used only by the map editor.
-     */
-    public boolean removeAdjacentNode(Node node) {
-        return adjacentNodes.remove(node);
-    }
-
     public void forEachChild(Consumer<Node> consumer) {
         nextNodes.forEach(consumer);
-    }
-
-    public void forEachAdjacentNode(Consumer<Node> consumer) {
-        adjacentNodes.forEach(consumer);
     }
 
     public long childCount(Type excludeType) {
@@ -98,40 +74,14 @@ public final class Node {
         return nextNodes.contains(node) || node.nextNodes.contains(this);
     }
 
-    private boolean isInFrontOf(Node node) {
-        if (!node.nextNodes.contains(this)) {
-            return false;
-        }
-        // If there's a path of length 2 to this node, this node must be in front of the given node.
-        final Set<Node> moreDistantNodes = new HashSet<>(node.nextNodes);
-        moreDistantNodes.addAll(node.adjacentNodes);
-        for (Node next : moreDistantNodes) {
-            if (next != this) {
-                final Set<Node> nextMoreDistantNodes = new HashSet<>(next.nextNodes);
-                nextMoreDistantNodes.addAll(next.adjacentNodes);
-                for (Node nextOfNext : nextMoreDistantNodes) {
-                    if (nextOfNext == this) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
     public static Map<Node, Set<Node>> buildAdjacencyMap(List<Node> nodes, Map<Node, List<Node>> prevNodeMap) {
         final Map<Node, Set<Node>> adjacentNodes = new HashMap<>();
         nodes.forEach(node -> {
             node.forEachChild(next -> adjacentNodes.computeIfAbsent(node, _key -> new HashSet<>()).add(next));
-            node.forEachAdjacentNode(next -> {
-                adjacentNodes.computeIfAbsent(node, _key -> new HashSet<>()).add(next);
-                adjacentNodes.computeIfAbsent(next, _key -> new HashSet<>()).add(node);
-            });
             prevNodeMap.get(node).forEach(prev -> adjacentNodes.computeIfAbsent(node, _key -> new HashSet<>()).add(prev));
         });
         for (Map.Entry<Node, Set<Node>> e : adjacentNodes.entrySet()) {
             final Node node = e.getKey();
-            e.getValue().removeIf(node::isInFrontOf);
             e.getValue().removeIf(neighbor -> neighbor.type == Type.PIT && node.type == Type.PIT);
         }
         return adjacentNodes;
