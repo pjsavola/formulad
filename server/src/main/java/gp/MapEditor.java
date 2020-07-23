@@ -230,6 +230,7 @@ public class MapEditor extends JPanel {
 
     private void toggleSelectMode() {
 	    autoSelectMode = !autoSelectMode;
+	    repaint();
     }
 
     @Override

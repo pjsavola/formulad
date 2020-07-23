@@ -362,6 +362,9 @@ public class Main extends Game implements Runnable {
                 for (Node straight : work) {
                     boolean allCurves = true;
                     for (Node prev : prevNodeMap.get(straight)) {
+                        if (prev.getType() == Node.Type.PIT) {
+                            continue;
+                        }
                         if (!prev.isCurve()) {
                             allCurves = false;
                             break;
@@ -377,6 +380,11 @@ public class Main extends Game implements Runnable {
                         }
                         break;
                     }
+                }
+                if (center == null) {
+                    StringBuilder sb = new StringBuilder();
+                    work.stream().distinct().forEach(n -> sb.append(" ").append(n.getId()));
+                    throw new RuntimeException("Nodes" + sb.toString() + " might be missing edges");
                 }
                 work.clear();
                 work.add(center);
@@ -463,6 +471,7 @@ public class Main extends Game implements Runnable {
             }
         } catch (IOException e) {
             log.log(errorLevel, "Track validation failed: " + e.getMessage(), e);
+            e.printStackTrace();
             return false;
         }
         return true;
