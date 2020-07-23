@@ -348,6 +348,10 @@ public class MapEditor extends JPanel {
             final File selectedFile = fileChooser.getSelectedFile();
             try (FileInputStream fis = new FileInputStream(selectedFile)) {
                 final Pair<String, Corner> p = loadNodes(fis, nodes, attributes, gridAngles, coordinates);
+                if (p == null) {
+                    JOptionPane.showConfirmDialog(this, "Wrong file format: " + selectedFile.getName(), "File Format Error", JOptionPane.DEFAULT_OPTION);
+                    return;
+                }
                 infoBoxCorner = p.getRight();
                 nextNodeId += nodes.size();
                 repaint();
@@ -357,13 +361,24 @@ public class MapEditor extends JPanel {
         }
     }
 
+    private static Pair<String, Corner> parseHeaderRow(String headerLine) {
+        if (headerLine != null && !headerLine.isEmpty()) {
+            final String[] parts = headerLine.split(" ");
+            if (parts.length < 2) return null;
+            try {
+                final int infoBoxCorner = Integer.parseInt(parts[1]);
+                return Pair.of(parts[0], Corner.values()[infoBoxCorner]);
+            } catch (NumberFormatException e) {
+                // Fail...
+            }
+        }
+        return null;
+    }
+
     public static Pair<String, Corner> loadHeader(String trackId, boolean external) {
         try (InputStream is = external ? new FileInputStream(trackId) : Main.class.getResourceAsStream("/" + trackId); InputStreamReader ir = new InputStreamReader(is); final BufferedReader br = new BufferedReader(ir)) {
             final String headerLine = br.readLine();
-            if (headerLine != null && !headerLine.isEmpty()) {
-                final String[] parts = headerLine.split(" ");
-                return Pair.of(parts[0], Corner.values()[Integer.parseInt(parts[1])]);
-            }
+            return parseHeaderRow(headerLine);
         } catch (IOException e) {
             Main.log.log(Level.SEVERE, "Reading header of " + trackId + " failed", e);
         }
@@ -374,9 +389,9 @@ public class MapEditor extends JPanel {
 	    Pair<String, Corner> result = null;
         try (InputStreamReader ir = new InputStreamReader(map); final BufferedReader br = new BufferedReader(ir)) {
             final String headerLine = br.readLine();
-            if (headerLine != null && !headerLine.isEmpty()) {
-                final String[] parts = headerLine.split(" ");
-                result = Pair.of(parts[0], Corner.values()[Integer.parseInt(parts[1])]);
+            result = parseHeaderRow(headerLine);
+            if (result == null) {
+                return null;
             }
             // File format begins with nodes, then a single empty line and then edges,
             // then a single empty line and then attributes.

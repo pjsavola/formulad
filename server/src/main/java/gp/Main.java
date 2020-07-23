@@ -433,6 +433,7 @@ public class Main extends Game implements Runnable {
             log.log(Level.WARNING, "Track validation failed: External data file " + trackId + " not found");
             return false;
         }
+        final Level errorLevel = external ? Level.WARNING : Level.SEVERE;
         final List<Node> nodes = new ArrayList<>();
         final Map<Node, Double> attributes = new HashMap<>();
         final Map<Node, Double> gridAngleMap = new HashMap<>();
@@ -441,27 +442,27 @@ public class Main extends Game implements Runnable {
         try (InputStream is = external ? new FileInputStream(trackId) : Main.class.getResourceAsStream("/" + trackId)) {
             final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes, gridAngleMap, coordinates);
             if (result == null) {
-                log.log(Level.SEVERE, "Track validation failed: Proper header is missing from " + trackId);
+                log.log(errorLevel, "Track validation failed: Proper header is missing from " + trackId);
                 return false;
             }
             final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
             final List<Node> grid = findGrid(nodes, attributes, gridAngleMap, distanceMap, prevNodeMap);
             if (grid.size() < 10) {
-                log.log(Level.SEVERE, "Track validation failed: Starting grid has less than 10 spots");
+                log.log(errorLevel, "Track validation failed: Starting grid has less than 10 spots");
                 return false;
             }
             final String imageFile = result.getLeft();
             if (external && !new File(imageFile).exists()) {
-                log.log(Level.WARNING, "Track validation failed: External background image " + imageFile + " not found");
+                log.log(errorLevel, "Track validation failed: External background image " + imageFile + " not found");
                 return false;
             }
             final BufferedImage image = external ? ImageCache.getImageFromPath(imageFile) : ImageCache.getImage("/" + imageFile);
             if (image == null) {
-                log.log(Level.SEVERE, "Track validation failed: Background image " + imageFile + " not found");
+                log.log(errorLevel, "Track validation failed: Background image " + imageFile + " not found");
                 return false;
             }
         } catch (IOException e) {
-            log.log(Level.SEVERE, "Track validation failed: " + e.getMessage(), e);
+            log.log(errorLevel, "Track validation failed: " + e.getMessage(), e);
             return false;
         }
         return true;

@@ -117,6 +117,9 @@ public abstract class Game extends JPanel {
         final String dataFile = "/" + trackId;
         try (InputStream is = external ? new FileInputStream(trackId) : Main.class.getResourceAsStream(dataFile)) {
             final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes, gridAngles, coordinates);
+            if (result == null) {
+                throw new RuntimeException("Data file " + dataFile + " is corrupted");
+            }
             final String imageFile = "/" + result.getLeft();
             infoBoxCorner = result.getRight();
             backgroundImage = external ? ImageCache.getImageFromPath(result.getLeft()) : ImageCache.getImage(imageFile);
