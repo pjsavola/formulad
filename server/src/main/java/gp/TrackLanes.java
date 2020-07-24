@@ -104,6 +104,27 @@ public class TrackLanes {
         lanes[0].checkCollisions(lanes[1]);
         lanes[2].checkCollisions(lanes[1]);
 
+        // Add collisions for pit exit
+        nodes.stream().filter(node -> node.getType() == Node.Type.PIT).forEach(node -> {
+            collisionMap.put(node, new HashSet<>());
+            node.forEachChild(next -> {
+                if (next.getType() != Node.Type.PIT) {
+                    collisionMap.get(node).add(next);
+                    collisionMap.get(next).add(node);
+                }
+            });
+        });
+
+        // Add collisions for pit entry
+        sortedNodes.forEach(node -> {
+            node.forEachChild(next -> {
+                if (next.getType() == Node.Type.PIT) {
+                    collisionMap.get(node).add(next);
+                    collisionMap.get(next).add(node);
+                }
+            });
+        });
+
         return collisionMap;
     }
 }

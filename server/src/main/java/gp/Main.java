@@ -29,7 +29,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class Main extends Game implements Runnable {
     private final Map<Node, List<Node>> prevNodeMap;
-    private final Map<Node, Set<Node>> adjacentNodes;
+    private Map<Node, Set<Node>> collisionMap;
     private LocalPlayer current;
     private LocalPlayer previous;
     private List<LocalPlayer> waitingPlayers = new ArrayList<>();
@@ -64,7 +64,6 @@ public class Main extends Game implements Runnable {
         initTrack(trackId, external);
         this.lobby = lobby;
         prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
-        adjacentNodes = Node.buildAdjacencyMap(nodes, prevNodeMap);
         LocalPlayer.animationDelayInMillis = params.animationDelayInMillis;
         final long seed = params.seed == null ? new Random().nextLong() : params.seed;
         this.rng = new Random(seed);
@@ -109,6 +108,7 @@ public class Main extends Game implements Runnable {
         }
         final int playerCount = aiToProfile.size();
         final List<Node> grid = findGrid(nodes, attributes, gridAngles, distanceMap, prevNodeMap).subList(0, playerCount);
+        collisionMap = TrackLanes.buildCollisionMap(nodes, distanceMap);
 
         final List<Integer> startingOrder = IntStream.range(0, playerCount).boxed().collect(Collectors.toList());
         if (params.randomizeStartingOrder) {
@@ -240,7 +240,7 @@ public class Main extends Game implements Runnable {
                     log.info("Move input received: " + selectedIndex);
                 }
                 current.move(selectedIndex, coordinates, attributes);
-                current.collide(players, adjacentNodes, rng);
+                current.collide(players, collisionMap, rng);
                 if (roll == 20 || roll == 30) {
                     LocalPlayer.possiblyAddEngineDamage(players, rng);
                 }
