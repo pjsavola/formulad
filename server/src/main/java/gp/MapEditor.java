@@ -205,8 +205,10 @@ public class MapEditor extends JPanel {
                         case KeyEvent.VK_D:
                             debugNeighbors.clear();
                             final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
-                            final Map<Node, Set<Node>> adjacencyMap = Node.buildAdjacencyMap(nodes, prevNodeMap);
-                            debugNeighbors.addAll(adjacencyMap.get(selectedNode));
+                            final Map<Node, Double> distanceMap = new HashMap<>();
+                            Main.findGrid(nodes, attributes, gridAngles, distanceMap, prevNodeMap);
+                            final Map<Node, Set<Node>> collisionMap = TrackLanes.buildCollisionMap(nodes, distanceMap);
+                            debugNeighbors.addAll(collisionMap.get(selectedNode));
                             repaint();
                             return;
                         default:
