@@ -8,6 +8,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.List;
+import java.util.Random;
 
 public class ProfilePanel extends JPanel {
     private class CarPreview extends JPanel {
@@ -97,6 +98,7 @@ public class ProfilePanel extends JPanel {
                     }
                 }
                 final JDialog dialog = new JDialog(frame);
+                final Random random = new Random();
 
                 final DefaultListModel<String> model = new DefaultListModel<>();
                 profiles.forEach(profile -> model.addElement(profile.getName()));
@@ -112,6 +114,8 @@ public class ProfilePanel extends JPanel {
                         if (profiles.stream().noneMatch(p -> p.getName().equals(result))) {
                             final Profile newProfile = new Profile(activeProfile.getManager(), result);
                             newProfile.setActive(true);
+                            newProfile.setColor1(random.nextInt(0xFFFFFF));
+                            newProfile.setColor2(random.nextInt(0xFFFFFF));
                             profiles.add(newProfile);
                             activeProfile.setActive(false);
                             activeProfile = newProfile;

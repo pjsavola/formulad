@@ -47,6 +47,9 @@ public class Main extends Game implements Runnable {
     private final Set<LocalPlayer> disconnectedPlayers = new HashSet<>();
     private final Lobby lobby;
     public static final Logger log = Logger.getLogger(Main.class.getName());
+    public static int defaultColor1 = 0xFF9966;
+    public static int defaultColor2 = 0xCCCC33;
+
     static {
         try {
             log.setUseParentHandlers(false);
@@ -809,6 +812,8 @@ public class Main extends Game implements Runnable {
             if (profiles.isEmpty()) {
                 final Profile defaultProfile = new Profile(profileManager, "Player");
                 defaultProfile.setActive(true);
+                defaultProfile.setColor1(defaultColor1);
+                defaultProfile.setColor2(defaultColor2);
                 profiles.add(defaultProfile);
             }
         }

@@ -74,7 +74,7 @@ public abstract class ImageCache {
         for (int size : sizes) {
             BufferedImage compatibleImage = gc.createCompatibleImage(size, size, BufferedImage.TYPE_INT_ARGB_PRE);
             Graphics g = compatibleImage.getGraphics();
-            Player.draw((Graphics2D) g, size / 2, size / 2, 0, Color.RED, Color.BLACK, 1.0);
+            Player.draw((Graphics2D) g, size / 2, size / 2, 0, new Color(Main.defaultColor1), new Color(Main.defaultColor2), 1.0);
             g.dispose();
             icons.add(compatibleImage);
         }
