@@ -140,7 +140,13 @@ public class Player {
     }
 
     public void draw(Graphics2D g, int x, int y, double angle) {
-        draw(g, x, y, angle, color1, color2, 1.0);
+        AffineTransform at = new AffineTransform();
+        at.translate(x, y);
+        g.transform(at);
+        g.rotate(angle);
+        draw(g, colorVariants, color2);
+        g.rotate(-angle);
+        g.translate(-x, -y);
     }
 
     public static Color manipulateColor(Color color, float factor) {
@@ -148,6 +154,58 @@ public class Player {
         int g = Math.max(0, Math.min(255, Math.round(color.getGreen() * factor)));
         int b = Math.max(0, Math.min(255, Math.round(color.getBlue() * factor)));
         return new Color(r, g, b);
+    }
+
+    static void draw(Graphics2D g, Color[] colors, Color color2) {
+        g.setColor(colors[0]);
+        g.fillRect(8, 0, 1, 1);
+        g.setColor(colors[1]);
+        g.fillRect(7, 0, 1, 1);
+        g.setColor(colors[2]);
+        g.fillRect(6, 0, 1, 1);
+        g.setColor(colors[3]);
+        g.fillRect(5, -1, 1, 3);
+        g.setColor(colors[4]);
+        g.fillRect(4, -1, 1, 3);
+        g.setColor(colors[5]);
+        g.fillRect(3, -1, 1, 3);
+        g.fillRect(0, -1, 1, 3);
+        g.fillRect(-1, -1, 1, 3);
+        g.fillRect(-4, -1, 1, 3);
+        g.setColor(colors[7]);
+        g.fillRect(1, -1, 1, 3);
+        g.fillRect(-3, -1, 1, 3);
+        g.setColor(colors[8]);
+        g.fillRect(-2, -1, 1, 3);
+        g.setColor(colors[6]);
+        g.fillRect(2, -1, 1, 3);
+        g.fillRect(-4, -2, 6, 1);
+        g.fillRect(-4, 2, 6, 1);
+        g.fillRect(-3, -3, 3, 1);
+        g.fillRect(-3, 3, 3, 1);
+        g.setColor(color2);
+        g.fillRect(7, 3, 2, 1);
+        g.fillRect(7, -3, 2, 1);
+        g.fillRect(-7, -2, 3, 5);
+        g.setColor(color2.brighter());
+        g.fillRect(-6, -1, 2, 3);
+        g.fillRect(7, 2, 2, 1);
+        g.fillRect(7, -2, 2, 1);
+        g.fillRect(8, 1, 1, 1);
+        g.fillRect(8, -1, 1, 1);
+        g.setColor(Color.BLACK);
+        g.fillRect(3, -4, 2, 2);
+        g.fillRect(3, 3, 2, 2);
+        g.fillRect(-6, -4, 2, 2);
+        g.fillRect(-6, 3, 2, 2);
+        g.fillRect(4, -2, 1, 1);
+        g.fillRect(4, 2, 1, 1);
+        g.fillRect(-1, 0, 2, 1);
+        g.setColor(Color.DARK_GRAY);
+        g.fillRect(5, -4, 1, 2);
+        g.fillRect(5, 3, 1, 2);
+        g.fillRect(-4, -4, 1, 2);
+        g.fillRect(-4, 3, 1, 2);
     }
 
     public static void draw(Graphics2D g, int x, int y, double angle, Color color1, Color color2, double scale) {
@@ -158,55 +216,7 @@ public class Player {
         g.rotate(angle);
         if (true) {
             Color[] colors = createColorVariants(color1);
-            g.setColor(colors[0]);
-            g.fillRect(8, 0, 1, 1);
-            g.setColor(colors[1]);
-            g.fillRect(7, 0, 1, 1);
-            g.setColor(colors[2]);
-            g.fillRect(6, 0, 1, 1);
-            g.setColor(colors[3]);
-            g.fillRect(5, -1, 1, 3);
-            g.setColor(colors[4]);
-            g.fillRect(4, -1, 1, 3);
-            g.setColor(colors[5]);
-            g.fillRect(3, -1, 1, 3);
-            g.fillRect(0, -1, 1, 3);
-            g.fillRect(-1, -1, 1, 3);
-            g.fillRect(-4, -1, 1, 3);
-            g.setColor(colors[7]);
-            g.fillRect(1, -1, 1, 3);
-            g.fillRect(-3, -1, 1, 3);
-            g.setColor(colors[8]);
-            g.fillRect(-2, -1, 1, 3);
-            g.setColor(colors[6]);
-            g.fillRect(2, -1, 1, 3);
-            g.fillRect(-4, -2, 6, 1);
-            g.fillRect(-4, 2, 6, 1);
-            g.fillRect(-3, -3, 3, 1);
-            g.fillRect(-3, 3, 3, 1);
-            g.setColor(color2);
-            g.fillRect(7, 3, 2, 1);
-            g.fillRect(7, -3, 2, 1);
-            g.fillRect(-7, -2, 3, 5);
-            g.setColor(color2.brighter());
-            g.fillRect(-6, -1, 2, 3);
-            g.fillRect(7, 2, 2, 1);
-            g.fillRect(7, -2, 2, 1);
-            g.fillRect(8, 1, 1, 1);
-            g.fillRect(8, -1, 1, 1);
-            g.setColor(Color.BLACK);
-            g.fillRect(3, -4, 2, 2);
-            g.fillRect(3, 3, 2, 2);
-            g.fillRect(-6, -4, 2, 2);
-            g.fillRect(-6, 3, 2, 2);
-            g.fillRect(4, -2, 1, 1);
-            g.fillRect(4, 2, 1, 1);
-            g.fillRect(-1, 0, 2, 1);
-            g.setColor(Color.DARK_GRAY);
-            g.fillRect(5, -4, 1, 2);
-            g.fillRect(5, 3, 1, 2);
-            g.fillRect(-4, -4, 1, 2);
-            g.fillRect(-4, 3, 1, 2);
+            draw(g, colors, color2);
         }
         else if (true) {
             g.setColor(color1);
