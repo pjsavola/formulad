@@ -19,6 +19,7 @@ public class Player {
     private double angle;
     private final Color color1;
     private final Color color2;
+    private Color[] colorVariants;
     boolean stopped;
     private final JPanel panel; // for repaint requests needed for animations
     private final List<Node> route = new ArrayList<>();
@@ -27,6 +28,20 @@ public class Player {
     static final Font rollFont = new Font("Arial", Font.PLAIN, 20);
     private static final Font statsFont = new Font("Arial", Font.PLAIN, 12);
 
+    private static Color[] createColorVariants(Color color) {
+        Color[] colors = new Color[9];
+        colors[0] = manipulateColor(color, 0.7f);
+        colors[1] = manipulateColor(color, 0.75f);
+        colors[2] = manipulateColor(color, 0.8f);
+        colors[3] = manipulateColor(color, 0.85f);
+        colors[4] = manipulateColor(color, 0.9f);
+        colors[5] = manipulateColor(color, 0.95f);
+        colors[6] = manipulateColor(color, 1.f);
+        colors[7] = manipulateColor(color, 1.1f);
+        colors[8] = manipulateColor(color, 1.2f);
+        return colors;
+    }
+
     public Player(String playerId, Node node, double initialAngle, JPanel panel, int color1, int color2) {
         this.playerId = playerId;
         this.color1 = new Color(color1);
@@ -34,6 +49,7 @@ public class Player {
         this.node = node;
         this.angle = initialAngle / 180 * Math.PI;
         this.panel = panel;
+        this.colorVariants = createColorVariants(this.color1);
     }
 
     public String getId() {
@@ -127,6 +143,13 @@ public class Player {
         draw(g, x, y, angle, color1, color2, 1.0);
     }
 
+    public static Color manipulateColor(Color color, float factor) {
+        int r = Math.max(0, Math.min(255, Math.round(color.getRed() * factor)));
+        int g = Math.max(0, Math.min(255, Math.round(color.getGreen() * factor)));
+        int b = Math.max(0, Math.min(255, Math.round(color.getBlue() * factor)));
+        return new Color(r, g, b);
+    }
+
     public static void draw(Graphics2D g, int x, int y, double angle, Color color1, Color color2, double scale) {
         AffineTransform at = new AffineTransform();
         at.translate(x, y);
@@ -134,6 +157,58 @@ public class Player {
         g.transform(at);
         g.rotate(angle);
         if (true) {
+            Color[] colors = createColorVariants(color1);
+            g.setColor(colors[0]);
+            g.fillRect(8, 0, 1, 1);
+            g.setColor(colors[1]);
+            g.fillRect(7, 0, 1, 1);
+            g.setColor(colors[2]);
+            g.fillRect(6, 0, 1, 1);
+            g.setColor(colors[3]);
+            g.fillRect(5, -1, 1, 3);
+            g.setColor(colors[4]);
+            g.fillRect(4, -1, 1, 3);
+            g.setColor(colors[5]);
+            g.fillRect(3, -1, 1, 3);
+            g.fillRect(0, -1, 1, 3);
+            g.fillRect(-1, -1, 1, 3);
+            g.fillRect(-4, -1, 1, 3);
+            g.setColor(colors[7]);
+            g.fillRect(1, -1, 1, 3);
+            g.fillRect(-3, -1, 1, 3);
+            g.setColor(colors[8]);
+            g.fillRect(-2, -1, 1, 3);
+            g.setColor(colors[6]);
+            g.fillRect(2, -1, 1, 3);
+            g.fillRect(-4, -2, 6, 1);
+            g.fillRect(-4, 2, 6, 1);
+            g.fillRect(-3, -3, 3, 1);
+            g.fillRect(-3, 3, 3, 1);
+            g.setColor(color2);
+            g.fillRect(7, 3, 2, 1);
+            g.fillRect(7, -3, 2, 1);
+            g.fillRect(-7, -2, 3, 5);
+            g.setColor(color2.brighter());
+            g.fillRect(-6, -1, 2, 3);
+            g.fillRect(7, 2, 2, 1);
+            g.fillRect(7, -2, 2, 1);
+            g.fillRect(8, 1, 1, 1);
+            g.fillRect(8, -1, 1, 1);
+            g.setColor(Color.BLACK);
+            g.fillRect(3, -4, 2, 2);
+            g.fillRect(3, 3, 2, 2);
+            g.fillRect(-6, -4, 2, 2);
+            g.fillRect(-6, 3, 2, 2);
+            g.fillRect(4, -2, 1, 1);
+            g.fillRect(4, 2, 1, 1);
+            g.fillRect(-1, 0, 2, 1);
+            g.setColor(Color.DARK_GRAY);
+            g.fillRect(5, -4, 1, 2);
+            g.fillRect(5, 3, 1, 2);
+            g.fillRect(-4, -4, 1, 2);
+            g.fillRect(-4, 3, 1, 2);
+        }
+        else if (true) {
             g.setColor(color1);
             g.fillRect(6, -3, 2, 1);
             g.fillRect(6, 3, 2, 1);
@@ -157,7 +232,6 @@ public class Player {
             g.fillRect(3, -2, 1, 1);
             g.fillRect(3, 2, 1, 1);
             g.fillRect(-1, 0, 2, 1);
-
         } else {
             g.fillRect(-7, -3, 1, 7);
             g.fillRect(-6, 0, 1, 1);
