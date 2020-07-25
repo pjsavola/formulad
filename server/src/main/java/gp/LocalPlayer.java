@@ -228,21 +228,23 @@ public final class LocalPlayer extends Player {
     }
 
     private void adjustHitpoints(int loss) {
-        Main.log.info("Player " + getNameAndId() + " loses " + loss + " hitpoints");
-        // Show animation
-        hitpoints -= loss;
-        ((Main) panel).notifyAll(new HitpointNotification(playerId, hitpoints));
-        ((Game) panel).scheduleHitpointAnimation(loss);
+        if (loss > 0) {
+            // Show animation
+            Main.log.info("Player " + getNameAndId() + " loses " + loss + " hitpoints");
+            hitpoints -= loss;
+            ((Main) panel).notifyAll(new HitpointNotification(playerId, hitpoints));
+            ((Game) panel).scheduleHitpointAnimation(loss, this);
+        }
     }
 
     private void recoverHitpoints() {
-        Main.log.info("Player " + getNameAndId() + " pits and recovers full hitpoints");
-        // Show animation
         final int gain = 18 - hitpoints;
         if (gain > 0) {
+            // Show animation
+            Main.log.info("Player " + getNameAndId() + " pits and recovers full hitpoints");
             hitpoints += gain;
             ((Main) panel).notifyAll(new HitpointNotification(playerId, hitpoints));
-            ((Game) panel).scheduleHitpointAnimation(-gain);
+            ((Game) panel).scheduleHitpointAnimation(-gain, this);
         }
     }
 

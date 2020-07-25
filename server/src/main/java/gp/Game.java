@@ -322,8 +322,8 @@ public abstract class Game extends JPanel {
         });
     }
 
-    void scheduleHitpointAnimation(int loss) {
-        final Point p = coordinates.get(getCurrent().node);
+    void scheduleHitpointAnimation(int loss, Player player) {
+        final Point p = coordinates.get(player.node);
         final HitpointAnimation a = new HitpointAnimation(loss, p.x, p.y);
         animations.add(a);
         timer.schedule(new TimerTask() {
