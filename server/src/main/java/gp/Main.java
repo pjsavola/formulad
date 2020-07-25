@@ -480,8 +480,13 @@ public class Main extends Game implements Runnable {
                 log.log(errorLevel, "Track validation failed: Background image " + imageFile + " not found");
                 return false;
             }
+            TrackLanes.buildCollisionMap(nodes, distanceMap);
         } catch (IOException e) {
             log.log(errorLevel, "Track validation failed: " + e.getMessage(), e);
+            e.printStackTrace();
+            return false;
+        } catch (Exception e) {
+            log.log(errorLevel, "Track validation failed for " + trackId + ": " + e.getMessage(), e);
             e.printStackTrace();
             return false;
         }

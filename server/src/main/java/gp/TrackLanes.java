@@ -60,6 +60,37 @@ public class TrackLanes {
             collisionMap.get(firstNode).add(otherLane.nodes.get(0));
             collisionMap.get(otherLane.nodes.get(0)).add(firstNode);
         }
+
+        private void checkCurveDistances(Lane lane) {
+            boolean inCurve = false;
+            int i = 0;
+            int j = 0;
+            while (i + 1 < nodes.size() && j + 1 < lane.nodes.size()) {
+                final boolean nextIsCurve1 = nodes.get(i + 1).isCurve();
+                final boolean nextIsCurve2 = lane.nodes.get(j + 1).isCurve();
+                if (nextIsCurve1 != inCurve && nextIsCurve2 != inCurve) {
+                    final double dist1 = distanceMap.get(nodes.get(i));
+                    final double dist2 = distanceMap.get(lane.nodes.get(j));
+                    final Node curveTransition1 = nodes.get(dist1 > dist2 ? i : i + 1);
+                    final Node curveTransition2 = lane.nodes.get(dist1 > dist2 ? j + 1 : j);
+                    if (!distanceMap.get(curveTransition1).equals(distanceMap.get(curveTransition2))) {
+                        throw new RuntimeException("Distances not properly configured at curve: " + curveTransition1.getId() + ", " + curveTransition2.getId());
+                    }
+                }
+                if (nextIsCurve1 != inCurve && nextIsCurve2 != inCurve) {
+                    inCurve = !inCurve;
+                    ++i;
+                    ++j;
+                } else {
+                    if (nextIsCurve1 == inCurve) {
+                        ++i;
+                    }
+                    if (nextIsCurve2 == inCurve) {
+                        ++j;
+                    }
+                }
+            }
+        }
     }
 
     private static int distanceToInt(double distance) {
@@ -124,6 +155,9 @@ public class TrackLanes {
                 }
             });
         });
+
+        // Sanity checks for distancee definitions
+        lanes[0].checkCurveDistances(lanes[2]);
 
         return collisionMap;
     }
