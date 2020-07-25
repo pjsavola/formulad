@@ -239,9 +239,11 @@ public final class LocalPlayer extends Player {
         Main.log.info("Player " + getNameAndId() + " pits and recovers full hitpoints");
         // Show animation
         final int gain = 18 - hitpoints;
-        hitpoints += gain;
-        ((Main) panel).notifyAll(new HitpointNotification(playerId, hitpoints));
-        ((Game) panel).scheduleHitpointAnimation(-gain);
+        if (gain > 0) {
+            hitpoints += gain;
+            ((Main) panel).notifyAll(new HitpointNotification(playerId, hitpoints));
+            ((Game) panel).scheduleHitpointAnimation(-gain);
+        }
     }
 
     public Moves findAllTargets(int roll, String gameId, List<LocalPlayer> players) {
