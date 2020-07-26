@@ -764,10 +764,13 @@ public class Main extends Game implements Runnable {
         });
         final JButton trackEditorButton = new JButton("Track Editor");
         trackEditorButton.addActionListener(e -> {
+            final MenuBar oldBar = f.getMenuBar();
             final MapEditor editor = new MapEditor(f);
             if (editor.open()) {
                 listener.contentChanged(editor, null, null, "track editor", true);
                 setContent(f, editor);
+            } else {
+                f.setMenuBar(oldBar);
             }
         });
         singlePlayerButton.setFont(new Font("Arial", Font.BOLD, 20));
