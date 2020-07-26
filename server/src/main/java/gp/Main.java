@@ -490,7 +490,7 @@ public class Main extends Game implements Runnable {
             return false;
         } catch (Exception e) {
             log.log(errorLevel, "Track validation failed for " + trackId + ": " + e.getMessage(), e);
-            e.printStackTrace();
+            //e.printStackTrace();
             return false;
         }
         return true;
