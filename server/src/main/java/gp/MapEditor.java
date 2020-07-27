@@ -22,6 +22,7 @@ import javax.swing.filechooser.FileFilter;
 
 import gp.ai.AIUtil;
 import gp.ai.Node;
+import gp.editor.*;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class MapEditor extends JPanel {
@@ -53,6 +54,7 @@ public class MapEditor extends JPanel {
     private final MenuItem setGridAngle;
 
     private final List<Node> debugNeighbors = new ArrayList<>();
+    private final UndoStack stack = new UndoStack(nodes, coordinates, attributes, gridAngles);
 
     public enum Corner { NE, SE, SW, NW };
 
@@ -87,28 +89,20 @@ public class MapEditor extends JPanel {
                                     // Not enough space
                                     return;
                                 }
-                                Node currentNode = selectedNode;
-                                for (int i = 0; i < nodeCount; ++i) {
-                                    final Node newNode = new Node(nextNodeId++, stroke);
-                                    nodes.add(newNode);
-                                    final Point p = new Point(start.x + (i + 1) * dx / nodeCount, start.y + (i + 1) * dy / nodeCount);
-                                    coordinates.put(newNode, p);
-                                    currentNode.addChild(newNode);
-                                    currentNode = newNode;
-                                }
-                                select(currentNode);
+                                final CreateNodesItem item = new CreateNodesItem(nextNodeId, stroke, start, selectedNode, dx, dy, nodeCount);
+                                stack.execute(item);
+                                nextNodeId += nodeCount;
+                                select(item.getLastItem());
                                 repaint();
                             } catch (NumberFormatException ex) {
                                 return;
                             }
                             return;
                         }
-                        final Node newNode = new Node(nextNodeId++, stroke);
-                        nodes.add(newNode);
-                        coordinates.put(newNode, new Point(e.getX(), e.getY()));
+                        final CreateNodeItem item = new CreateNodeItem(nextNodeId++, stroke, new Point(e.getX(), e.getY()), selectedNode);
+                        stack.execute(item);
                         if (autoSelectMode && selectedNode != null) {
-                            selectedNode.addChild(newNode);
-                            select(newNode);
+                            select(nodes.get(nodes.size() - 1));
                         } else {
                             select(null);
                         }
@@ -116,7 +110,8 @@ public class MapEditor extends JPanel {
                         select(node);
                     } else if (selectedNode != node) {
                         if (autoSelectMode) {
-                            selectedNode.addChild(node);
+                            final CreateEdgeItem item = new CreateEdgeItem(selectedNode, node);
+                            stack.execute(item);
                         }
                         select(node);
                     } else {
@@ -129,18 +124,17 @@ public class MapEditor extends JPanel {
                         if (selectedNode == node) {
                             select(null);
                         }
-                        nodes.remove(node);
-                        for (Node n : nodes) {
-                            n.removeChild(node);
-                        }
-                        attributes.remove(node);
-                        gridAngles.remove(node);
-                        coordinates.remove(node);
+                        final RemoveNodeItem item = new RemoveNodeItem(node);
+                        stack.execute(item);
                         repaint();
                     }
                 }
             }
         });
+        // TODO: UNDO
+        // TODO: Shift all nodes
+        // TODO: Scale node coordinates
+        // TODO: Unify node identifiers
         final MenuBar menuBar = new MenuBar();
         final Menu fileMenu = new Menu("File");
         final Menu editMenu = new Menu("Edit");
@@ -162,17 +156,26 @@ public class MapEditor extends JPanel {
         fileMenu.add(saveTrackData);
 
         menuBar.add(editMenu);
+        final MenuItem undo = new MenuItem("Undo");
+        undo.addActionListener(e -> {
+            stack.undo();
+            select(null);
+            repaint();
+        });
+        undo.setShortcut(new MenuShortcut(KeyEvent.VK_Z));
+        editMenu.add(undo);
+        stack.setMenuItem(undo);
         final MenuItem autoSelectMode = new MenuItem("Switch Mode");
         autoSelectMode.addActionListener(e -> toggleSelectMode());
         autoSelectMode.setShortcut(new MenuShortcut(KeyEvent.VK_A));
         editMenu.add(autoSelectMode);
         setGarage = new MenuItem("Set Garage");
         setGarage.addActionListener(e -> setAttribute());
-        setGarage.setShortcut(new MenuShortcut(KeyEvent.VK_Z));
+        setGarage.setShortcut(new MenuShortcut(KeyEvent.VK_E));
         editMenu.add(setGarage);
         setCurveDistance = new MenuItem("Set Curve Distance");
         setCurveDistance.addActionListener(e -> setAttribute());
-        setCurveDistance.setShortcut(new MenuShortcut(KeyEvent.VK_Z));
+        setCurveDistance.setShortcut(new MenuShortcut(KeyEvent.VK_E));
         editMenu.add(setCurveDistance);
         setGridAngle = new MenuItem("Set Grid Angle");
         setGridAngle.addActionListener(e -> setGridAngle());
@@ -186,7 +189,7 @@ public class MapEditor extends JPanel {
         menuBar.add(strokeMenu);
         final MenuItem strokeStraight = new MenuItem("Straight");
         strokeStraight.addActionListener(e -> setStroke(Node.Type.STRAIGHT));
-        strokeStraight.setShortcut(new MenuShortcut(KeyEvent.VK_S));
+        strokeStraight.setShortcut(new MenuShortcut(KeyEvent.VK_T));
         strokeMenu.add(strokeStraight);
         strokes.put(Node.Type.STRAIGHT, strokeStraight);
         final MenuItem strokeCurve1 = new MenuItem("1 Stop Curve");
