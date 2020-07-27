@@ -64,6 +64,45 @@ public class MapEditor extends JPanel {
                 if (e.getButton() == MouseEvent.BUTTON1) {
                     final Node node = getNode(nodes, coordinates, e.getX(), e.getY(), DIAMETER);
                     if (node == null) {
+                        if ((e.getModifiers() & InputEvent.SHIFT_MASK) != 0 && autoSelectMode && selectedNode != null) {
+                            final String value = (String) JOptionPane.showInputDialog(
+                                    MapEditor.this,
+                                    "Number of new nodes:",
+                                    "New node count",
+                                    JOptionPane.PLAIN_MESSAGE,
+                                    null,
+                                    null,
+                                    1
+                            );
+                            try {
+                                final int nodeCount = Integer.parseInt(value);
+                                if (nodeCount < 1) {
+                                    return;
+                                }
+                                final Point start = coordinates.get(selectedNode);
+                                final int dx = e.getX() - start.x;
+                                final int dy = e.getY() - start.y;
+                                System.out.println(dx + " " + dy + " " + (dx * dx + dy * dy));
+                                if (dx * dx + dy * dy < 16 * DIAMETER * DIAMETER * nodeCount) {
+                                    // Not enough space
+                                    return;
+                                }
+                                Node currentNode = selectedNode;
+                                for (int i = 0; i < nodeCount; ++i) {
+                                    final Node newNode = new Node(nextNodeId++, stroke);
+                                    nodes.add(newNode);
+                                    final Point p = new Point(start.x + (i + 1) * dx / nodeCount, start.y + (i + 1) * dy / nodeCount);
+                                    coordinates.put(newNode, p);
+                                    currentNode.addChild(newNode);
+                                    currentNode = newNode;
+                                }
+                                select(currentNode);
+                                repaint();
+                            } catch (NumberFormatException ex) {
+                                return;
+                            }
+                            return;
+                        }
                         final Node newNode = new Node(nextNodeId++, stroke);
                         nodes.add(newNode);
                         coordinates.put(newNode, new Point(e.getX(), e.getY()));
