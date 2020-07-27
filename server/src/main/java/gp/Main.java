@@ -344,7 +344,7 @@ public class Main extends Game implements Runnable {
                     return;
                 }
                 final long nextChildCount = next.childCount(Node.Type.PIT);
-                final boolean fromCenterToEdge = childCount == 3 && nextChildCount == 2;
+                final boolean fromCenterToEdge = childCount == 3 && (nextChildCount == 2 || prevNodeMap.get(next).stream().anyMatch(Node::isCurve));
                 distanceMap.put(next, distanceMap.get(node) + (fromCenterToEdge ? 0.5 : 1));
                 work.add(next);
             });
