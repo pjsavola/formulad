@@ -674,7 +674,7 @@ public class Main extends Game implements Runnable {
         f.setContentPane(scrollPane);
         f.pack();
         final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        f.setSize(Math.min(screenSize.width, f.getWidth()), Math.min(screenSize.height, f.getHeight()));
+        f.setSize(Math.min(screenSize.width, f.getWidth()), Math.min(screenSize.height - 100, f.getHeight()));
     }
 
     static class ProfileSaver extends WindowAdapter {

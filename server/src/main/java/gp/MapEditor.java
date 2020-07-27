@@ -32,6 +32,7 @@ public class MapEditor extends JPanel {
     private static final Color ARC_END = new Color(0x990000);
     private static final Color LIGHT_RED = new Color(0xFF6600);
 
+    private final JFrame frame;
     private int nextNodeId;
     private final List<Node> nodes = new ArrayList<>();
     private final Map<Node, Double> attributes = new HashMap<>();
@@ -56,6 +57,7 @@ public class MapEditor extends JPanel {
     public enum Corner { NE, SE, SW, NW };
 
 	public MapEditor(JFrame frame) {
+	    this.frame = frame;
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -297,6 +299,9 @@ public class MapEditor extends JPanel {
             }
             backgroundImageFileName = selectedFile.getName();
             setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
+            frame.pack();
+            final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+            frame.setSize(Math.min(screenSize.width, frame.getWidth()), Math.min(screenSize.height - 100, frame.getHeight()));
             return true;
         }
         return false;
