@@ -15,6 +15,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
+import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 import javax.swing.*;
@@ -131,14 +132,13 @@ public class MapEditor extends JPanel {
                 }
             }
         });
-        // TODO: UNDO
         // TODO: Shift all nodes
         // TODO: Scale node coordinates
-        // TODO: Unify node identifiers
         final MenuBar menuBar = new MenuBar();
         final Menu fileMenu = new Menu("File");
         final Menu editMenu = new Menu("Edit");
         final Menu strokeMenu = new Menu("Stroke");
+        final Menu toolMenu = new Menu("Tools");
         final Menu validationMenu = new Menu("Validation");
 
         menuBar.add(fileMenu);
@@ -220,6 +220,11 @@ public class MapEditor extends JPanel {
 
         setStroke(Node.Type.STRAIGHT);
         select(null);
+
+        menuBar.add(toolMenu);
+        final MenuItem unify = new MenuItem("Unify node identifiers");
+        unify.addActionListener(e -> unifyNodeIdentifiers());
+        toolMenu.add(unify);
 
         menuBar.add(validationMenu);
         final MenuItem validate = new MenuItem("Validate Track");
@@ -565,6 +570,46 @@ public class MapEditor extends JPanel {
                 gridAngles.remove(selectedNode);
             }
             repaint();
+        }
+    }
+
+    private void unifyNodeIdentifiers() {
+        try {
+            final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
+            final Map<Node, Double> distanceMap = new HashMap<>();
+            Main.findGrid(nodes, attributes, gridAngles, distanceMap, prevNodeMap);
+            nodes.sort((n1, n2) -> n2.compareTo(n1, distanceMap));
+            final List<Node> newNodes = new ArrayList<>();
+            final Map<Node, Point> newCoordinates = new HashMap<>();
+            final Map<Node, Double> newAttributes = new HashMap<>();
+            final Map<Node, Double> newGridAngles = new HashMap<>();
+            final Map<Node, Node> oldToNew = new HashMap<>();
+            for (Node node : nodes) {
+                final Point point = coordinates.get(node);
+                final Double attr = attributes.get(node);
+                final Double angle = gridAngles.get(node);
+                final Node newNode = new Node(newNodes.size(), node.getType());
+                if (point != null) newCoordinates.put(newNode, point);
+                if (attr != null) newAttributes.put(newNode, attr);
+                if (angle != null) newGridAngles.put(newNode, angle);
+                oldToNew.put(node, newNode);
+                newNodes.add(newNode);
+            }
+            oldToNew.forEach((oldNode, newNode) -> {
+                oldNode.childStream().forEach(oldChild -> newNode.addChild(oldToNew.get(oldChild)));
+            });
+            oldToNew.clear();
+            nodes.clear();
+            nodes.addAll(newNodes);
+            coordinates.clear();
+            coordinates.putAll(newCoordinates);
+            attributes.clear();
+            attributes.putAll(newAttributes);
+            gridAngles.clear();
+            gridAngles.putAll(newGridAngles);
+            repaint();
+        } catch (Exception e) {
+            JOptionPane.showConfirmDialog(this, "Failed to unify node identifiers: " + e.getMessage(), "Validation Error", JOptionPane.DEFAULT_OPTION);
         }
     }
 

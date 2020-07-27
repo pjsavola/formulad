@@ -93,7 +93,7 @@ public class TrackLanes {
         }
     }
 
-    private static int distanceToInt(double distance) {
+    public static int distanceToInt(double distance) {
         return (int) (100 * distance + 0.5);
     }
 

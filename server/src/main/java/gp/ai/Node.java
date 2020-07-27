@@ -1,5 +1,8 @@
 package gp.ai;
 
+import gp.LocalPlayer;
+import gp.TrackLanes;
+
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -135,5 +138,22 @@ public final class Node {
         if (this == other) return true;
         if (other instanceof Node) return id == ((Node) other).id;
         return false;
+    }
+
+    public int compareTo(Node node, Map<Node, Double> distanceMap) {
+        final double d1 = distanceMap.get(this);
+        final double d2 = distanceMap.get(node);
+        if (d1 == d2) {
+            if (isCurve() && !node.isCurve()) {
+                return 1;
+            } else if (!isCurve() && node.isCurve()) {
+                return -1;
+            }
+            final int distanceToNextArea1 = getDistanceToNextArea();
+            final int distanceToNextArea2 = node.getDistanceToNextArea();
+            final int delta = distanceToNextArea1 - distanceToNextArea2;
+            return isCurve() ? delta : -delta;
+        }
+        return TrackLanes.distanceToInt(d2 - d1);
     }
 }

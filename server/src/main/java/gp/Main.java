@@ -429,7 +429,7 @@ public class Main extends Game implements Runnable {
             }
         }
         gridAngles.keySet().forEach(grid::add);
-        grid.sort((n1, n2) -> (int) (100 * (distanceMap.get(n2) - distanceMap.get(n1))));
+        grid.sort((n1, n2) -> TrackLanes.distanceToInt(distanceMap.get(n2)) - TrackLanes.distanceToInt(distanceMap.get(n1)));
 
         nodes.forEach(node -> {
             final boolean isPit = node.getType() == Node.Type.PIT;
