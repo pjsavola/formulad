@@ -28,6 +28,18 @@ import gp.model.*;
 import gp.model.Gear;
 import org.apache.commons.lang3.tuple.Pair;
 
+class PreviousSettings {
+    String trackId = "hockenheim.dat";
+    boolean external;
+    String port = "1277";
+    String server = "localhost:1277";
+    boolean randomStartOrder = true;
+    int laps = 1;
+    int animationDelay = 60;
+    int timePerTurn = 3;
+    int leeway = 3600;
+}
+
 public class Main extends Game implements Runnable {
     private Map<Node, Set<Node>> collisionMap;
     private LocalPlayer current;
@@ -49,6 +61,8 @@ public class Main extends Game implements Runnable {
     public static int defaultColor1 = 0xFF9966;
     public static int defaultColor2 = 0xCCCC33;
 
+    static PreviousSettings settings = new PreviousSettings();
+
     static {
         try {
             log.setUseParentHandlers(false);
@@ -64,6 +78,8 @@ public class Main extends Game implements Runnable {
     public Main(Params params, Lobby lobby, JFrame frame, JPanel panel, PlayerSlot[] slots, TrackData trackData) {
         super(frame, panel);
         initTrack(trackData);
+        settings.trackId = trackData.getTrackId();
+        settings.external = trackData.isExternal();
         this.lobby = lobby;
         LocalPlayer.animationDelayInMillis = params.animationDelayInMillis;
         final long seed = params.seed == null ? new Random().nextLong() : params.seed;
@@ -395,7 +411,7 @@ public class Main extends Game implements Runnable {
         private int laps = 1;
     }
 
-    private static void showGameSettings(JFrame frame, JPanel panel, Lobby lobby, List<Profile> profiles, Params params, String trackId, WindowChanger listener) {
+    private static void showGameSettings(JFrame frame, JPanel panel, Lobby lobby, List<Profile> profiles, Params params, WindowChanger listener) {
         final List<ProfileMessage> localProfiles = profiles.stream().map(ProfileMessage::new).collect(Collectors.toList());
         final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
         final PlayerSlot[] slots = new PlayerSlot[10];
@@ -408,7 +424,7 @@ public class Main extends Game implements Runnable {
             lobby.setSlots(slots);
         }
         final TrackPreviewButton changeTrackButton = new TrackPreviewButton(frame, panel, lobby);
-        final TrackData previousTrack = TrackData.createTrackData(trackId, false);
+        final TrackData previousTrack = TrackData.createTrackData(settings.trackId, settings.external);
         if (previousTrack == null) {
             return;
         }
@@ -419,11 +435,11 @@ public class Main extends Game implements Runnable {
         lobbyPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         final JButton startButton = new JButton("Start");
-        final JCheckBox randomStartingOrder = new JCheckBox("Randomize starting order", true);
-        final SettingsField laps = new SettingsField(lobbyPanel, "Laps", "1", 1, 200);
-        final SettingsField animationDelay = new SettingsField(lobbyPanel, "Animation delay (ms)", "100", 0, 1000);
-        final SettingsField time = new SettingsField(lobbyPanel, "Time per turn (s)", "3", 0, 3600);
-        final SettingsField leeway = new SettingsField(lobbyPanel, "Time leeway (s)", "3600", 0, 36000);
+        final JCheckBox randomStartingOrder = new JCheckBox("Randomize starting order", settings.randomStartOrder);
+        final SettingsField laps = new SettingsField(lobbyPanel, "Laps", Integer.toString(settings.laps), 1, 200);
+        final SettingsField animationDelay = new SettingsField(lobbyPanel, "Animation delay (ms)", Integer.toString(settings.animationDelay), 0, 1000);
+        final SettingsField time = new SettingsField(lobbyPanel, "Time per turn (s)", Integer.toString(settings.timePerTurn), 0, 3600);
+        final SettingsField leeway = new SettingsField(lobbyPanel, "Time leeway (s)", Integer.toString(settings.leeway), 0, 36000);
         startButton.addActionListener(event -> {
             boolean hasPlayers = false;
             final Set<UUID> ids = new HashSet<>();
@@ -460,6 +476,11 @@ public class Main extends Game implements Runnable {
                 lobby.interrupt();
             }
             params.randomizeStartingOrder = randomStartingOrder.isSelected();
+            settings.randomStartOrder = params.randomizeStartingOrder;
+            settings.laps = params.laps;
+            settings.animationDelay = params.animationDelayInMillis;
+            settings.timePerTurn = time.getValue();
+            settings.leeway = leeway.getValue();
             final Main server = new Main(params, lobby, frame, panel, slots, changeTrackButton.getTrackData());
             listener.contentChanged(server, lobby, server, lobby == null ? "race" : "server", true);
             setContent(frame, server);
@@ -546,21 +567,21 @@ public class Main extends Game implements Runnable {
         contents.add(buttonPanel);
         contents.add(profilePanel);
 
-        final JButton singlePlayerButton = new JButton("Single Player");
+        final JButton singlePlayerButton = new JButton("Single Race");
         singlePlayerButton.addActionListener(e -> {
-            showGameSettings(f, p, null, profiles, params, profilePanel.getActiveProfile().getLastTrack(), listener);
+            showGameSettings(f, p, null, profiles, params, listener);
         });
         final JButton hostMultiplayerButton = new JButton("Host Multiplayer");
         hostMultiplayerButton.addActionListener(e -> {
-            String result = (String) JOptionPane.showInputDialog(f, "Select port", "Select port", JOptionPane.PLAIN_MESSAGE,  null, null, "1277");
+            String result = (String) JOptionPane.showInputDialog(f, "Select port", "Select port", JOptionPane.PLAIN_MESSAGE,  null, null, settings.port);
             if (result == null) {
                 return;
             }
             try {
                 final int port = Integer.parseInt(result);
+                settings.port = result;
                 final Lobby lobby = new Lobby(port);
-                final String trackId = profilePanel.getActiveProfile().getLastTrack();
-                showGameSettings(f, p, lobby, profiles, params, trackId, listener);
+                showGameSettings(f, p, lobby, profiles, params, listener);
             } catch (NumberFormatException exception) {
                 JOptionPane.showConfirmDialog(p, "Invalid port: '" + result + "'", "Error", JOptionPane.DEFAULT_OPTION);
             } catch (IOException exception) {
@@ -580,6 +601,7 @@ public class Main extends Game implements Runnable {
                 if (addressAndPort.length == 2) {
                     final int port = Integer.parseInt(addressAndPort[1]);
                     Socket socket = new Socket(addressAndPort[0], port);
+                    settings.server = result;
                     final Client client = new Client(f, socket, p, profilePanel.getActiveProfile());
                     listener.contentChanged(client, null, client, "client", true);
                     setContent(f, client);

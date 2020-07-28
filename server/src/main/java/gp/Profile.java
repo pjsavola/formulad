@@ -157,6 +157,6 @@ public class Profile implements Serializable {
                 // TODO: Better exception handling
             }
         }
-        return "singapore.dat";
+        return Main.settings.trackId;
     }
 }
