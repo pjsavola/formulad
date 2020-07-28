@@ -230,7 +230,9 @@ public class MapEditor extends JPanel {
         final MenuItem changeScale = new MenuItem("Change scale");
         changeScale.addActionListener(e -> scale());
         toolMenu.add(changeScale);
-
+        final MenuItem deduceDistances = new MenuItem("Deduce Curve Distances");
+        deduceDistances.addActionListener(e -> deduceDistances());
+        toolMenu.add(deduceDistances);
 
         menuBar.add(validationMenu);
         final MenuItem validate = new MenuItem("Validate Track");
@@ -557,6 +559,14 @@ public class MapEditor extends JPanel {
 	        }
             repaint();
         }
+    }
+
+    private void deduceDistances() {
+        final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
+        nodes.stream().filter(Node::isCurve).filter(node -> prevNodeMap.get(node).stream().noneMatch(Node::isCurve)).forEach(node -> {
+            attributes.putIfAbsent(node, 0.0);
+        });
+        repaint();
     }
 
     private void setGridAngle() {
