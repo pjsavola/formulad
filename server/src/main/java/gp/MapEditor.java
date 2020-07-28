@@ -132,8 +132,7 @@ public class MapEditor extends JPanel {
                 }
             }
         });
-        // TODO: Shift all nodes
-        // TODO: Scale node coordinates
+        // TODO: Automatic distances
         final MenuBar menuBar = new MenuBar();
         final Menu fileMenu = new Menu("File");
         final Menu editMenu = new Menu("Edit");
@@ -222,9 +221,16 @@ public class MapEditor extends JPanel {
         select(null);
 
         menuBar.add(toolMenu);
-        final MenuItem unify = new MenuItem("Unify node identifiers");
+        final MenuItem unify = new MenuItem("Canonize node identifiers");
         unify.addActionListener(e -> unifyNodeIdentifiers());
         toolMenu.add(unify);
+        final MenuItem moveAll = new MenuItem("Move all nodes");
+        moveAll.addActionListener(e -> moveAll());
+        toolMenu.add(moveAll);
+        final MenuItem changeScale = new MenuItem("Change scale");
+        changeScale.addActionListener(e -> scale());
+        toolMenu.add(changeScale);
+
 
         menuBar.add(validationMenu);
         final MenuItem validate = new MenuItem("Validate Track");
@@ -570,6 +576,54 @@ public class MapEditor extends JPanel {
                 gridAngles.remove(selectedNode);
             }
             repaint();
+        }
+    }
+
+    private void moveAll() {
+        final JTextField x = new JTextField();
+        final JTextField y = new JTextField();
+        Object[] message = { "X:", x, "Y:", y };
+        int option = JOptionPane.showConfirmDialog(null, message, "Move all nodes", JOptionPane.OK_CANCEL_OPTION);
+        if (option == JOptionPane.OK_OPTION) {
+            try {
+                final int dx = Integer.parseInt(x.getText());
+                final int dy = Integer.parseInt(y.getText());
+                if (dx != 0 || dy != 0) {
+                    coordinates.values().forEach(p -> {
+                        p.x += dx;
+                        p.y += dy;
+                    });
+                    repaint();
+                }
+            } catch (NumberFormatException e) {
+                JOptionPane.showConfirmDialog(this, "Error: " + e.getMessage(), "Invalid number format", JOptionPane.DEFAULT_OPTION);
+            }
+        }
+    }
+
+    private void scale() {
+        final Object attr = JOptionPane.showInputDialog(
+                this,
+                "Scaling factor:",
+                "Set Scaling Factor",
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                null,
+                1.0
+        );
+        if (attr != null && !attr.toString().isEmpty()) {
+            try {
+                final double newScale = Double.valueOf(attr.toString());
+                if (newScale != 1.0 && newScale > 0) {
+                    coordinates.values().forEach(p -> {
+                        p.x *= newScale;
+                        p.y *= newScale;
+                    });
+                    repaint();
+                }
+            } catch (NumberFormatException e) {
+                JOptionPane.showConfirmDialog(this, "Error: " + e.getMessage(), "Invalid number format", JOptionPane.DEFAULT_OPTION);
+            }
         }
     }
 
