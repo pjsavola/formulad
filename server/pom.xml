@@ -4,7 +4,7 @@
 
     <groupId>fi.bogus</groupId>
     <artifactId>gp-online-server</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.32b</version>
 
     <name>gp-online-server</name>
     <description>GP Online</description>

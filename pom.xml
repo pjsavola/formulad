@@ -4,14 +4,14 @@
 
     <groupId>fi.bogus</groupId>
     <artifactId>gp-online</artifactId>
-    <version>0.1</version>
+    <version>0.32</version>
     <packaging>pom</packaging>
 
     <name>gp-online-super</name>
     <description>Add project description here</description>
 
     <properties>
-        <common-version>0.1</common-version>
+        <common-version>0.32</common-version>
         <quickcheck.version>0.8</quickcheck.version>
         <used.java.version>1.8</used.java.version>
         <uberjar.name>gp-online</uberjar.name>

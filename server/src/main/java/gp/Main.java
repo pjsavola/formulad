@@ -5,6 +5,8 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
@@ -300,8 +302,8 @@ public class Main extends Game implements Runnable {
                 return false;
             }
             final String imageFile = result.getLeft();
-            if (external && !new File(imageFile).exists()) {
-                log.log(errorLevel, "Track validation failed: External background image " + imageFile + " not found");
+            if (external && (!new File(imageFile).exists() || Files.size(Paths.get(imageFile)) > 5_000_000)) {
+                log.log(errorLevel, "Track validation failed: External background image " + imageFile + " not found or too big");
                 return false;
             }
             final BufferedImage image = external ? ImageCache.getImageFromPath(imageFile) : ImageCache.getImage("/" + imageFile);
@@ -406,9 +408,11 @@ public class Main extends Game implements Runnable {
             lobby.setSlots(slots);
         }
         final TrackPreviewButton changeTrackButton = new TrackPreviewButton(frame, panel, lobby);
-        if (!changeTrackButton.setTrack(trackId, false)) {
+        final TrackData previousTrack = TrackData.createTrackData(trackId, false);
+        if (previousTrack == null) {
             return;
         }
+        changeTrackButton.setTrack(previousTrack, TrackPreviewButton.createIcon(previousTrack.getBackgroundImage()));
         final JPanel lobbyPanel = new JPanel();
         lobbyPanel.setName(lobby == null ? "Game Settings" : "Multiplayer Game Settings");
         lobbyPanel.setLayout(new BoxLayout(lobbyPanel, BoxLayout.PAGE_AXIS));

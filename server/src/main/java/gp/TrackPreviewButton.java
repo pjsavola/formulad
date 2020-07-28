@@ -98,18 +98,14 @@ class TrackPreviewButton extends JButton {
             final JDialog trackDialog = new JDialog(frame);
             filenames.stream().filter(name -> name.endsWith(".dat")).forEach(f -> {
                 final boolean external = !internalTracks.contains(f);
-                if (!Main.validateTrack(f, external)) {
-                    return;
-                }
-                final BufferedImage image = getImage(f, external);
-                if (image == null) {
+                final TrackData data = TrackData.createTrackData(f, external);
+                if (data == null) {
                     return;
                 }
                 final JButton selectTrackButton = new JButton();
-                final ImageIcon icon = createIcon(image);
+                final ImageIcon icon = createIcon(data.getBackgroundImage());
                 selectTrackButton.addActionListener(l -> {
-                    setIcon(icon);
-                    setTrack(f, external);
+                    setTrack(data, icon);
                     trackDialog.setVisible(false);
                 });
                 selectTrackButton.setIcon(icon);
@@ -125,36 +121,24 @@ class TrackPreviewButton extends JButton {
         });
     }
 
-    boolean setTrack(String trackId, boolean external) {
-        final TrackData newData = TrackData.createTrackData(trackId, external);
+    void setTrack(TrackData newData, ImageIcon icon) {
         if (newData == null) {
-            return false;
+            return;
         }
         if (!newData.equals(data)) {
             data = newData;
-            setIcon(createIcon(newData.getBackgroundImage()));
+            setIcon(icon);
             if (lobby != null) {
                 lobby.setTrack(newData);
             }
         }
-        return true;
     }
 
     TrackData getTrackData() {
         return data;
     }
 
-    private BufferedImage getImage(String trackId, boolean external) {
-        final Pair<String, MapEditor.Corner> header = MapEditor.loadHeader(trackId, external);
-        if (header == null) {
-            JOptionPane.showConfirmDialog(panel, "Invalid track " + trackId, "Error", JOptionPane.DEFAULT_OPTION);
-        } else {
-            return external ? ImageCache.getImageFromPath(header.getLeft()) : ImageCache.getImage("/" + header.getLeft());
-        }
-        return null;
-    }
-
-    private static ImageIcon createIcon(BufferedImage image) {
+    static ImageIcon createIcon(BufferedImage image) {
         final ImageIcon icon = new ImageIcon();
         final int x = image.getWidth();
         final int y = image.getHeight();
