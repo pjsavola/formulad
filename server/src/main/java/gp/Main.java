@@ -592,7 +592,7 @@ public class Main extends Game implements Runnable {
         });
         final JButton joinMultiplayerButton = new JButton("Join Multiplayer");
         joinMultiplayerButton.addActionListener(e -> {
-            String result = (String) JOptionPane.showInputDialog(p, "IP address and port", "IP address and port", JOptionPane.PLAIN_MESSAGE,  null, null, "localhost:1277");
+            String result = (String) JOptionPane.showInputDialog(p, "IP address and port", "IP address and port", JOptionPane.PLAIN_MESSAGE,  null, null, settings.server);
             if (result == null) {
                 return;
             }
