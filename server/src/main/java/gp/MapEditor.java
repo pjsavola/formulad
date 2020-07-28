@@ -57,6 +57,7 @@ public class MapEditor extends JPanel {
 
     private final List<Node> debugNeighbors = new ArrayList<>();
     private final UndoStack stack = new UndoStack(nodes, coordinates, attributes, gridAngles);
+    private Double previousCurveDistance;
 
     public enum Corner { NE, SE, SW, NW };
 
@@ -541,6 +542,10 @@ public class MapEditor extends JPanel {
 	                attributes.put(selectedNode, 1.0);
                 }
             } else {
+	            Double initialValue = attributes.get(selectedNode);
+	            if (initialValue == null && previousCurveDistance != null) {
+	                initialValue = previousCurveDistance + 0.5;
+                }
                 final Object attr = JOptionPane.showInputDialog(
                         this,
                         "Set Curve Distance:",
@@ -548,11 +553,13 @@ public class MapEditor extends JPanel {
                         JOptionPane.PLAIN_MESSAGE,
                         null,
                         null,
-                        attributes.get(selectedNode)
+                        initialValue
                 );
                 if (attr != null) {
                     if (!attr.toString().isEmpty()) {
-                        attributes.put(selectedNode, Double.valueOf(attr.toString()));
+                        final Double value = Double.valueOf(attr.toString());
+                        previousCurveDistance = value;
+                        attributes.put(selectedNode, value);
                     } else {
                         attributes.remove(selectedNode);
                     }
