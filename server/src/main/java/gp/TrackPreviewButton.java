@@ -142,8 +142,9 @@ class TrackPreviewButton extends JButton {
         final ImageIcon icon = new ImageIcon();
         final int x = image.getWidth();
         final int y = image.getHeight();
-        final int scale = y / 300;
-        icon.setImage(image.getScaledInstance(x / scale, y / scale, Image.SCALE_FAST));
+        final double scaleX = x / 400.0;
+        final double scaleY = y / 300.0;
+        icon.setImage(image.getScaledInstance((int) (x / scaleX), (int) (y / scaleY), Image.SCALE_FAST));
         return icon;
     }
 }
