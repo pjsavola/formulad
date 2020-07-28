@@ -1,6 +1,7 @@
 package gp.editor;
 
 import gp.ai.Node;
+import gp.ai.NodeType;
 
 import java.awt.*;
 import java.util.List;
@@ -8,7 +9,7 @@ import java.util.ArrayList;
 
 public class CreateNodesItem implements UndoItem {
     private final int firstId;
-    private final Node.Type type;
+    private final NodeType type;
     private final Point start;
     private final Node parent;
     private final int dx;
@@ -17,7 +18,7 @@ public class CreateNodesItem implements UndoItem {
     private UndoStack stack;
     private List<Node> nodes = new ArrayList<>();
 
-    public CreateNodesItem(int firstId, Node.Type type, Point start, Node parent, int dx, int dy, int count) {
+    public CreateNodesItem(int firstId, NodeType type, Point start, Node parent, int dx, int dy, int count) {
         this.firstId = firstId;
         this.type = type;
         this.start = start;

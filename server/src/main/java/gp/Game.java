@@ -1,6 +1,7 @@
 package gp;
 
 import gp.ai.Node;
+import gp.ai.TrackData;
 import gp.model.GameState;
 import gp.model.PlayerStats;
 import org.apache.commons.lang3.tuple.Pair;
@@ -28,12 +29,6 @@ public abstract class Game extends JPanel {
 
     // Node identifier equals to the index in this array
     final List<Node> nodes = new ArrayList<>();
-    // Contains coordinates for all nodes
-    final Map<Node, Point> coordinates = new HashMap<>();
-    // Contains pit lane garage locations and distance information for curves
-    final Map<Node, Double> attributes = new HashMap<>();
-    // Contains grid starting angles
-    final Map<Node, Double> gridAngles = new HashMap<>();
 
     // Used when selecting where to move. Maps node index to damage taken if that node is selected.
     private Map<Integer, Integer> highlightedNodeToDamage;
@@ -53,7 +48,7 @@ public abstract class Game extends JPanel {
     static Font headerFont = new Font("Arial", Font.BOLD, 12);
     static Font statsFont = new Font("Arial", Font.PLAIN, 12);
 
-    String trackId;
+    TrackData data;
     private MapEditor.Corner infoBoxCorner;
     private volatile boolean keepAlive = true;
 
@@ -112,20 +107,12 @@ public abstract class Game extends JPanel {
         }).start();
     }
 
-    void initTrack(String trackId, boolean external) {
-        this.trackId = trackId;
-        final String dataFile = "/" + trackId;
-        try (InputStream is = external ? new FileInputStream(trackId) : Main.class.getResourceAsStream(dataFile)) {
-            final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes, gridAngles, coordinates);
-            if (result == null) {
-                throw new RuntimeException("Data file " + dataFile + " is corrupted");
-            }
-            final String imageFile = "/" + result.getLeft();
-            infoBoxCorner = result.getRight();
-            backgroundImage = external ? ImageCache.getImageFromPath(result.getLeft()) : ImageCache.getImage(imageFile);
-        } catch (IOException e) {
-            throw new RuntimeException("Data file " + dataFile + " is missing or corrupted", e);
-        }
+    void initTrack(TrackData data) {
+        this.data = data;
+        infoBoxCorner = data.getInfoBoxCorner();
+        nodes.clear();
+        nodes.addAll(data.getNodes());
+        backgroundImage = data.getBackgroundImage();
         setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
         frame.pack();
     }
@@ -177,7 +164,7 @@ public abstract class Game extends JPanel {
                 if (nodeId < 0 || nodeId >= nodes.size()) continue;
                 final Node node = nodes.get(nodeId);
                 final int damage = entry.getValue();
-                final Point p = coordinates.get(node);
+                final Point p = node.getLocation();
                 if (nodeId == mouseOverHighlightNodeIndex) {
                     MapEditor.drawOval(g2d, p.x, p.y, 15, 15, true, true, Color.YELLOW, 1);
                     if (damage > 0) {
@@ -220,7 +207,7 @@ public abstract class Game extends JPanel {
     private void drawRetiredPlayers(Graphics2D g2d) {
         if (immutablePlayerMap == null) return;
 
-        immutablePlayerMap.values().forEach(player -> player.drawRetired(g2d, coordinates));
+        immutablePlayerMap.values().forEach(player -> player.drawRetired(g2d));
     }
 
     private void drawPlayers(Graphics2D g2d) {
@@ -234,10 +221,10 @@ public abstract class Game extends JPanel {
                 current.drawRoll(g2d, roll, circleX);
             } else {
                 // TODO: Highlight only manual AI?
-                immutablePlayerMap.values().stream().filter(p -> p == current && !p.isStopped()).forEach(p -> p.highlight(g2d, coordinates));
+                immutablePlayerMap.values().stream().filter(p -> p == current && !p.isStopped()).forEach(p -> p.highlight(g2d));
             }
         }
-        immutablePlayerMap.values().forEach(player -> player.draw(g2d, coordinates));
+        immutablePlayerMap.values().forEach(player -> player.draw(g2d));
     }
 
     protected void drawStandings(Graphics2D g2d) {
@@ -311,7 +298,7 @@ public abstract class Game extends JPanel {
      */
     @Nullable
     public Integer getNodeId(int x, int y) {
-        final Node target = MapEditor.getNode(nodes, coordinates, x, y, MapEditor.DIAMETER);
+        final Node target = MapEditor.getNode(nodes, null, x, y, MapEditor.DIAMETER);
         return target == null ? null : target.getId();
     }
 
@@ -323,7 +310,7 @@ public abstract class Game extends JPanel {
     }
 
     void scheduleHitpointAnimation(int loss, Player player) {
-        final Point p = coordinates.get(player.node);
+        final Point p = player.node.getLocation();
         final HitpointAnimation a = new HitpointAnimation(loss, p.x, p.y);
         animations.add(a);
         timer.schedule(new TimerTask() {

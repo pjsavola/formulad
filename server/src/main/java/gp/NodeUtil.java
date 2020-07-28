@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import gp.ai.Node;
+import gp.ai.NodeType;
 
 public abstract class NodeUtil {
     // Finds path from initial node to the given node at given distance
@@ -59,7 +60,7 @@ public abstract class NodeUtil {
                     result.put(node, new DamageAndPath(0, findPath(node, distance, distanceMap)));
                     continue;
                 }
-                if (finalLap && startNode.getType() != Node.Type.FINISH && node.getType() == Node.Type.FINISH) {
+                if (finalLap && startNode.getType() != NodeType.FINISH && node.getType() == NodeType.FINISH) {
                     result.put(node, new DamageAndPath(0, findPath(node, distance, distanceMap)));
                     continue;
                 }
@@ -69,7 +70,7 @@ public abstract class NodeUtil {
                         // node is blocked
                         return;
                     }
-                    if (!allowPitEntry && next.getType() == Node.Type.PIT) {
+                    if (!allowPitEntry && next.getType() == NodeType.PIT) {
                         // cannot enter pits on final lap or with too large gear
                         return;
                     }

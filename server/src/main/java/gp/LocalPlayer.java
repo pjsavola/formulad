@@ -10,6 +10,7 @@ import javax.swing.JPanel;
 import gp.ai.Gear;
 import gp.ai.Node;
 
+import gp.ai.NodeType;
 import gp.model.*;
 
 public final class LocalPlayer extends Player {
@@ -55,15 +56,15 @@ public final class LocalPlayer extends Player {
     //       curve vs.    curve -> shorter distance to next area is assumed to have inside line and gets player order
     //    no-curve vs. no-curve -> longer distance to next area is assumed to have inside line and gets player order
     // 5. order of arrival
-    public int compareTo(LocalPlayer player, Map<Node, Double> distanceMap, List<LocalPlayer> stoppedPlayers) {
+    public int compareTo(LocalPlayer player, List<LocalPlayer> stoppedPlayers) {
         if (lapsToGo == player.lapsToGo) {
             if (lapsToGo < 0) {
                 final int index1 = stoppedPlayers.indexOf(this);
                 final int index2 = stoppedPlayers.indexOf(player);
                 return index1 > index2 ? 1 : -1;
             }
-            final double d1 = distanceMap.get(node);
-            final double d2 = distanceMap.get(player.node);
+            final double d1 = node.getDistance();
+            final double d2 = player.node.getDistance();
             if (d1 < d2) return 1;
             else if (d2 < d1) return -1;
             if (gear == player.gear) {
@@ -112,7 +113,7 @@ public final class LocalPlayer extends Player {
 
         if (newGear == gear) return true;
 
-        if (node.getType() == Node.Type.PIT && newGear > 4) return false;
+        if (node.getType() == NodeType.PIT && newGear > 4) return false;
 
         if (Math.abs(newGear - gear) <= 1) {
             setGear(newGear);
@@ -149,11 +150,11 @@ public final class LocalPlayer extends Player {
         return roll;
     }
 
-    public void move(int index, Map<Node, Point> coordinates, Map<Node, Double> attributes) {
-        move(paths.get(index), coordinates, attributes);
+    public void move(int index) {
+        move(paths.get(index));
     }
 
-    private void move(DamageAndPath dp, Map<Node, Point> coordinates, Map<Node, Double> attributes) {
+    private void move(DamageAndPath dp) {
         final List<Node> route = dp.getPath();
         if (route == null || route.isEmpty()) {
             throw new RuntimeException("Invalid route: " + route);
@@ -163,17 +164,17 @@ public final class LocalPlayer extends Player {
         }
         final int oldLapsToGo = lapsToGo;
         int size = route.size();
-        if (node != null && node.getType() != Node.Type.FINISH) {
+        if (node != null && node.getType() != NodeType.FINISH) {
             for (Node node : route) {
-                if (node.getType() == Node.Type.FINISH) {
+                if (node.getType() == NodeType.FINISH) {
                     --lapsToGo;
                     break;
                 }
             }
         }
-        if (route.get(route.size() - 1).getType() != Node.Type.PIT) {
+        if (route.get(route.size() - 1).getType() != NodeType.PIT) {
             for (int i = route.size() - 2; i >= 0; --i) {
-                if (route.get(i).getType() == Node.Type.PIT) {
+                if (route.get(i).getType() == NodeType.PIT) {
                     --lapsToGo;
                     ++pitStops;
                     break;
@@ -182,7 +183,7 @@ public final class LocalPlayer extends Player {
         }
         for (int i = 1; i < size; ++i) {
             final Node n2 = route.get(i);
-            move(n2, coordinates);
+            move(n2);
             ((Main) panel).notifyAll(new MovementNotification(playerId, n2.getId()));
             try {
                 Thread.sleep(animationDelayInMillis);
@@ -213,7 +214,7 @@ public final class LocalPlayer extends Player {
             Main.log.log(Level.SEVERE, getNameAndId() + " performed an illegal move, taking too much damage");
             stop();
         }
-        if (node.getType() == Node.Type.PIT && attributes.containsKey(node)) {
+        if (node.hasGarage()) {
             recoverHitpoints();
         }
         if (lapsToGo < 0) {
@@ -339,7 +340,7 @@ public final class LocalPlayer extends Player {
         }
     }
 
-    public PlayerStats getStatistics(int position, Map<Node, Double> distanceMap) {
+    public PlayerStats getStatistics(int position) {
         final PlayerStats stats = new PlayerStats();
         stats.playerId = playerId;
         stats.id = id;
@@ -350,7 +351,7 @@ public final class LocalPlayer extends Player {
         stats.exceptions = exceptions;
         stats.hitpoints = hitpoints;
         if (hitpoints <= 0) {
-            stats.distance = distanceMap.get(node);
+            stats.distance = node.getDistance();
         }
         stats.gridPosition = gridPosition;
         stats.pitStops = pitStops;

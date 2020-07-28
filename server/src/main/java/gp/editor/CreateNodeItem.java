@@ -1,18 +1,19 @@
 package gp.editor;
 
 import gp.ai.Node;
+import gp.ai.NodeType;
 
 import java.awt.*;
 
 public class CreateNodeItem implements UndoItem {
     private final int id;
-    private final Node.Type type;
+    private final NodeType type;
     private final Point point;
     private final Node parent;
     private UndoStack stack;
     private Node node;
 
-    public CreateNodeItem(int id, Node.Type type, Point point, Node parent) {
+    public CreateNodeItem(int id, NodeType type, Point point, Node parent) {
         this.id = id;
         this.type = type;
         this.point = point;

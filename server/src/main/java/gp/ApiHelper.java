@@ -6,6 +6,7 @@ import java.util.Map;
 
 import gp.ai.Node;
 
+import gp.ai.NodeType;
 import gp.model.Edge;
 import gp.model.GameId;
 import gp.model.GameState;
@@ -15,7 +16,7 @@ import gp.model.PlayerState;
 import gp.model.Track;
 
 public abstract class ApiHelper {
-    public static Track buildTrack(String gameId, String playerId, List<Node> nodes, Map<Node, Double> attributes) {
+    public static Track buildTrack(String gameId, String playerId, List<Node> nodes) {
         final Track track = new Track()
             .game(new GameId().gameId(gameId))
             .player(new PlayerId().playerId(playerId));
@@ -29,7 +30,7 @@ public abstract class ApiHelper {
                 .nodeId(i)
                 .type(gp.model.TypeEnum.valueOf(node.getType().name()))
             );
-            if (node.getType() == Node.Type.PIT && attributes.containsKey(node)) {
+            if (node.hasGarage()) {
                 garageNodes.add(apiNodes.get(apiNodes.size() - 1));
             }
         }

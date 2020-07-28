@@ -24,11 +24,9 @@ import gp.ai.*;
 import gp.ai.Node;
 import gp.model.*;
 import gp.model.Gear;
-import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class Main extends Game implements Runnable {
-    private final Map<Node, List<Node>> prevNodeMap;
     private Map<Node, Set<Node>> collisionMap;
     private LocalPlayer current;
     private LocalPlayer previous;
@@ -38,7 +36,6 @@ public class Main extends Game implements Runnable {
     private final List<LocalPlayer> stoppedPlayers = new ArrayList<>();
     private final Map<LocalPlayer, AI> aiMap = new HashMap<>();
     private final Random rng;
-    private final Map<Node, Double> distanceMap = new HashMap<>();
     private boolean stopped;
     private boolean enableTimeout;
     private final int initTimeoutInMillis;
@@ -62,11 +59,10 @@ public class Main extends Game implements Runnable {
         }
     }
 
-    public Main(Params params, Lobby lobby, JFrame frame, JPanel panel, PlayerSlot[] slots, String trackId, boolean external) {
+    public Main(Params params, Lobby lobby, JFrame frame, JPanel panel, PlayerSlot[] slots, TrackData trackData) {
         super(frame, panel);
-        initTrack(trackId, external);
+        initTrack(trackData);
         this.lobby = lobby;
-        prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
         LocalPlayer.animationDelayInMillis = params.animationDelayInMillis;
         final long seed = params.seed == null ? new Random().nextLong() : params.seed;
         this.rng = new Random(seed);
@@ -75,22 +71,22 @@ public class Main extends Game implements Runnable {
         gearTimeoutInMillis = params.gearTimeoutInMillis;
         moveTimeoutInMillis = params.moveTimeoutInMillis;
         allPlayers = new ArrayList<>();
-        createGrid(params, attributes, slots, frame);
+        createGrid(params, slots, frame);
         waitingPlayers.addAll(players);
-        waitingPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
+        waitingPlayers.sort((p1, p2) -> p1.compareTo(p2, stoppedPlayers));
         final List<PlayerStats> stats = new ArrayList<>();
         for (int i = 0; i < waitingPlayers.size(); i++) {
             final LocalPlayer player = waitingPlayers.get(i);
-            final PlayerStats playerStats = player.getStatistics(i + 1, distanceMap);
+            final PlayerStats playerStats = player.getStatistics(i + 1);
             stats.add(playerStats);
         }
-        allPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
+        allPlayers.sort((p1, p2) -> p1.compareTo(p2, stoppedPlayers));
         standings = new ArrayList<>(allPlayers);
         notifyAll(new FinalStandings(stats));
         current = waitingPlayers.remove(0);
     }
 
-    private void createGrid(Params params, Map<Node, Double> attributes, PlayerSlot[] slots, JFrame frame) {
+    private void createGrid(Params params, PlayerSlot[] slots, JFrame frame) {
         final Map<AI, ProfileMessage> aiToProfile = new LinkedHashMap<>(); // preserve order
         for (PlayerSlot slot : slots) {
             final ProfileMessage profile = slot.getProfile();
@@ -110,8 +106,8 @@ public class Main extends Game implements Runnable {
             }
         }
         final int playerCount = aiToProfile.size();
-        final List<Node> grid = findGrid(nodes, attributes, gridAngles, distanceMap, prevNodeMap).subList(0, playerCount);
-        collisionMap = TrackLanes.buildCollisionMap(nodes, distanceMap);
+        final List<Node> grid = data.getStartingGrid(playerCount);
+        collisionMap = data.getCollisionMap();
 
         final List<Integer> startingOrder = IntStream.range(0, playerCount).boxed().collect(Collectors.toList());
         if (params.randomizeStartingOrder) {
@@ -120,21 +116,21 @@ public class Main extends Game implements Runnable {
         enableTimeout = true;
         final List<CreatedPlayerNotification> notifications = new ArrayList<>();
         for (Map.Entry<AI, ProfileMessage> e : aiToProfile.entrySet()) {
-            notifications.add(createAiPlayer(e, grid, startingOrder, attributes, params.leeway, params.laps));
+            notifications.add(createAiPlayer(e, grid, startingOrder, params.leeway, params.laps));
         }
         notifications.forEach(this::notifyAll);
         immutablePlayerMap = new HashMap<>(aiToProfile.size());
         allPlayers.forEach(player -> immutablePlayerMap.put(player.getId(), player));
     }
 
-    private CreatedPlayerNotification createAiPlayer(Map.Entry<AI, ProfileMessage> ai, List<Node> grid, List<Integer> startingOrder, Map<Node, Double> attributes, int leeway, int laps) {
+    private CreatedPlayerNotification createAiPlayer(Map.Entry<AI, ProfileMessage> ai, List<Node> grid, List<Integer> startingOrder, int leeway, int laps) {
         // Recreate track for each player, so nothing bad happens if AI mutates it.
         final int playerCount = allPlayers.size();
         final String playerId = "p" + (playerCount + 1);
-        final Track track = ApiHelper.buildTrack(trackId, playerId, nodes, attributes);
+        final Track track = ApiHelper.buildTrack(data.getTrackId(), playerId, nodes);
         final int gridPosition = startingOrder.get(playerCount);
         final Node startNode = grid.get(gridPosition);
-        final LocalPlayer player = new LocalPlayer(playerId, startNode, gridAngles.get(startNode), laps, this, leeway, ai.getValue().getColor1(), ai.getValue().getColor2());
+        final LocalPlayer player = new LocalPlayer(playerId, startNode, startNode.getGridAngle(), laps, this, leeway, ai.getValue().getColor1(), ai.getValue().getColor2());
         current = player;
         log.info("Initializing player " + playerId);
         NameAtStart nameResponse = getAiInput(() -> ai.getKey().startGame(track), initTimeoutInMillis);
@@ -158,7 +154,7 @@ public class Main extends Game implements Runnable {
         allPlayers.add(player);
         player.setGridPosition(gridPosition + 1);
         aiMap.put(player, ai.getKey());
-        return new CreatedPlayerNotification(current.getId(), name, startNode.getId(), 18, 1, ai.getValue().getColor1(), ai.getValue().getColor2());
+        return new CreatedPlayerNotification(current.getId(), name, startNode.getId(), 18, 1, ai.getValue().getColor1(), ai.getValue().getColor2(), startNode.getGridAngle());
     }
 
     public void notifyAll(Object notification) {
@@ -208,7 +204,7 @@ public class Main extends Game implements Runnable {
         while (!stopped) {
             current.beginTurn();
             final AI ai = aiMap.get(current);
-            final GameState gameState = ApiHelper.buildGameState(trackId, players);
+            final GameState gameState = ApiHelper.buildGameState(data.getTrackId(), players);
             log.info("Querying gear input from AI " + current.getNameAndId());
             final Gear gearResponse = getAiInput(() -> ai.selectGear(gameState), gearTimeoutInMillis);
             if (ai instanceof ManualAI || allPlayers.stream().filter(pl -> !pl.isStopped()).map(aiMap::get).noneMatch(p -> p instanceof ManualAI)) {
@@ -225,7 +221,7 @@ public class Main extends Game implements Runnable {
             }
             roll = current.roll(rng);
             repaint();
-            final Moves allMoves = current.findAllTargets(roll, trackId, players);
+            final Moves allMoves = current.findAllTargets(roll, data.getTrackId(), players);
             if (current.getLeeway() <= 0) {
                 log.info("Player " + current.getNameAndId() + " used his timeout leeway and was dropped from the game");
                 current.stop();
@@ -242,7 +238,7 @@ public class Main extends Game implements Runnable {
                 } else {
                     log.info("Move input received: " + selectedIndex);
                 }
-                current.move(selectedIndex, coordinates, attributes);
+                current.move(selectedIndex);
                 current.collide(players, collisionMap, rng);
                 if (roll == 20 || roll == 30) {
                     LocalPlayer.possiblyAddEngineDamage(players, rng);
@@ -255,7 +251,7 @@ public class Main extends Game implements Runnable {
         final List<PlayerStats> stats = new ArrayList<>();
         for (int i = 0; i < stoppedPlayers.size(); i++) {
             final LocalPlayer player = stoppedPlayers.get(i);
-            final PlayerStats playerStats = player.getStatistics(i + 1, distanceMap);
+            final PlayerStats playerStats = player.getStatistics(i + 1);
             stats.add(playerStats);
         }
         final FinalStandings fs = new FinalStandings(stats);
@@ -280,176 +276,6 @@ public class Main extends Game implements Runnable {
         super.exit();
     }
 
-    static List<Node> findGrid(List<Node> nodes, Map<Node, Double> attributes, Map<Node, Double> gridAngles, Map<Node, Double> distanceMap, Map<Node, List<Node>> prevNodeMap) {
-	    final Set<Node> visited = new HashSet<>();
-        final List<Node> grid = new ArrayList<>();
-        final List<Node> work = new ArrayList<>();
-        final List<Node> edges = new ArrayList<>();
-        Node center = null;
-        for (Node node : nodes) {
-            if (node.getType() == Node.Type.FINISH) {
-                work.add(node);
-                visited.add(node);
-                if (node.childCount(Node.Type.PIT) == 3) {
-                    center = node;
-                } else {
-                    edges.add(node);
-                }
-            }
-            if (node.isCurve() && !attributes.containsKey(node)) {
-                throw new RuntimeException("There is a curve without distance attribute");
-            }
-            if (node.childCount(null) == 0) {
-                throw new RuntimeException("Track contains a dead-end");
-            }
-        }
-        while (!work.isEmpty()) {
-            final Node node = work.remove(0);
-            node.forEachChild(next -> {
-                if (visited.add(next)) {
-                    work.add(next);
-                }
-            });
-        }
-        if (nodes.size() != visited.size()) {
-            throw new RuntimeException("Track contains unreachable nodes");
-        }
-        if (center == null) {
-            throw new RuntimeException("Finish line must have width 3");
-        }
-        if (center.hasChildren(edges)) {
-            distanceMap.put(center, 0.0);
-        } else {
-            distanceMap.put(center, 0.5);
-            distanceMap.put(edges.get(0), 0.0);
-            distanceMap.put(edges.get(1), 0.0);
-        }
-        work.add(center);
-        final MutableObject<Node> pit = new MutableObject<>(null);
-        final List<Node> curves = new ArrayList<>();
-        while (!work.isEmpty()) {
-            final Node node = work.remove(0);
-            final long childCount = node.childCount(Node.Type.PIT);
-            node.forEachChild(next -> {
-                if (distanceMap.containsKey(next)) {
-                    return;
-                }
-                if (next.isCurve()) {
-                    curves.add(next);
-                    return;
-                }
-                if (next.getType() == Node.Type.PIT) {
-                    pit.setValue(next);
-                    distanceMap.put(next, distanceMap.get(node) - 0.4);
-                    return;
-                }
-                final long nextChildCount = next.childCount(Node.Type.PIT);
-                final boolean fromCenterToEdge = childCount == 3 && (nextChildCount == 2 || prevNodeMap.get(next).stream().anyMatch(Node::isCurve));
-                distanceMap.put(next, distanceMap.get(node) + (fromCenterToEdge ? 0.5 : 1));
-                work.add(next);
-            });
-            if (work.isEmpty() && !curves.isEmpty()) {
-                final double maxDistance = distanceMap.values().stream().mapToDouble(Double::doubleValue).max().orElse(0);
-                for (Node curve : curves) {
-                    final double relativeDistance = attributes.get(curve);
-                    distanceMap.put(curve, maxDistance + relativeDistance);
-                }
-                while (!curves.isEmpty()) {
-                    final Node curve = curves.remove(0);
-                    curve.forEachChild(next -> {
-                        if (distanceMap.containsKey(next)) {
-                            return;
-                        }
-                        if (!next.isCurve()) {
-                            work.add(next);
-                            return;
-                        }
-                        curves.add(next);
-                        distanceMap.put(next, attributes.get(next) + maxDistance);
-                    });
-                }
-                final double newMaxDistance = distanceMap.values().stream().mapToDouble(Double::doubleValue).max().orElse(0);
-                center = null;
-                if (work.isEmpty()) {
-                    throw new RuntimeException("Curve exit must have size > 0");
-                }
-                for (Node straight : work) {
-                    boolean allCurves = true;
-                    for (Node prev : prevNodeMap.get(straight)) {
-                        if (prev.getType() == Node.Type.PIT) {
-                            continue;
-                        }
-                        if (!prev.isCurve()) {
-                            allCurves = false;
-                            break;
-                        }
-                    }
-                    if (allCurves) {
-                        distanceMap.put(straight, newMaxDistance);
-                        for (Node otherStraight : work) {
-                            if (straight.hasChild(otherStraight)) {
-                                center = otherStraight;
-                                break;
-                            }
-                        }
-                        break;
-                    }
-                }
-                if (center == null) {
-                    StringBuilder sb = new StringBuilder();
-                    work.stream().distinct().forEach(n -> sb.append(" ").append(n.getId()));
-                    throw new RuntimeException("Nodes" + sb.toString() + " might be missing edges");
-                }
-                work.clear();
-                work.add(center);
-                distanceMap.put(center, newMaxDistance + 0.5);
-            }
-        }
-        final Node pitEntry = pit.getValue();
-        if (pitEntry != null) {
-            prevNodeMap.get(pitEntry).stream().map(distanceMap::get).min(Double::compareTo).ifPresent(min -> distanceMap.put(pitEntry, min - 0.4));
-        }
-        while (pit.getValue() != null) {
-            final Node node = pit.getValue();
-            final long childCount = node.childCount(null);
-            if (childCount > 1) {
-                node.forEachChild(next -> {
-                    if (next.getType() == Node.Type.PIT || !distanceMap.containsKey(next)) {
-                        throw new RuntimeException("Pit lane is branching");
-                    }
-                });
-                pit.setValue(null);
-            } else if (childCount < 1) {
-                throw new RuntimeException("Pit lane is dead end");
-            } else {
-                node.forEachChild(next -> {
-                    distanceMap.put(next, distanceMap.get(node) + 0.01);
-                    pit.setValue(next);
-                });
-            }
-        }
-        gridAngles.keySet().forEach(grid::add);
-        grid.sort((n1, n2) -> TrackLanes.distanceToInt(distanceMap.get(n2)) - TrackLanes.distanceToInt(distanceMap.get(n1)));
-
-        nodes.forEach(node -> {
-            final boolean isPit = node.getType() == Node.Type.PIT;
-            final double distance = distanceMap.get(node);
-            node.forEachChild(next -> {
-                if (next.getType() == Node.Type.FINISH) {
-                    return;
-                }
-                final boolean nextIsPit = next.getType() == Node.Type.PIT;
-                if (isPit && !nextIsPit) return;
-                if (nextIsPit && !isPit) return;
-                final double childDistance = distanceMap.get(next);
-                if (childDistance <= distance) {
-                    throw new RuntimeException("Track might contain a cycle: " + node.getId() + " -> " + next.getId());
-                }
-            });
-        });
-        return grid;
-    }
-
     public static boolean validateTrack(String trackId, boolean external) {
         if (external && !new File(trackId).exists()) {
             log.log(Level.WARNING, "Track validation failed: External data file " + trackId + " not found");
@@ -468,7 +294,7 @@ public class Main extends Game implements Runnable {
                 return false;
             }
             final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
-            final List<Node> grid = findGrid(nodes, attributes, gridAngleMap, distanceMap, prevNodeMap);
+            final List<Node> grid = TrackData.build(nodes, attributes, gridAngleMap, distanceMap, prevNodeMap);
             if (grid.size() < 10) {
                 log.log(errorLevel, "Track validation failed: Starting grid has less than 10 spots");
                 return false;
@@ -513,13 +339,14 @@ public class Main extends Game implements Runnable {
     }
 
     private void drawDistances(Graphics2D g2d) {
-        for (Map.Entry<Node, Double> entry : distanceMap.entrySet()) {
-            final Point p = coordinates.get(entry.getKey());
+        for (Node node : nodes) {
+            final Point p = node.getLocation();
             final int posX = p.x - 5;
             final int posY = p.y + 3;
             g2d.setFont(new Font("Arial", Font.PLAIN, 8));
             g2d.setColor(Color.BLUE);
-            g2d.drawString(getDistanceString(entry.getValue()), posX, posY);
+            g2d.drawString(getDistanceString(node.getDistance()), posX, posY);
+
         }
     }
 
@@ -538,16 +365,16 @@ public class Main extends Game implements Runnable {
             if (players.isEmpty()) {
                 // Making a clone, because sorting depends on the order of stoppedPlayers list
                 final List<LocalPlayer> clone = new ArrayList<>(stoppedPlayers);
-                stoppedPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, clone));
+                stoppedPlayers.sort((p1, p2) -> p1.compareTo(p2, clone));
                 // This will make the game thread to stop.
                 stopped = true;
                 return;
             }
             // Set turn order for next round
             waitingPlayers.addAll(players);
-            waitingPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
+            waitingPlayers.sort((p1, p2) -> p1.compareTo(p2, stoppedPlayers));
             // Sort info box contents to match with current standings and turn order
-            allPlayers.sort((p1, p2) -> p1.compareTo(p2, distanceMap, stoppedPlayers));
+            allPlayers.sort((p1, p2) -> p1.compareTo(p2, stoppedPlayers));
             standings = new ArrayList<>(allPlayers);
             notifyAll(new Standings(allPlayers));
         }
@@ -629,7 +456,7 @@ public class Main extends Game implements Runnable {
                 lobby.interrupt();
             }
             params.randomizeStartingOrder = randomStartingOrder.isSelected();
-            final Main server = new Main(params, lobby, frame, panel, slots, changeTrackButton.getTrack(), changeTrackButton.isTrackExternal());
+            final Main server = new Main(params, lobby, frame, panel, slots, changeTrackButton.getTrackData());
             listener.contentChanged(server, lobby, server, lobby == null ? "race" : "server", true);
             setContent(frame, server);
             new Thread(server).start();

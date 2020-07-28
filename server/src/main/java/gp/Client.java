@@ -49,7 +49,7 @@ public class Client extends Game implements Runnable {
                 } else if (request instanceof FinalStandings) {
                     final FinalStandings standings = (FinalStandings) request;
                     if (!initialStandingsReceived) {
-                        profile.standingsReceived(standings.getStats(), trackId);
+                        profile.standingsReceived(standings.getStats(), data.getTrackId());
                         profile.getManager().saveProfiles();
                         initialStandingsReceived = true;
                         immutablePlayerMap = new HashMap<>(playerMap);
@@ -79,14 +79,12 @@ public class Client extends Game implements Runnable {
                         } else if (request instanceof Moves) {
                             final Moves moves = (Moves) request;
                             oos.writeObject(ai.selectMove(moves));
-                        } else if (request instanceof ProfileRequest) {
-                            final String trackId = ((ProfileRequest) request).getTrackId();
-                            final boolean external = ((ProfileRequest) request).isTrackExternal();
+                        } else if (request instanceof TrackData) {
                             try {
                                 waiting = true;
-                                initTrack(trackId, external);
-                            } catch (RuntimeException e) {
-                                final String msg = (external ? "External track " : "Track ") + trackId + " not found";
+                                initTrack((TrackData) request);
+                            } catch (Exception e) {
+                                final String msg = "Error when receiving track data: " + e.getMessage();
                                 Main.log.log(Level.SEVERE, msg, e);
                                 JOptionPane.showConfirmDialog(this, msg, "Error", JOptionPane.DEFAULT_OPTION);
                                 exit();
@@ -144,7 +142,7 @@ public class Client extends Game implements Runnable {
     public void notify(MovementNotification notification) {
         final Player player = immutablePlayerMap.get(notification.getPlayerId());
         if (player != null) {
-            player.move(nodes.get(notification.getNodeId()), coordinates);
+            player.move(nodes.get(notification.getNodeId()));
         }
     }
 
@@ -184,7 +182,7 @@ public class Client extends Game implements Runnable {
 
     public void notify(CreatedPlayerNotification notification) {
         final Node startNode = nodes.get(notification.getNodeId());
-        final Player player = new Player(notification.getPlayerId(), startNode, gridAngles.get(startNode), this, notification.getColor1(), notification.getColor2());
+        final Player player = new Player(notification.getPlayerId(), startNode, notification.getGridAngle(), this, notification.getColor1(), notification.getColor2());
         player.setName(notification.getName());
         player.setHitpoints(notification.getHitpoints());
         player.setLapsRemaining(notification.getLapsRemaining());

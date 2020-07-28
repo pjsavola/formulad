@@ -1,5 +1,6 @@
 package gp;
 
+import gp.ai.TrackData;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.swing.*;
@@ -21,8 +22,7 @@ import java.util.zip.ZipInputStream;
 class TrackPreviewButton extends JButton {
     private final JPanel panel;
     private final Lobby lobby;
-    private String trackId;
-    private boolean external;
+    private TrackData data;
 
     public static class ResourceWalker {
         public static void main(String[] args) throws URISyntaxException, IOException {
@@ -126,25 +126,22 @@ class TrackPreviewButton extends JButton {
     }
 
     boolean setTrack(String trackId, boolean external) {
-        final BufferedImage image = getImage(trackId, external);
-        if (image == null) {
+        final TrackData newData = TrackData.createTrackData(trackId, external);
+        if (newData == null) {
             return false;
         }
-        setIcon(createIcon(image));
-        if (lobby != null && !trackId.equals(this.trackId)) {
-            lobby.setTrack(trackId, external);
+        if (!newData.equals(data)) {
+            data = newData;
+            setIcon(createIcon(newData.getBackgroundImage()));
+            if (lobby != null) {
+                lobby.setTrack(newData);
+            }
         }
-        this.trackId = trackId;
-        this.external = external;
         return true;
     }
 
-    String getTrack() {
-        return trackId;
-    }
-
-    boolean isTrackExternal() {
-        return external;
+    TrackData getTrackData() {
+        return data;
     }
 
     private BufferedImage getImage(String trackId, boolean external) {

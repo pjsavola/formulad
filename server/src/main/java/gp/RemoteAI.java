@@ -10,6 +10,7 @@ import java.util.logging.Level;
 import gp.ai.AI;
 
 import gp.ai.GreatAI;
+import gp.ai.TrackData;
 import gp.model.*;
 
 public class RemoteAI implements AI {
@@ -70,10 +71,10 @@ public class RemoteAI implements AI {
         oos = null;
     }
 
-    public ProfileMessage getProfile(ProfileRequest request) {
+    public ProfileMessage getProfile(TrackData data) {
         if (oos != null && ois != null) {
             try {
-                oos.writeObject(request);
+                oos.writeObject(data);
                 Object response;
                 do {
                     response = getResponse();

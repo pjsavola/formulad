@@ -103,23 +103,23 @@ public class Player {
         }
     }
 
-    public void highlight(Graphics2D g2d, Map<Node, Point> coordinates) {
-        final Point p = coordinates.get(node);
+    public void highlight(Graphics2D g2d) {
+        final Point p = node.getLocation();
         MapEditor.drawOval(g2d, p.x, p.y, 20, 20, true, false, Color.GREEN, 1);
     }
 
-    public void draw(Graphics2D g2d, Map<Node, Point> coordinates) {
+    public void draw(Graphics2D g2d) {
         if (!stopped) {
             synchronized (route) {
                 if (route.size() > 1) {
-                    drawRoute(g2d, coordinates);
+                    drawRoute(g2d);
                 }
             }
-            final Point p = coordinates.get(node);
+            final Point p = node.getLocation();
             draw(g2d, p.x, p.y, angle);
         } else if (hitpoints <= 0) {
             // Draw small x for retired players
-            final Point p = coordinates.get(node);
+            final Point p = node.getLocation();
             g2d.setColor(color1);
             g2d.drawLine(p.x - 2, p.y - 2, p.x + 2, p.y + 2);
             g2d.setColor(color2);
@@ -129,10 +129,10 @@ public class Player {
         }
     }
 
-    public void drawRetired(Graphics2D g2d, Map<Node, Point> coordinates) {
+    public void drawRetired(Graphics2D g2d) {
         if (stopped && hitpoints <= 0) {
             // Draw small x for retired players
-            final Point p = coordinates.get(node);
+            final Point p = node.getLocation();
             g2d.setColor(color1);
             g2d.drawLine(p.x - 2, p.y - 2, p.x + 2, p.y + 2);
             g2d.drawLine(p.x + 2, p.y - 2, p.x - 2, p.y + 2);
@@ -286,13 +286,13 @@ public class Player {
         }
     }
 
-    public void move(Node n, Map<Node, Point> coordinates) {
+    public void move(Node n) {
         synchronized (route) {
             if (route.isEmpty()) {
                 route.add(node);
             }
-            final Point p1 = coordinates.get(node);
-            final Point p2 = coordinates.get(n);
+            final Point p1 = node.getLocation();
+            final Point p2 = n.getLocation();
             angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
             node = n;
             route.add(n);
@@ -339,11 +339,11 @@ public class Player {
         }
     }
 
-    private void drawRoute(Graphics2D g2d, Map<Node, Point> coordinates) {
+    private void drawRoute(Graphics2D g2d) {
         g2d.setColor(transparentWhite);
         for (int i = 0; i < route.size() - 1; i++) {
-            final Point n1 = coordinates.get(route.get(i));
-            final Point n2 = coordinates.get(route.get(i + 1));
+            final Point n1 = route.get(i).getLocation();
+            final Point n2 = route.get(i + 1).getLocation();
             g2d.drawLine(n1.x, n1.y, n2.x, n2.y);
         }
     }

@@ -1,6 +1,7 @@
 package gp;
 
 import gp.ai.Node;
+import gp.ai.NodeType;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -101,11 +102,11 @@ public class TrackLanes {
         final Map<Node, Set<Node>> collisionMap = new HashMap<>();
         List<Node> sortedNodes = nodes
                 .stream()
-                .filter(n -> n.getType() != Node.Type.PIT)
+                .filter(n -> n.getType() != NodeType.PIT)
                 .sorted(Comparator.comparingInt(n1 -> distanceToInt(distanceMap.get(n1))))
                 .collect(Collectors.toList());
         final List<Node> finishLine = sortedNodes.subList(0, 3);
-        if (finishLine.stream().anyMatch(n -> n.getType() != Node.Type.FINISH)) {
+        if (finishLine.stream().anyMatch(n -> n.getType() != NodeType.FINISH)) {
             throw new RuntimeException("Finish line nodes don't have the lowest distance");
         }
         // Middle node is either 1st node (distance 0.0) or 3rd node (distance 0.5)
@@ -136,10 +137,10 @@ public class TrackLanes {
         lanes[2].checkCollisions(lanes[1]);
 
         // Add collisions for pit exit
-        nodes.stream().filter(node -> node.getType() == Node.Type.PIT).forEach(node -> {
+        nodes.stream().filter(node -> node.getType() == NodeType.PIT).forEach(node -> {
             collisionMap.put(node, new HashSet<>());
             node.forEachChild(next -> {
-                if (next.getType() != Node.Type.PIT) {
+                if (next.getType() != NodeType.PIT) {
                     collisionMap.get(node).add(next);
                     collisionMap.get(next).add(node);
                 }
@@ -149,7 +150,7 @@ public class TrackLanes {
         // Add collisions for pit entry
         sortedNodes.forEach(node -> {
             node.forEachChild(next -> {
-                if (next.getType() == Node.Type.PIT) {
+                if (next.getType() == NodeType.PIT) {
                     collisionMap.get(node).add(next);
                     collisionMap.get(next).add(node);
                 }

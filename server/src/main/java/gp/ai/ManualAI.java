@@ -59,7 +59,7 @@ public class ManualAI implements AI {
             throw new RuntimeException("No data sent for player: " + playerId);
         }
         final MutableInt selectedGear = new MutableInt(0);
-        final boolean inPits = location != null && location.getType() == Node.Type.PIT;
+        final boolean inPits = location != null && location.getType() == NodeType.PIT;
         game.actionMenu.removeAll();
         for (int newGear = 1; newGear <= 6; ++newGear) {
             if (AIUtil.validateGear(hitpoints, gear, newGear, inPits)) {

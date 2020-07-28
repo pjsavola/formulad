@@ -1,39 +1,72 @@
 package gp.ai;
 
-import gp.LocalPlayer;
 import gp.TrackLanes;
 
+import java.awt.*;
+import java.io.Serializable;
 import java.util.*;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 
-public final class Node {
-    public enum Type { UNKNOWN, STRAIGHT, CURVE_2, CURVE_1, START, FINISH, CURVE_3, PIT };
+public final class Node implements Serializable {
     private final int id;
-    private final Type type;
+    private final NodeType type;
     private final Set<Node> nextNodes = new HashSet<>();
+    private boolean garage;
+    private double distance;
+    private transient double gridAngle; // Client does not need this
+    private Point point;
 
-    public Node(int id, int type) {
-        this(id, Type.values()[type]);
-    }
-
-    public Node(int id, Type type) {
+    public Node(int id, NodeType type) {
         this.id = id;
         this.type = type;
     }
 
     public Node(gp.model.Node node) {
-        this.id = node.getNodeId();
-        this.type = Type.valueOf(node.getType().name());
+        id = node.getNodeId();
+        type = NodeType.valueOf(node.getType().getValue());
+    }
+
+    public void setGarage(boolean garage) {
+        this.garage = garage;
+    }
+
+    public void setDistance(double distance) {
+        this.distance = distance;
+    }
+
+    public void setGridAngle(double gridAngle) {
+        this.gridAngle = gridAngle;
+    }
+
+    public void setLocation(Point point) {
+        this.point = point;
     }
 
     public int getId() {
         return id;
     }
 
-    public Type getType() {
+    public NodeType getType() {
         return type;
+    }
+
+    public boolean hasGarage() {
+        return garage;
+    }
+
+    public double getDistance() {
+        return distance;
+    }
+
+    public double getGridAngle() {
+        return gridAngle;
+    }
+
+    public Point getLocation() {
+        return point;
     }
 
     /**
@@ -57,7 +90,7 @@ public final class Node {
         nextNodes.forEach(consumer);
     }
 
-    public long childCount(Type excludeType) {
+    public long childCount(NodeType excludeType) {
         return excludeType == null ? nextNodes.size() : nextNodes.stream().filter(n -> n.type != excludeType).count();
     }
 
@@ -71,23 +104,6 @@ public final class Node {
 
     public Stream<Node> childStream() {
         return nextNodes.stream();
-    }
-
-    public boolean isAdjacentOf(Node node) {
-        return nextNodes.contains(node) || node.nextNodes.contains(this);
-    }
-
-    public static Map<Node, Set<Node>> buildAdjacencyMap(List<Node> nodes, Map<Node, List<Node>> prevNodeMap) {
-        final Map<Node, Set<Node>> adjacentNodes = new HashMap<>();
-        nodes.forEach(node -> {
-            node.forEachChild(next -> adjacentNodes.computeIfAbsent(node, _key -> new HashSet<>()).add(next));
-            prevNodeMap.get(node).forEach(prev -> adjacentNodes.computeIfAbsent(node, _key -> new HashSet<>()).add(prev));
-        });
-        for (Map.Entry<Node, Set<Node>> e : adjacentNodes.entrySet()) {
-            final Node node = e.getKey();
-            e.getValue().removeIf(neighbor -> neighbor.type == Type.PIT && node.type == Type.PIT);
-        }
-        return adjacentNodes;
     }
 
     /**
@@ -116,7 +132,7 @@ public final class Node {
     }
 
     public boolean isCurve() {
-        return type == Type.CURVE_1 || type == Type.CURVE_2 || type == Type.CURVE_3;
+        return type == NodeType.CURVE_1 || type == NodeType.CURVE_2 || type == NodeType.CURVE_3;
     }
 
     public int getStopCount() {
@@ -141,9 +157,7 @@ public final class Node {
     }
 
     public int compareTo(Node node, Map<Node, Double> distanceMap) {
-        final double d1 = distanceMap.get(this);
-        final double d2 = distanceMap.get(node);
-        if (d1 == d2) {
+        if (distance == node.distance) {
             if (isCurve() && !node.isCurve()) {
                 return 1;
             } else if (!isCurve() && node.isCurve()) {
@@ -154,6 +168,6 @@ public final class Node {
             final int delta = distanceToNextArea1 - distanceToNextArea2;
             return isCurve() ? delta : -delta;
         }
-        return TrackLanes.distanceToInt(d2 - d1);
+        return TrackLanes.distanceToInt(node.distance - distance);
     }
 }

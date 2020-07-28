@@ -11,8 +11,9 @@ public class CreatedPlayerNotification extends Notification implements Serializa
     private final int lapsToGo;
     private final int color1;
     private final int color2;
+    private final double angle;
 
-    public CreatedPlayerNotification(String playerId, String name, int nodeId, int hitpoints, int lapsToGo, int color1, int color2) {
+    public CreatedPlayerNotification(String playerId, String name, int nodeId, int hitpoints, int lapsToGo, int color1, int color2, double angle) {
         super(playerId);
         this.name = name;
         this.nodeId = nodeId;
@@ -20,6 +21,7 @@ public class CreatedPlayerNotification extends Notification implements Serializa
         this.lapsToGo = lapsToGo;
         this.color1 = color1;
         this.color2 = color2;
+        this.angle = angle;
     }
 
     public String getName() {
@@ -44,6 +46,10 @@ public class CreatedPlayerNotification extends Notification implements Serializa
 
     public int getColor2() {
         return color2;
+    }
+
+    public double getGridAngle() {
+        return angle;
     }
 
     @Override

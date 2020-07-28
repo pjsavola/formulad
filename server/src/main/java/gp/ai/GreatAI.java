@@ -51,7 +51,7 @@ public class GreatAI implements AI {
         if (location == null) {
             throw new RuntimeException("Unknown location for player: " + playerId);
         }
-        final boolean inPits = location.getType() == Node.Type.PIT;
+        final boolean inPits = location.getType() == NodeType.PIT;
         final int maxGear = inPits ? 4 : 6;
         final int stopsDone = player.getStops();
         if (stopsDone < location.getStopCount()) {
@@ -352,12 +352,12 @@ public class GreatAI implements AI {
         }
 
         // Consider pitting
-        boolean canPit = bestIndices.stream().map(i -> nodeMap.get(moves.get(i).getNodeId())).anyMatch(n -> n.getType() == Node.Type.PIT);
+        boolean canPit = bestIndices.stream().map(i -> nodeMap.get(moves.get(i).getNodeId())).anyMatch(n -> n.getType() == NodeType.PIT);
         if (canPit) {
-            final boolean mustPit = bestIndices.stream().map(i -> nodeMap.get(moves.get(i).getNodeId())).noneMatch(n -> n.getType() != Node.Type.PIT);
+            final boolean mustPit = bestIndices.stream().map(i -> nodeMap.get(moves.get(i).getNodeId())).noneMatch(n -> n.getType() != NodeType.PIT);
             if (!mustPit) {
                 // There is actually a choice
-                final boolean canPitNow = bestIndices.stream().map(i -> nodeMap.get(moves.get(i).getNodeId())).anyMatch(n -> n.getType() == Node.Type.PIT && garageNodes.contains(n));
+                final boolean canPitNow = bestIndices.stream().map(i -> nodeMap.get(moves.get(i).getNodeId())).anyMatch(n -> n.getType() == NodeType.PIT && garageNodes.contains(n));
                 if (canPitNow) {
                     final boolean lowHitpoints = player.getHitpoints() <= 12;
                     final Iterator<Integer> it = bestIndices.iterator();
@@ -365,7 +365,7 @@ public class GreatAI implements AI {
                         final int i = it.next();
                         final Node node = nodeMap.get(moves.get(i).getNodeId());
                         final boolean isGarage = garageNodes.contains(node);
-                        final boolean isPit = node.getType() == Node.Type.PIT;
+                        final boolean isPit = node.getType() == NodeType.PIT;
                         if (isPit && !isGarage) {
                             // Remove all pit nodes with no garage
                             it.remove();
@@ -385,7 +385,7 @@ public class GreatAI implements AI {
                     while (it.hasNext()) {
                         final int i = it.next();
                         final Node node = nodeMap.get(moves.get(i).getNodeId());
-                        final boolean isPit = node.getType() == Node.Type.PIT;
+                        final boolean isPit = node.getType() == NodeType.PIT;
                         if (lowHitpoints) {
                             if (!isPit) {
                                 // Remove all non-pit nodes if hitpoints are low

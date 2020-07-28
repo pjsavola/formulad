@@ -15,7 +15,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
-import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 import javax.swing.*;
@@ -23,6 +22,8 @@ import javax.swing.filechooser.FileFilter;
 
 import gp.ai.AIUtil;
 import gp.ai.Node;
+import gp.ai.NodeType;
+import gp.ai.TrackData;
 import gp.editor.*;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -43,13 +44,13 @@ public class MapEditor extends JPanel {
     private Node selectedNode;
     private BufferedImage backgroundImage;
     private String backgroundImageFileName;
-    private Node.Type stroke = Node.Type.STRAIGHT;
+    private NodeType stroke = NodeType.STRAIGHT;
     private Corner infoBoxCorner = Corner.NE;
 
     // After drawing an edge, automatically select the target node.
     private boolean autoSelectMode = true;
 
-    private final HashMap<Node.Type, MenuItem> strokes = new HashMap<>();
+    private final HashMap<NodeType, MenuItem> strokes = new HashMap<>();
     private final MenuItem setGarage;
     private final MenuItem setCurveDistance;
     private final MenuItem setGridAngle;
@@ -187,37 +188,37 @@ public class MapEditor extends JPanel {
 
         menuBar.add(strokeMenu);
         final MenuItem strokeStraight = new MenuItem("Straight");
-        strokeStraight.addActionListener(e -> setStroke(Node.Type.STRAIGHT));
+        strokeStraight.addActionListener(e -> setStroke(NodeType.STRAIGHT));
         strokeStraight.setShortcut(new MenuShortcut(KeyEvent.VK_T));
         strokeMenu.add(strokeStraight);
-        strokes.put(Node.Type.STRAIGHT, strokeStraight);
+        strokes.put(NodeType.STRAIGHT, strokeStraight);
         final MenuItem strokeCurve1 = new MenuItem("1 Stop Curve");
-        strokeCurve1.addActionListener(e -> setStroke(Node.Type.CURVE_1));
+        strokeCurve1.addActionListener(e -> setStroke(NodeType.CURVE_1));
         strokeCurve1.setShortcut(new MenuShortcut(KeyEvent.VK_1));
         strokeMenu.add(strokeCurve1);
-        strokes.put(Node.Type.CURVE_1, strokeCurve1);
+        strokes.put(NodeType.CURVE_1, strokeCurve1);
         final MenuItem strokeCurve2 = new MenuItem("2 Stop Curve");
-        strokeCurve2.addActionListener(e -> setStroke(Node.Type.CURVE_2));
+        strokeCurve2.addActionListener(e -> setStroke(NodeType.CURVE_2));
         strokeCurve2.setShortcut(new MenuShortcut(KeyEvent.VK_2));
         strokeMenu.add(strokeCurve2);
-        strokes.put(Node.Type.CURVE_2, strokeCurve2);
+        strokes.put(NodeType.CURVE_2, strokeCurve2);
         final MenuItem strokeCurve3 = new MenuItem("3 Stop Curve");
-        strokeCurve3.addActionListener(e -> setStroke(Node.Type.CURVE_3));
+        strokeCurve3.addActionListener(e -> setStroke(NodeType.CURVE_3));
         strokeCurve3.setShortcut(new MenuShortcut(KeyEvent.VK_3));
         strokeMenu.add(strokeCurve3);
-        strokes.put(Node.Type.CURVE_3, strokeCurve3);
+        strokes.put(NodeType.CURVE_3, strokeCurve3);
         final MenuItem strokeFinishLine = new MenuItem("Finish Line");
-        strokeFinishLine.addActionListener(e -> setStroke(Node.Type.FINISH));
+        strokeFinishLine.addActionListener(e -> setStroke(NodeType.FINISH));
         strokeFinishLine.setShortcut(new MenuShortcut(KeyEvent.VK_F));
         strokeMenu.add(strokeFinishLine);
-        strokes.put(Node.Type.FINISH, strokeFinishLine);
+        strokes.put(NodeType.FINISH, strokeFinishLine);
         final MenuItem strokePitLane = new MenuItem("Pit Lane");
-        strokePitLane.addActionListener(e -> setStroke(Node.Type.PIT));
+        strokePitLane.addActionListener(e -> setStroke(NodeType.PIT));
         strokePitLane.setShortcut(new MenuShortcut(KeyEvent.VK_P));
         strokeMenu.add(strokePitLane);
-        strokes.put(Node.Type.PIT, strokePitLane);
+        strokes.put(NodeType.PIT, strokePitLane);
 
-        setStroke(Node.Type.STRAIGHT);
+        setStroke(NodeType.STRAIGHT);
         select(null);
 
         menuBar.add(toolMenu);
@@ -263,7 +264,7 @@ public class MapEditor extends JPanel {
                             debugNeighbors.clear();
                             final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
                             final Map<Node, Double> distanceMap = new HashMap<>();
-                            Main.findGrid(nodes, attributes, gridAngles, distanceMap, prevNodeMap);
+                            TrackData.build(nodes, attributes, gridAngles, distanceMap, prevNodeMap);
                             final Map<Node, Set<Node>> collisionMap = TrackLanes.buildCollisionMap(nodes, distanceMap);
                             debugNeighbors.addAll(collisionMap.get(selectedNode));
                             repaint();
@@ -286,12 +287,12 @@ public class MapEditor extends JPanel {
     private void select(Node node) {
 	    selectedNode = node;
 	    if (selectedNode != null) System.out.println(selectedNode.getId());
-	    setGarage.setEnabled(selectedNode != null && selectedNode.getType() == Node.Type.PIT);
+	    setGarage.setEnabled(selectedNode != null && selectedNode.getType() == NodeType.PIT);
         setCurveDistance.setEnabled(selectedNode != null && selectedNode.isCurve());
-	    setGridAngle.setEnabled(selectedNode != null && selectedNode.getType() != Node.Type.PIT);
+	    setGridAngle.setEnabled(selectedNode != null && selectedNode.getType() != NodeType.PIT);
     }
 
-	private void setStroke(Node.Type stroke) {
+	private void setStroke(NodeType stroke) {
 	    this.stroke = stroke;
 	    strokes.forEach((type, item) -> item.setEnabled(stroke != type));
     }
@@ -502,7 +503,7 @@ public class MapEditor extends JPanel {
                     final int id = Integer.parseInt(parts[0]);
                     final int x = Integer.parseInt(parts[1]);
                     final int y = Integer.parseInt(parts[2]);
-                    final Node.Type type = Node.Type.values()[Integer.parseInt(parts[3])];
+                    final NodeType type = NodeType.values()[Integer.parseInt(parts[3])];
                     final Node node = new Node(id, type);
                     idMap.put(id, node);
                     coordMap.put(node, new Point(x, y));
@@ -533,7 +534,7 @@ public class MapEditor extends JPanel {
 
     private void setAttribute() {
 	    if (selectedNode != null) {
-	        if (selectedNode.getType() == Node.Type.PIT) {
+	        if (selectedNode.getType() == NodeType.PIT) {
 	            if (attributes.containsKey(selectedNode)) {
 	                attributes.remove(selectedNode);
                 } else {
@@ -641,7 +642,7 @@ public class MapEditor extends JPanel {
         try {
             final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
             final Map<Node, Double> distanceMap = new HashMap<>();
-            Main.findGrid(nodes, attributes, gridAngles, distanceMap, prevNodeMap);
+            TrackData.build(nodes, attributes, gridAngles, distanceMap, prevNodeMap);
             nodes.sort((n1, n2) -> n2.compareTo(n1, distanceMap));
             final List<Node> newNodes = new ArrayList<>();
             final Map<Node, Point> newCoordinates = new HashMap<>();
@@ -681,7 +682,7 @@ public class MapEditor extends JPanel {
 	    try {
             final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
             final Map<Node, Double> distanceMap = new HashMap<>();
-            final List<Node> grid = Main.findGrid(nodes, attributes, gridAngles, distanceMap, prevNodeMap);
+            final List<Node> grid = TrackData.build(nodes, attributes, gridAngles, distanceMap, prevNodeMap);
             if (grid.size() < 10) {
                 JOptionPane.showConfirmDialog(this, "Track validation failed: Starting grid has less than 10 spots", "Validation Error", JOptionPane.DEFAULT_OPTION);
             }
@@ -778,7 +779,7 @@ public class MapEditor extends JPanel {
     @Nullable
     public static Node getNode(Collection<Node> nodes, Map<Node, Point> coordinates, int x, int y, int threshold) {
         for (Node node : nodes) {
-            final Point point = coordinates.get(node);
+            final Point point = coordinates == null ? node.getLocation() : coordinates.get(node);
             if (Math.hypot(x - point.x, y - point.y) < threshold) {
                 return node;
             }
