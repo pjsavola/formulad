@@ -235,6 +235,7 @@ public class MapEditor extends JPanel {
         final MenuItem deduceDistances = new MenuItem("Deduce Curve Distances");
         deduceDistances.addActionListener(e -> deduceDistances());
         toolMenu.add(deduceDistances);
+        deduceDistances.setEnabled(false);
 
         menuBar.add(validationMenu);
         final MenuItem validate = new MenuItem("Validate Track");
@@ -647,6 +648,7 @@ public class MapEditor extends JPanel {
 
     private void unifyNodeIdentifiers() {
         try {
+            select(null);
             final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
             final Map<Node, Double> distanceMap = new HashMap<>();
             TrackData.build(nodes, attributes, gridAngles, distanceMap, prevNodeMap);

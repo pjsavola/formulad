@@ -83,17 +83,21 @@ class TrackPreviewButton extends JButton {
                     return;
                 }
             }
+            filenames.sort(String::compareTo);
             final Set<String> internalTracks = new HashSet<>(filenames);
+            final List<String> externalTracks = new ArrayList<>();
             // Try to search for custom tracks
             final File file = new File(".");
             final File[] dataFiles = file.listFiles(f -> f.getName().toLowerCase().endsWith(".dat"));
             if (dataFiles != null) {
                 for (File f : dataFiles) {
                     if (!internalTracks.contains(f.getName())) {
-                        filenames.add(f.getName());
+                        externalTracks.add(f.getName());
                     }
                 }
             }
+            externalTracks.sort(String::compareTo);
+            filenames.addAll(externalTracks);
             final JPanel trackPanel = new JPanel(new GridLayout(0, 2));
             final JDialog trackDialog = new JDialog(frame);
             filenames.stream().filter(name -> name.endsWith(".dat")).forEach(f -> {
@@ -111,9 +115,10 @@ class TrackPreviewButton extends JButton {
                 selectTrackButton.setIcon(icon);
                 trackPanel.add(selectTrackButton);
             });
+            final JScrollPane scrollPane = new JScrollPane(trackPanel);
             trackDialog.setTitle("Select track");
             trackDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-            trackDialog.setContentPane(trackPanel);
+            trackDialog.setContentPane(scrollPane);
             trackDialog.pack();
             trackDialog.setModal(true);
             trackDialog.setLocationRelativeTo(frame);

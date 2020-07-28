@@ -92,7 +92,7 @@ public class TrackData implements Serializable {
                 }
             }
             if (node.childCount(null) == 0) {
-                throw new RuntimeException("Track contains a dead-end");
+                throw new RuntimeException("Track contains a dead-end: " + node.getId());
             }
             if (node.isCurve() && !attributes.containsKey(node)) {
                 throw new RuntimeException("There is a curve without distance attribute");
