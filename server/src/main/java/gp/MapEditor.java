@@ -685,6 +685,7 @@ public class MapEditor extends JPanel {
             final List<Node> grid = TrackData.build(nodes, attributes, gridAngles, distanceMap, prevNodeMap);
             if (grid.size() < 10) {
                 JOptionPane.showConfirmDialog(this, "Track validation failed: Starting grid has less than 10 spots", "Validation Error", JOptionPane.DEFAULT_OPTION);
+                return;
             }
             TrackLanes.buildCollisionMap(nodes, distanceMap);
             JOptionPane.showConfirmDialog(this, "Track seems OK", "Success", JOptionPane.DEFAULT_OPTION);

@@ -91,11 +91,11 @@ public class TrackData implements Serializable {
                     edges.add(node);
                 }
             }
-            if (node.isCurve() && !attributes.containsKey(node)) {
-                throw new RuntimeException("There is a curve without distance attribute");
-            }
             if (node.childCount(null) == 0) {
                 throw new RuntimeException("Track contains a dead-end");
+            }
+            if (node.isCurve() && !attributes.containsKey(node)) {
+                throw new RuntimeException("There is a curve without distance attribute");
             }
         }
         while (!work.isEmpty()) {
@@ -124,7 +124,15 @@ public class TrackData implements Serializable {
         final List<Node> curves = new ArrayList<>();
         while (!work.isEmpty()) {
             final Node node = work.remove(0);
-            final long childCount = node.childCount(NodeType.PIT);
+            final double dist = distanceMap.get(node);
+            final Set<Node> grandChildren = new HashSet<>();
+            node.forEachChild(child -> {
+                if (child.getType() == NodeType.PIT) return;
+                child.forEachChild(grandChild -> {
+                    if (grandChild.getType() == NodeType.PIT) return;
+                    grandChildren.add(grandChild);
+                });
+            });
             node.forEachChild(next -> {
                 if (distanceMap.containsKey(next)) {
                     return;
@@ -135,12 +143,21 @@ public class TrackData implements Serializable {
                 }
                 if (next.getType() == NodeType.PIT) {
                     pit.setValue(next);
-                    distanceMap.put(next, distanceMap.get(node) - 0.4);
+                    distanceMap.put(next, dist - 0.4);
                     return;
                 }
-                final long nextChildCount = next.childCount(NodeType.PIT);
-                final boolean fromCenterToEdge = childCount == 3 && (nextChildCount == 2 || prevNodeMap.get(next).stream().anyMatch(Node::isCurve));
-                distanceMap.put(next, distanceMap.get(node) + (fromCenterToEdge ? 0.5 : 1));
+                final double distanceDelta;
+                if (prevNodeMap.get(next).size() == 1) {
+                    // We might end up here in 2 cases:
+                    // - Just before curve where movement is limited
+                    // - In case lane lengths are different
+                    distanceDelta = next.childStream().anyMatch(Node::isCurve) ? 1.0 : 0.4;
+                } else if (grandChildren.contains(next)) {
+                    distanceDelta = 1.0;
+                } else {
+                    distanceDelta = 0.5;
+                }
+                distanceMap.put(next, dist + distanceDelta);
                 work.add(next);
             });
             if (work.isEmpty() && !curves.isEmpty()) {
