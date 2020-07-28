@@ -156,7 +156,7 @@ public final class Node implements Serializable {
         return false;
     }
 
-    public int compareTo(Node node, Map<Node, Double> distanceMap) {
+    public int compareTo(Node node) {
         if (distance == node.distance) {
             if (isCurve() && !node.isCurve()) {
                 return 1;

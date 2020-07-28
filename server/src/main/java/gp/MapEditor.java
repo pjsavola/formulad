@@ -643,7 +643,8 @@ public class MapEditor extends JPanel {
             final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
             final Map<Node, Double> distanceMap = new HashMap<>();
             TrackData.build(nodes, attributes, gridAngles, distanceMap, prevNodeMap);
-            nodes.sort((n1, n2) -> n2.compareTo(n1, distanceMap));
+            nodes.forEach(node -> node.setDistance(distanceMap.get(node)));
+            nodes.sort((n1, n2) -> n2.compareTo(n1));
             final List<Node> newNodes = new ArrayList<>();
             final Map<Node, Point> newCoordinates = new HashMap<>();
             final Map<Node, Double> newAttributes = new HashMap<>();
