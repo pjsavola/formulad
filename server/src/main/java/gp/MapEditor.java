@@ -57,6 +57,7 @@ public class MapEditor extends JPanel {
     private final UndoStack stack = new UndoStack(nodes, attributes);
     private Double previousCurveDistance;
     private boolean showDistances;
+    private Dimension panelDim;
 
     public enum Corner { NE, SE, SW, NW };
 
@@ -328,9 +329,9 @@ public class MapEditor extends JPanel {
         for (Node node : nodes) {
             drawNode(g2d, node);
         }
-        UIUtil.drawInfoBox(g2d, this, 10, infoBoxCorner);
-        final int x = UIUtil.getX(infoBoxCorner, this, 250);
-        final int y = UIUtil.getY(infoBoxCorner, this, 5 + 15 * 10);
+        UIUtil.drawInfoBox(g2d, panelDim, 10, infoBoxCorner);
+        final int x = UIUtil.getX(infoBoxCorner, panelDim, 250);
+        final int y = UIUtil.getY(infoBoxCorner, panelDim, 5 + 15 * 10);
         if (selectedNode != null) {
             final Point p = selectedNode.getLocation();
             drawOval(g2d, p.x, p.y, DIAMETER + 2, DIAMETER + 2, true, false, Color.YELLOW, 1);
@@ -371,7 +372,8 @@ public class MapEditor extends JPanel {
                 return false;
             }
             backgroundImageFileName = selectedFile.getName();
-            setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
+            panelDim = new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight());
+            setPreferredSize(panelDim);
             frame.pack();
             final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
             frame.setSize(Math.min(screenSize.width, frame.getWidth()), Math.min(screenSize.height - 100, frame.getHeight()));

@@ -59,6 +59,7 @@ public abstract class Game extends JPanel {
     private List<HitpointAnimation> animations = Collections.synchronizedList(new ArrayList<>());
 
     private double scale = 1.0;
+    private Dimension panelDim;
 
     private class HitpointAnimation {
         private final Color color;
@@ -143,7 +144,8 @@ public abstract class Game extends JPanel {
         nodes.clear();
         nodes.addAll(data.getNodes());
         backgroundImage = data.getBackgroundImage();
-        setPreferredSize(new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight()));
+        panelDim = new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight());
+        setPreferredSize(panelDim);
         frame.pack();
     }
 
@@ -223,14 +225,14 @@ public abstract class Game extends JPanel {
         // Other thread may replace this.standings with a new object, but it's not mutated
         final List<Player> standings = this.standings;
         if (standings == null) return;
-        UIUtil.drawInfoBox(g2d, this, standings.size(), infoBoxCorner);
+        UIUtil.drawInfoBox(g2d, panelDim, standings.size(), infoBoxCorner);
         int i = 0;
         for (Player player : standings) {
             if (player == getCurrent()) {
-                UIUtil.drawTurnMarker(g2d, this, standings.size(), infoBoxCorner, i);
+                UIUtil.drawTurnMarker(g2d, panelDim, standings.size(), infoBoxCorner, i);
             }
-            final int x = UIUtil.getX(infoBoxCorner, this, 250);
-            final int y = UIUtil.getY(infoBoxCorner, this, 5 + 15 * standings.size());
+            final int x = UIUtil.getX(infoBoxCorner, panelDim, 250);
+            final int y = UIUtil.getY(infoBoxCorner, panelDim, 5 + 15 * standings.size());
             player.draw(g2d, x + 15, y + i * 15 + 10, 0);
             player.drawStats(g2d, x + 30, y + i * 15 + 15, hitpointMap);
             ++i;
