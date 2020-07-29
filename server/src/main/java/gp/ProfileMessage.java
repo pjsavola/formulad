@@ -35,6 +35,25 @@ public class ProfileMessage implements Serializable {
     }
     public static ProfileMessage aiProfile = new ProfileMessage("AI", true);
 
+    public static ProfileMessage readProfile(String[] line) {
+        return new ProfileMessage(
+                UUID.fromString(line[0]),
+                line[1],
+                Integer.parseInt(line[2]),
+                Integer.parseInt(line[3]),
+                "gp.ai.ManualAI".equals(line[4])
+        );
+    }
+
+    private ProfileMessage(UUID id, String name, int color1, int color2, boolean ai) {
+        this.id = id;
+        this.name = name;
+        this.color1 = color1;
+        this.color2 = color2;
+        local = true;
+        this.ai = ai;
+    }
+
     private ProfileMessage(String name, boolean ai) {
         id = UUID.randomUUID();
         this.name = name;

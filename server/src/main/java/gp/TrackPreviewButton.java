@@ -5,6 +5,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URI;
@@ -19,7 +20,7 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-class TrackPreviewButton extends JButton {
+class TrackPreviewButton extends JButton implements TrackSelector {
     private final JPanel panel;
     private final Lobby lobby;
     private TrackData data;
@@ -45,88 +46,103 @@ class TrackPreviewButton extends JButton {
         this.panel = panel;
         this.lobby = lobby;
         addActionListener(e -> {
-            final List<String> filenames = new ArrayList<>();
-            final boolean ide = false;
-            if (ide) {
-                try (InputStream in = Main.class.getResourceAsStream("/"); BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
-                    String resource;
-                    while ((resource = br.readLine()) != null) {
-                        filenames.add(resource);
-                    }
-                } catch (IOException ex) {
-                    Main.log.log(Level.SEVERE, "Unable to read resource directory", e);
-                    return;
-                }
-            } else {
-                try {
-                    final CodeSource src = Main.class.getProtectionDomain().getCodeSource();
-                    if (src != null) {
-                        URL jar = src.getLocation();
-                        ZipInputStream zip = new ZipInputStream(jar.openStream());
-                        while(true) {
-                            ZipEntry z = zip.getNextEntry();
-                            if (z == null) {
-                                break;
-                            }
-                            final String name = z.getName();
-                            if (name.toLowerCase().endsWith(".dat")) {
-                                filenames.add(name);
-                            }
-                        }
-                    }
-                    else {
-                        Main.log.log(Level.SEVERE, "Unable to read resource directory", e);
-                        return;
-                    }
-                } catch (IOException ex) {
-                    Main.log.log(Level.SEVERE, "Unable to read resource directory", e);
-                    return;
-                }
-            }
-            filenames.sort(String::compareTo);
-            final Set<String> internalTracks = new HashSet<>(filenames);
-            final List<String> externalTracks = new ArrayList<>();
-            // Try to search for custom tracks
-            final File file = new File(".");
-            final File[] dataFiles = file.listFiles(f -> f.getName().toLowerCase().endsWith(".dat"));
-            if (dataFiles != null) {
-                for (File f : dataFiles) {
-                    if (!internalTracks.contains(f.getName())) {
-                        externalTracks.add(f.getName());
-                    }
-                }
-            }
-            externalTracks.sort(String::compareTo);
-            filenames.addAll(externalTracks);
-            final JPanel trackPanel = new JPanel(new GridLayout(0, 2));
-            final JDialog trackDialog = new JDialog(frame);
-            filenames.stream().filter(name -> name.endsWith(".dat")).forEach(f -> {
-                final boolean external = !internalTracks.contains(f);
-                final TrackData data = TrackData.createTrackData(f, external);
-                if (data == null) {
-                    return;
-                }
-                final JButton selectTrackButton = new JButton();
-                final ImageIcon icon = createIcon(data.getBackgroundImage());
-                selectTrackButton.addActionListener(l -> {
-                    setTrack(data, icon);
-                    trackDialog.setVisible(false);
-                });
-                selectTrackButton.setIcon(icon);
-                trackPanel.add(selectTrackButton);
-            });
-            final JScrollPane scrollPane = new JScrollPane(trackPanel);
-            trackDialog.setTitle("Select track");
-            trackDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-            trackDialog.setContentPane(scrollPane);
-            trackDialog.pack();
-            trackDialog.setModal(true);
-            trackDialog.setLocationRelativeTo(frame);
-            trackDialog.setVisible(true);
+            openTrackSelectionDialog(frame, this);
         });
     }
 
-    void setTrack(TrackData newData, ImageIcon icon) {
+    static void openTrackSelectionDialog(Container parent, TrackSelector trackSelector) {
+        final List<String> internal = new ArrayList<>();
+        final List<String> external = new ArrayList<>();
+        getAllTracks(internal, external);
+        final JPanel trackPanel = new JPanel(new GridLayout(0, 2));
+        final JDialog trackDialog = parent instanceof JFrame ? new JDialog((JFrame) parent) : new JDialog((JDialog) parent, true);
+        internal.stream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).forEach(data -> {
+            final JButton selectTrackButton = new JButton();
+            final ImageIcon icon = createIcon(data.getBackgroundImage());
+            selectTrackButton.addActionListener(l -> {
+                trackSelector.setTrack(data, icon);
+                trackDialog.setVisible(false);
+            });
+            selectTrackButton.setIcon(icon);
+            trackPanel.add(selectTrackButton);
+        });
+        external.stream().map(f -> TrackData.createTrackData(f, true)).filter(Objects::nonNull).forEach(data -> {
+            final JButton selectTrackButton = new JButton();
+            final ImageIcon icon = createIcon(data.getBackgroundImage());
+            selectTrackButton.addActionListener(l -> {
+                trackSelector.setTrack(data, icon);
+                trackDialog.setVisible(false);
+            });
+            selectTrackButton.setIcon(icon);
+            trackPanel.add(selectTrackButton);
+        });
+        final JScrollPane scrollPane = new JScrollPane(trackPanel);
+        trackDialog.setTitle("Select track");
+        trackDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        trackDialog.setContentPane(scrollPane);
+        trackDialog.pack();
+        trackDialog.setModal(true);
+        trackDialog.setLocationRelativeTo(parent);
+        trackDialog.setVisible(true);
+    }
+
+    public static void getAllTracks(List<String> internal, List<String> external) {
+        final boolean ide = true;
+        if (ide) {
+            try (InputStream in = Main.class.getResourceAsStream("/"); BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
+                String resource;
+                while ((resource = br.readLine()) != null) {
+                    if (resource.toLowerCase().endsWith(".dat")) {
+                        internal.add(resource);
+                    }
+                }
+            } catch (IOException ex) {
+                Main.log.log(Level.SEVERE, "Unable to read resource directory", ex);
+                return;
+            }
+        } else {
+            try {
+                final CodeSource src = Main.class.getProtectionDomain().getCodeSource();
+                if (src != null) {
+                    URL jar = src.getLocation();
+                    ZipInputStream zip = new ZipInputStream(jar.openStream());
+                    while(true) {
+                        ZipEntry z = zip.getNextEntry();
+                        if (z == null) {
+                            break;
+                        }
+                        final String name = z.getName();
+                        if (name.toLowerCase().endsWith(".dat")) {
+                            internal.add(name);
+                        }
+                    }
+                }
+                else {
+                    Main.log.log(Level.SEVERE, "Unable to read resource directory");
+                    return;
+                }
+            } catch (IOException ex) {
+                Main.log.log(Level.SEVERE, "Unable to read resource directory", ex);
+                return;
+            }
+        }
+        internal.sort(String::compareTo);
+
+        // Try to search for custom tracks
+        final File file = new File(".");
+        final File[] dataFiles = file.listFiles(f -> f.getName().toLowerCase().endsWith(".dat"));
+        if (dataFiles != null) {
+            for (File f : dataFiles) {
+                if (!internal.contains(f.getName())) {
+                    external.add(f.getName());
+                }
+            }
+        }
+        external.sort(String::compareTo);
+    }
+
+    @Override
+    public void setTrack(TrackData newData, ImageIcon icon) {
         if (newData == null) {
             return;
         }

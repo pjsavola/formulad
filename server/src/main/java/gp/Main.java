@@ -397,7 +397,7 @@ public class Main extends Game implements Runnable {
     }
 
     private static class Params {
-       private int animationDelayInMillis = 100;
+        private int animationDelayInMillis = 100;
         private int initTimeoutInMillis = 3000;
         private int gearTimeoutInMillis = 3000;
         private int moveTimeoutInMillis = 3000;
@@ -557,7 +557,7 @@ public class Main extends Game implements Runnable {
         p.setName("Main Menu");
         p.add(contents);
         p.setBorder(new EmptyBorder(10, 10, 10, 10));
-        final JPanel buttonPanel = new JPanel(new GridLayout(4, 0));
+        final JPanel buttonPanel = new JPanel(new GridLayout(5, 0));
         final ProfilePanel profilePanel = new ProfilePanel(profiles);
         buttonPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         contents.add(buttonPanel);
@@ -567,6 +567,105 @@ public class Main extends Game implements Runnable {
         singlePlayerButton.addActionListener(e -> {
             showGameSettings(f, p, null, profiles, params, listener);
         });
+        final JButton championshipButton = new JButton("Championship Season");
+        championshipButton.addActionListener(e -> {
+            final DefaultListModel<String> model = new DefaultListModel<>();
+            final File file = new File(".");
+            final File[] dataFiles = file.listFiles(fn -> fn.getName().toLowerCase().endsWith(".cha") && fn.getName().length() > 4);
+            final Map<String, Season> existingSeasons = new HashMap<>();
+            if (dataFiles != null) {
+                for (File fn : dataFiles) {
+                    final String name = fn.getName().substring(0, fn.getName().length() - 4);
+                    final Season season = new Season(name);
+                    if (season.load()) {
+                        existingSeasons.put(name, season);
+                    }
+                }
+                existingSeasons.values().stream().sorted(Season::compareTo).map(Season::getName).forEach(model::addElement);
+            }
+            final JDialog dialog = new JDialog(f);
+            final JList<String> list = new JList<>(model);
+            final JButton newButton = new JButton("New");
+            final JButton selectButton = new JButton("Load");
+            final JButton deleteButton = new JButton("Delete");
+            newButton.addActionListener(e1 -> {
+                String result = (String) JOptionPane.showInputDialog(dialog, "New season name", "New season", JOptionPane.PLAIN_MESSAGE, null, null, null);
+                if (result != null && !result.isEmpty()) {
+                    if (existingSeasons.containsKey(result)) {
+                        JOptionPane.showConfirmDialog(dialog, "Season with name " + result + " already exists", "Error", JOptionPane.DEFAULT_OPTION);
+                    } else {
+                        final Season season = new Season(result);
+                        dialog.setVisible(false);
+                        season.start(f, profiles);
+                    }
+                }
+            });
+            selectButton.addActionListener(e12 -> {
+                final int index = list.getSelectedIndex();
+                if (index == -1) {
+                    return;
+                }
+                final String selectedSeason = model.getElementAt(index);
+                final Season season = existingSeasons.get(selectedSeason);
+                if (season != null) {
+                    dialog.setVisible(false);
+
+                }
+            });
+            deleteButton.addActionListener(e13 -> {
+                final int index = list.getSelectedIndex();
+                if (index == -1) {
+                    return;
+                }
+                final String deletedSeason = model.getElementAt(index);
+                int result = JOptionPane.showConfirmDialog(dialog, "Are you sure you want to delete season " + deletedSeason, "Confirm", JOptionPane.YES_NO_OPTION);
+                if (result == JOptionPane.YES_OPTION) {
+                    final Season season = existingSeasons.get(deletedSeason);
+                    if (season != null && season.delete()) {
+                        existingSeasons.remove(deletedSeason);
+                        model.remove(index);
+                        list.setSelectedIndex(-1);
+                    }
+                }
+            });
+            selectButton.setEnabled(!model.isEmpty());
+            deleteButton.setEnabled(!model.isEmpty());
+
+            list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            list.setSelectedIndex(0); // most recent season
+            list.addListSelectionListener(e14 -> {
+                if (!e14.getValueIsAdjusting()) {
+                    if (list.getSelectedIndex() == -1) {
+                        deleteButton.setEnabled(false);
+                        selectButton.setEnabled(false);
+                    } else {
+                        deleteButton.setEnabled(true);
+                        selectButton.setEnabled(true);
+                    }
+                }
+            });
+            list.setVisibleRowCount(5);
+            final JScrollPane listScrollPane = new JScrollPane(list);
+
+            final JPanel buttonPane = new JPanel();
+            buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.Y_AXIS));
+            buttonPane.add(newButton);
+            buttonPane.add(selectButton);
+            buttonPane.add(deleteButton);
+            buttonPane.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+
+            final JPanel contents2 = new JPanel(new GridLayout(0, 2));
+            contents2.add(listScrollPane, BorderLayout.CENTER);
+            contents2.add(buttonPane, BorderLayout.PAGE_END);
+            dialog.setTitle("Manage Championship Seasons");
+            dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+            dialog.setContentPane(contents2);
+            dialog.pack();
+            dialog.setModal(true);
+            dialog.setLocationRelativeTo(f);
+            dialog.setVisible(true);
+        });
+
         final JButton hostMultiplayerButton = new JButton("Host Multiplayer");
         hostMultiplayerButton.addActionListener(e -> {
             String result = (String) JOptionPane.showInputDialog(f, "Select port", "Select port", JOptionPane.PLAIN_MESSAGE,  null, null, settings.port);
@@ -623,14 +722,17 @@ public class Main extends Game implements Runnable {
             }
         });
         singlePlayerButton.setFont(new Font("Arial", Font.BOLD, 20));
+        championshipButton.setFont(new Font("Arial", Font.BOLD, 20));
         hostMultiplayerButton.setFont(new Font("Arial", Font.BOLD, 20));
         joinMultiplayerButton.setFont(new Font("Arial", Font.BOLD, 20));
         trackEditorButton.setFont(new Font("Arial", Font.BOLD, 20));
         singlePlayerButton.setPreferredSize(new Dimension(80, 40));
+        championshipButton.setPreferredSize(new Dimension(80, 40));
         hostMultiplayerButton.setPreferredSize(new Dimension(80, 40));
         joinMultiplayerButton.setPreferredSize(new Dimension(80, 40));
         trackEditorButton.setPreferredSize(new Dimension(80, 40));
         buttonPanel.add(singlePlayerButton);
+        buttonPanel.add(championshipButton);
         buttonPanel.add(hostMultiplayerButton);
         buttonPanel.add(joinMultiplayerButton);
         buttonPanel.add(trackEditorButton);

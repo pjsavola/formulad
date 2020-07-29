@@ -261,13 +261,16 @@ public class MapEditor extends JPanel {
         final MenuItem moveAll = new MenuItem("Move all nodes");
         moveAll.addActionListener(e -> moveAll());
         toolMenu.add(moveAll);
-        final MenuItem changeScale = new MenuItem("Change scale");
+        final MenuItem changeScale = new MenuItem("Scale node coordinates");
         changeScale.addActionListener(e -> scale());
         toolMenu.add(changeScale);
         final MenuItem deduceDistances = new MenuItem("Deduce Curve Distances");
         deduceDistances.addActionListener(e -> deduceDistances());
         toolMenu.add(deduceDistances);
         deduceDistances.setEnabled(false);
+        final MenuItem autoFillEdges = new MenuItem("Auto-fill edges in straigths");
+        toolMenu.add(autoFillEdges);
+        autoFillEdges.setEnabled(false);
 
         menuBar.add(validationMenu);
         final MenuItem showDistances = new MenuItem("Show Distances");

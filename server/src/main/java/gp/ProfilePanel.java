@@ -88,15 +88,7 @@ public class ProfilePanel extends JPanel {
         profileTitle.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                JFrame frame = null;
-                Container parent = ProfilePanel.this;
-                while (parent != null) {
-                    parent = parent.getParent();
-                    if (parent instanceof JFrame) {
-                        frame = (JFrame) parent;
-                        break;
-                    }
-                }
+                final JFrame frame = (JFrame) getTopLevelAncestor();
                 final JDialog dialog = new JDialog(frame);
                 final Random random = new Random();
 
