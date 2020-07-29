@@ -182,7 +182,7 @@ public abstract class Game extends JPanel {
         }
         final Graphics2D g2d = (Graphics2D) g;
         // Circle for dice rolls
-        final int x = infoBoxCorner == MapEditor.Corner.NW ? getWidth() - 40 : 40;
+        final int x = infoBoxCorner == MapEditor.Corner.NW ? panelDim.width - 40 : 40;
         MapEditor.drawOval(g2d, x, 40, 50, 50, true, true, Color.BLACK, 1);
         drawTargets(g2d);
         drawInfoBox(g2d);
@@ -252,7 +252,7 @@ public abstract class Game extends JPanel {
         if (current != null) {
             final Integer roll = this.roll;
             if (roll != null) {
-                final int circleX = infoBoxCorner == MapEditor.Corner.NW ? getWidth() - 40 : 40;
+                final int circleX = infoBoxCorner == MapEditor.Corner.NW ? panelDim.width - 40 : 40;
                 current.drawRoll(g2d, roll, circleX);
             } else {
                 // TODO: Highlight only manual AI?
@@ -265,8 +265,8 @@ public abstract class Game extends JPanel {
     protected void drawStandings(Graphics2D g2d) {
         if (finalStandings != null) {
             final int height = 5 + 15 * (finalStandings.length + 1);
-            final int x = getWidth() / 2 - 220;
-            final int y = getHeight() / 2 - height / 2;
+            final int x = panelDim.width / 2 - 220;
+            final int y = panelDim.height / 2 - height / 2;
             g2d.setColor(Color.BLACK);
             g2d.setFont(titleFont);
             final int titleWidth = g2d.getFontMetrics().stringWidth("STANDINGS");
