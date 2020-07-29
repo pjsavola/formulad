@@ -10,6 +10,7 @@ import javax.annotation.Nullable;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -57,6 +58,8 @@ public abstract class Game extends JPanel {
     private Timer timer = new Timer();
     private List<HitpointAnimation> animations = Collections.synchronizedList(new ArrayList<>());
 
+    private double scale = 1.0;
+
     private class HitpointAnimation {
         private final Color color;
         private final int x;
@@ -89,6 +92,33 @@ public abstract class Game extends JPanel {
         actionMenu = new Menu("Action");
         final MenuBar menuBar = new MenuBar();
         menuBar.add(actionMenu);
+        final Menu view = new Menu("View");
+        menuBar.add(view);
+        final MenuItem zoomIn = new MenuItem("Zoom In");
+        final MenuItem zoomOut = new MenuItem("Zoom Out");
+        view.add(zoomIn);
+        view.add(zoomOut);
+        final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        zoomIn.addActionListener(e -> {
+            final double oldScale = scale;
+            scale = Math.min(4.0, scale * 1.1);
+            if (scale != oldScale) {
+                setPreferredSize(new Dimension((int) (backgroundImage.getWidth() * scale), (int) (backgroundImage.getHeight() * scale)));
+                frame.pack();
+                frame.setSize(Math.min(screenSize.width, frame.getWidth()), Math.min(screenSize.height - 100, frame.getHeight()));
+            }
+        });
+        zoomIn.setShortcut(new MenuShortcut(KeyEvent.VK_PLUS));
+        zoomOut.addActionListener(e -> {
+            final double oldScale = scale;
+            scale = Math.max(1.0, scale / 1.1);
+            if (scale != oldScale) {
+                setPreferredSize(new Dimension((int) (backgroundImage.getWidth() * scale), (int) (backgroundImage.getHeight() * scale)));
+                frame.pack();
+                frame.setSize(Math.min(screenSize.width, frame.getWidth()), Math.min(screenSize.height - 100, frame.getHeight()));
+            }
+        });
+        zoomOut.setShortcut(new MenuShortcut(KeyEvent.VK_MINUS));
         frame.setMenuBar(menuBar);
         new Thread(() -> {
             Robot hal = null;
@@ -142,6 +172,9 @@ public abstract class Game extends JPanel {
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
+        AffineTransform at = new AffineTransform();
+        at.scale(scale, scale);
+        ((Graphics2D) g).transform(at);
         if (backgroundImage != null) {
             g.drawImage(backgroundImage, 0, 0, null);
         }
@@ -298,7 +331,7 @@ public abstract class Game extends JPanel {
      */
     @Nullable
     public Integer getNodeId(int x, int y) {
-        final Node target = MapEditor.getNode(nodes, x, y, MapEditor.DIAMETER);
+        final Node target = MapEditor.getNode(nodes, (int) (x / scale), (int) (y / scale), MapEditor.DIAMETER);
         return target == null ? null : target.getId();
     }
 
