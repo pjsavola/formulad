@@ -2,6 +2,7 @@ package gp;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
@@ -58,6 +59,7 @@ public class MapEditor extends JPanel {
     private Double previousCurveDistance;
     private boolean showDistances;
     private Dimension panelDim;
+    private double scale = 1.0;
 
     public enum Corner { NE, SE, SW, NW };
 
@@ -66,8 +68,10 @@ public class MapEditor extends JPanel {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
+                final int x = (int) (e.getX() / scale);
+                final int y = (int) (e.getY() / scale);
                 if (e.getButton() == MouseEvent.BUTTON1) {
-                    final Node node = getNode(nodes, e.getX(), e.getY(), DIAMETER);
+                    final Node node = getNode(nodes, x, y, DIAMETER);
                     if (node == null) {
                         if ((e.getModifiers() & InputEvent.SHIFT_MASK) != 0 && autoSelectMode && selectedNode != null) {
                             final String value = (String) JOptionPane.showInputDialog(
@@ -85,8 +89,8 @@ public class MapEditor extends JPanel {
                                     return;
                                 }
                                 final Point start = selectedNode.getLocation();
-                                final int dx = e.getX() - start.x;
-                                final int dy = e.getY() - start.y;
+                                final int dx = x - start.x;
+                                final int dy = y - start.y;
                                 System.out.println(dx + " " + dy + " " + (dx * dx + dy * dy));
                                 if (dx * dx + dy * dy < 16 * DIAMETER * DIAMETER * nodeCount) {
                                     // Not enough space
@@ -102,7 +106,7 @@ public class MapEditor extends JPanel {
                             }
                             return;
                         }
-                        final CreateNodeItem item = new CreateNodeItem(nextNodeId++, stroke, new Point(e.getX(), e.getY()), selectedNode);
+                        final CreateNodeItem item = new CreateNodeItem(nextNodeId++, stroke, new Point(x, y), selectedNode);
                         stack.execute(item);
                         if (autoSelectMode && selectedNode != null) {
                             select(nodes.get(nodes.size() - 1));
@@ -122,7 +126,7 @@ public class MapEditor extends JPanel {
                     }
                     repaint();
                 } else if (e.getButton() == MouseEvent.BUTTON3) {
-                    final Node node = getNode(nodes, e.getX(), e.getY(), DIAMETER / 2 + 1);
+                    final Node node = getNode(nodes, x, y, DIAMETER / 2 + 1);
                     if (node != null) {
                         if (selectedNode == node) {
                             select(null);
@@ -139,6 +143,7 @@ public class MapEditor extends JPanel {
         final Menu fileMenu = new Menu("File");
         final Menu editMenu = new Menu("Edit");
         final Menu strokeMenu = new Menu("Stroke");
+        final Menu view = new Menu("View");
         final Menu toolMenu = new Menu("Tools");
         final Menu validationMenu = new Menu("Validation");
 
@@ -221,6 +226,33 @@ public class MapEditor extends JPanel {
 
         setStroke(NodeType.STRAIGHT);
         select(null);
+
+        menuBar.add(view);
+        final MenuItem zoomIn = new MenuItem("Zoom In");
+        final MenuItem zoomOut = new MenuItem("Zoom Out");
+        view.add(zoomIn);
+        view.add(zoomOut);
+        final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        zoomIn.addActionListener(e -> {
+            final double oldScale = scale;
+            scale = Math.min(4.0, scale * 1.1);
+            if (scale != oldScale) {
+                setPreferredSize(new Dimension((int) (backgroundImage.getWidth() * scale), (int) (backgroundImage.getHeight() * scale)));
+                frame.pack();
+                frame.setSize(Math.min(screenSize.width, frame.getWidth()), Math.min(screenSize.height - 100, frame.getHeight()));
+            }
+        });
+        zoomIn.setShortcut(new MenuShortcut(KeyEvent.VK_PLUS));
+        zoomOut.addActionListener(e -> {
+            final double oldScale = scale;
+            scale = Math.max(1.0, scale / 1.1);
+            if (scale != oldScale) {
+                setPreferredSize(new Dimension((int) (backgroundImage.getWidth() * scale), (int) (backgroundImage.getHeight() * scale)));
+                frame.pack();
+                frame.setSize(Math.min(screenSize.width, frame.getWidth()), Math.min(screenSize.height - 100, frame.getHeight()));
+            }
+        });
+        zoomOut.setShortcut(new MenuShortcut(KeyEvent.VK_MINUS));
 
         menuBar.add(toolMenu);
         final MenuItem unify = new MenuItem("Canonize node identifiers");
@@ -309,6 +341,9 @@ public class MapEditor extends JPanel {
     @Override
     public void paintComponent(Graphics g) {
 	    super.paintComponent(g);
+        AffineTransform at = new AffineTransform();
+        at.scale(scale, scale);
+        ((Graphics2D) g).transform(at);
 	    if (backgroundImage != null) {
             g.drawImage(backgroundImage, 0, 0, null);
         }
