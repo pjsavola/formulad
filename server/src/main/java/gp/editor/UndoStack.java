@@ -40,4 +40,8 @@ public class UndoStack {
         }
         menuItem.setEnabled(canUndo());
     }
+
+    public void clear() {
+        items.clear();
+    }
 }

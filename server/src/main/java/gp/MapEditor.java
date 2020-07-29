@@ -421,13 +421,11 @@ public class MapEditor extends JPanel {
                     });
                 }
                 writer.println();
-                if (!attributes.isEmpty()) {
-                    for (Map.Entry<Node, Double> entry : attributes.entrySet()) {
-                        writer.print(idMap.get(entry.getKey()));
-                        writer.print(" ");
-                        writer.println(entry.getValue());
-                    }
-                }
+                nodes.stream().filter(attributes::containsKey).forEach(node -> {
+                    writer.print(idMap.get(node));
+                    writer.print(" ");
+                    writer.println(attributes.get(node));
+                });
                 nodes.stream().filter(Node::hasGarage).forEach(node -> {
                     writer.print(idMap.get(node));
                     writer.print(" ");
@@ -463,6 +461,10 @@ public class MapEditor extends JPanel {
                     JOptionPane.showConfirmDialog(this, "Wrong file format: " + selectedFile.getName(), "File Format Error", JOptionPane.DEFAULT_OPTION);
                     return;
                 }
+                select(null);
+                stack.clear();
+                showDistances = false;
+                previousCurveDistance = null;
                 infoBoxCorner = p.getRight();
                 nextNodeId += nodes.size();
                 repaint();
