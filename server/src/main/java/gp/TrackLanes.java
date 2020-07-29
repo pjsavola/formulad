@@ -9,12 +9,10 @@ import java.util.stream.Collectors;
 public class TrackLanes {
     private static class Lane {
         private final List<Node> nodes = new ArrayList<>();
-        private final Map<Node, Double> distanceMap;
         private final Map<Node, Set<Node>> collisionMap;
 
-        private Lane(Node start, Map<Node, Double> distanceMap, Map<Node, Set<Node>>  collisionMap) {
+        private Lane(Node start, Map<Node, Set<Node>> collisionMap) {
             nodes.add(start);
-            this.distanceMap = distanceMap;
             this.collisionMap = collisionMap;
         }
 
@@ -23,7 +21,7 @@ public class TrackLanes {
         }
 
         private double getDistance() {
-            return distanceMap.get(getLastNode());
+            return getLastNode().getDistance();
         }
 
         private boolean canContinueTo(Node node) {
@@ -43,10 +41,10 @@ public class TrackLanes {
             for (int i = 1; i < nodes.size(); ++i) {
                 final Node prev = nodes.get(i - 1);
                 final Node node = nodes.get(i);
-                final double distPrev = distanceMap.get(prev);
-                final double dist = distanceMap.get(node);
+                final double distPrev = prev.getDistance();
+                final double dist = node.getDistance();
                 for (Node otherNode : otherLane.nodes) {
-                    final double distOther = distanceMap.get(otherNode);
+                    final double distOther = otherNode.getDistance();
                     if (distOther <= distPrev) continue;
                     collisionMap.get(node).add(otherNode);
                     collisionMap.get(otherNode).add(node);
@@ -54,7 +52,7 @@ public class TrackLanes {
                 }
             }
             final Node firstNode = nodes.get(0);
-            if (distanceMap.get(firstNode) == 0) {
+            if (firstNode.getDistance() == 0) {
                 collisionMap.get(firstNode).add(otherLane.getLastNode());
                 collisionMap.get(otherLane.getLastNode()).add(firstNode);
             }
@@ -70,11 +68,11 @@ public class TrackLanes {
                 final boolean nextIsCurve1 = nodes.get(i + 1).isCurve();
                 final boolean nextIsCurve2 = lane.nodes.get(j + 1).isCurve();
                 if (nextIsCurve1 != inCurve && nextIsCurve2 != inCurve) {
-                    final double dist1 = distanceMap.get(nodes.get(i));
-                    final double dist2 = distanceMap.get(lane.nodes.get(j));
+                    final double dist1 = nodes.get(i).getDistance();
+                    final double dist2 = lane.nodes.get(j).getDistance();
                     final Node curveTransition1 = nodes.get(dist1 > dist2 ? i : i + 1);
                     final Node curveTransition2 = lane.nodes.get(dist1 > dist2 ? j + 1 : j);
-                    if (!distanceMap.get(curveTransition1).equals(distanceMap.get(curveTransition2))) {
+                    if (curveTransition1.getDistance() != curveTransition2.getDistance()) {
                         throw new RuntimeException("Distances not properly configured at curve: " + curveTransition1.getId() + ", " + curveTransition2.getId());
                     }
                 }
@@ -98,23 +96,26 @@ public class TrackLanes {
         return (int) (100 * distance + 0.5);
     }
 
-    public static Map<Node, Set<Node>> buildCollisionMap(Collection<Node> nodes, Map<Node, Double> distanceMap) {
+    public static Map<Node, Set<Node>> buildCollisionMap(Collection<Node> nodes) {
+        if (nodes.stream().anyMatch(node -> node.getDistance() < 0.0)) {
+            throw new RuntimeException("Some nodes have undefined distances when trying to build collision map");
+        }
         final Map<Node, Set<Node>> collisionMap = new HashMap<>();
         List<Node> sortedNodes = nodes
                 .stream()
                 .filter(n -> n.getType() != NodeType.PIT)
-                .sorted(Comparator.comparingInt(n1 -> distanceToInt(distanceMap.get(n1))))
+                .sorted(Comparator.comparingInt(n1 -> distanceToInt(n1.getDistance())))
                 .collect(Collectors.toList());
         final List<Node> finishLine = sortedNodes.subList(0, 3);
         if (finishLine.stream().anyMatch(n -> n.getType() != NodeType.FINISH)) {
             throw new RuntimeException("Finish line nodes don't have the lowest distance");
         }
         // Middle node is either 1st node (distance 0.0) or 3rd node (distance 0.5)
-        final int middleIndex = distanceMap.get(finishLine.get(0)).equals(distanceMap.get(finishLine.get(1))) ? 2 : 0;
+        final int middleIndex = finishLine.get(0).getDistance() == finishLine.get(1).getDistance() ? 2 : 0;
         final Lane[] lanes = new Lane[3];
-        lanes[0] = new Lane(finishLine.get(middleIndex == 2 ? 0 : 1), distanceMap, collisionMap);
-        lanes[1] = new Lane(finishLine.get(middleIndex), distanceMap, collisionMap);
-        lanes[2] = new Lane(finishLine.get(middleIndex == 2 ? 1 : 2), distanceMap, collisionMap);
+        lanes[0] = new Lane(finishLine.get(middleIndex == 2 ? 0 : 1), collisionMap);
+        lanes[1] = new Lane(finishLine.get(middleIndex), collisionMap);
+        lanes[2] = new Lane(finishLine.get(middleIndex == 2 ? 1 : 2), collisionMap);
 
         sortedNodes = sortedNodes.subList(3, sortedNodes.size());
         sortedNodes.forEach(node -> {

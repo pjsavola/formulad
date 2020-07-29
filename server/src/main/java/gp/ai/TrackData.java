@@ -41,15 +41,13 @@ public class TrackData implements Serializable {
         final List<Node> nodes = new ArrayList<>();
         final Map<Node, Double> attributes = new HashMap<>();
         final Map<Node, Double> gridAngleMap = new HashMap<>();
-        final Map<Node, Double> distanceMap = new HashMap<>();
         final Map<Node, Point> coordinates = new HashMap<>();
         try (InputStream is = external ? new FileInputStream(trackId) : Main.class.getResourceAsStream("/" + trackId)) {
             final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes, gridAngleMap, coordinates);
             if (result == null) {
                 return null;
             }
-            final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
-            final List<Node> grid = build(nodes, attributes, gridAngleMap, distanceMap, prevNodeMap);
+            final List<Node> grid = build(nodes, attributes, gridAngleMap);
             if (grid.size() < 10) {
                 return null;
             }
@@ -67,64 +65,49 @@ public class TrackData implements Serializable {
                 }
             });
             gridAngleMap.forEach(Node::setGridAngle);
-            distanceMap.forEach(Node::setDistance);
             coordinates.forEach(Node::setLocation);
-            final Map<Node, Set<Node>> collisionMap = TrackLanes.buildCollisionMap(nodes, distanceMap);
+            final Map<Node, Set<Node>> collisionMap = TrackLanes.buildCollisionMap(nodes);
             return new TrackData(trackId, external, nodes, grid, collisionMap, image, result.getRight());
         } catch (Exception e) {
             return null;
         }
     }
 
-    public static List<Node> build(List<Node> nodes, Map<Node, Double> attributes, Map<Node, Double> gridAngles, Map<Node, Double> distanceMap, Map<Node, List<Node>> prevNodeMap) {
-	    final Set<Node> visited = new HashSet<>();
-        final List<Node> work = new ArrayList<>();
+    public static void updateDistances(List<Node> nodes, Map<Node, Double> attributes) {
         final List<Node> edges = new ArrayList<>();
         Node center = null;
         for (Node node : nodes) {
             if (node.getType() == NodeType.FINISH) {
-                work.add(node);
-                visited.add(node);
                 if (node.childCount(NodeType.PIT) == 3) {
                     center = node;
                 } else {
                     edges.add(node);
                 }
             }
-            if (node.childCount(null) == 0) {
-                throw new RuntimeException("Track contains a dead-end: " + node.getId());
-            }
-            if (node.isCurve() && !attributes.containsKey(node)) {
-                throw new RuntimeException("There is a curve without distance attribute");
-            }
+            node.setDistance(-1.0);
         }
-        while (!work.isEmpty()) {
-            final Node node = work.remove(0);
-            node.forEachChild(next -> {
-                if (visited.add(next)) {
-                    work.add(next);
-                }
-            });
-        }
-        if (nodes.size() != visited.size()) {
-            throw new RuntimeException("Track contains unreachable nodes");
-        }
-        if (center == null) {
-            throw new RuntimeException("Finish line must have width 3");
+        if (center == null || edges.size() != 2) {
+            throw new RuntimeException("Unable to find Finish line of width 3");
         }
         if (center.hasChildren(edges)) {
-            distanceMap.put(center, 0.0);
+            center.setDistance(0.0);
+        } else if (edges.get(0).hasChild(center) && edges.get(1).hasChild(center)) {
+            center.setDistance(0.5);
+            edges.get(0).setDistance(0.0);
+            edges.get(1).setDistance(0.0);
         } else {
-            distanceMap.put(center, 0.5);
-            distanceMap.put(edges.get(0), 0.0);
-            distanceMap.put(edges.get(1), 0.0);
+            throw new RuntimeException("Finish line seems to be disjoint");
         }
-        work.add(center);
+        final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
+        final Deque<Node> work = new ArrayDeque<>();
+        work.addLast(center);
         final MutableObject<Node> pit = new MutableObject<>(null);
-        final List<Node> curves = new ArrayList<>();
+        final Deque<Node> curves = new ArrayDeque<>();
         while (!work.isEmpty()) {
-            final Node node = work.remove(0);
-            final double dist = distanceMap.get(node);
+            final Node node = work.removeFirst();
+            if (node.childCount(NodeType.PIT) == 0) {
+                throw new RuntimeException("Found dead-end node: " + node.getId());
+            }
             final Set<Node> grandChildren = new HashSet<>();
             node.forEachChild(child -> {
                 if (child.getType() == NodeType.PIT) return;
@@ -134,16 +117,16 @@ public class TrackData implements Serializable {
                 });
             });
             node.forEachChild(next -> {
-                if (distanceMap.containsKey(next)) {
+                if (next.getDistance() >= 0.0) {
                     return;
                 }
                 if (next.isCurve()) {
-                    curves.add(next);
+                    curves.addLast(next);
                     return;
                 }
                 if (next.getType() == NodeType.PIT) {
                     pit.setValue(next);
-                    distanceMap.put(next, dist - 0.4);
+                    next.setDistance(node.getDistance() - 0.4);
                     return;
                 }
                 final double distanceDelta;
@@ -157,33 +140,36 @@ public class TrackData implements Serializable {
                 } else {
                     distanceDelta = 0.5;
                 }
-                distanceMap.put(next, dist + distanceDelta);
-                work.add(next);
+                next.setDistance(node.getDistance() + distanceDelta);
+                work.addLast(next);
             });
             if (work.isEmpty() && !curves.isEmpty()) {
-                final double maxDistance = distanceMap.values().stream().mapToDouble(Double::doubleValue).max().orElse(0);
-                for (Node curve : curves) {
-                    final double relativeDistance = attributes.get(curve);
-                    distanceMap.put(curve, maxDistance + relativeDistance);
-                }
+                final double maxDistance = nodes.stream().map(Node::getDistance).mapToDouble(Double::doubleValue).max().orElse(0);
                 while (!curves.isEmpty()) {
-                    final Node curve = curves.remove(0);
+                    final Node curve = curves.removeFirst();
+                    final Double relativeDistance = attributes.get(curve);
+                    if (relativeDistance == null) {
+                        throw new RuntimeException("Found curve without distance attribute: " + curve.getId());
+                    }
+                    curve.setDistance(maxDistance + relativeDistance);
+                    if (curve.childCount(NodeType.PIT) == 0) {
+                        throw new RuntimeException("Found dead-end curve: " + curve.getId());
+                    }
                     curve.forEachChild(next -> {
-                        if (distanceMap.containsKey(next)) {
+                        if (next.getDistance() >= 0.0) {
                             return;
                         }
                         if (!next.isCurve()) {
                             work.add(next);
                             return;
                         }
-                        curves.add(next);
-                        distanceMap.put(next, attributes.get(next) + maxDistance);
+                        curves.addLast(next);
                     });
                 }
-                final double newMaxDistance = distanceMap.values().stream().mapToDouble(Double::doubleValue).max().orElse(0);
+                final double newMaxDistance = nodes.stream().map(Node::getDistance).mapToDouble(Double::doubleValue).max().orElse(0);
                 center = null;
                 if (work.isEmpty()) {
-                    throw new RuntimeException("Curve exit must have size > 0");
+                    throw new RuntimeException("Track cannot end in a curve");
                 }
                 for (Node straight : work) {
                     boolean allCurves = true;
@@ -197,7 +183,7 @@ public class TrackData implements Serializable {
                         }
                     }
                     if (allCurves) {
-                        distanceMap.put(straight, newMaxDistance);
+                        straight.setDistance(newMaxDistance);
                         for (Node otherStraight : work) {
                             if (straight.hasChild(otherStraight)) {
                                 center = otherStraight;
@@ -208,44 +194,52 @@ public class TrackData implements Serializable {
                     }
                 }
                 if (center == null) {
-                    StringBuilder sb = new StringBuilder();
+                    final StringBuilder sb = new StringBuilder();
                     work.stream().distinct().forEach(n -> sb.append(" ").append(n.getId()));
-                    throw new RuntimeException("Nodes" + sb.toString() + " might be missing edges");
+                    throw new RuntimeException("Curve exit" + sb.toString() + " might be missing edges");
                 }
                 work.clear();
-                work.add(center);
-                distanceMap.put(center, newMaxDistance + 0.5);
+                center.setDistance(newMaxDistance + 0.5);
+                work.addLast(center);
             }
         }
         final Node pitEntry = pit.getValue();
         if (pitEntry != null) {
-            prevNodeMap.get(pitEntry).stream().map(distanceMap::get).min(Double::compareTo).ifPresent(min -> distanceMap.put(pitEntry, min - 0.4));
+            prevNodeMap.get(pitEntry).stream().map(Node::getDistance).min(Double::compareTo).ifPresent(min -> pitEntry.setDistance(min - 0.4));
         }
         while (pit.getValue() != null) {
             final Node node = pit.getValue();
-            final long childCount = node.childCount(null);
+            if (node.childStream().filter(n -> n.getType() != NodeType.PIT).anyMatch(n -> n.getDistance() < 0.0)) {
+                throw new RuntimeException("Distance not defined at pit lane exit");
+            }
+            final long childCount = node.childStream().filter(n -> n.getType() == NodeType.PIT).count();
             if (childCount > 1) {
-                node.forEachChild(next -> {
-                    if (next.getType() == NodeType.PIT || !distanceMap.containsKey(next)) {
-                        throw new RuntimeException("Pit lane is branching");
-                    }
-                });
+                throw new RuntimeException("Pit lane is branching");
+            } else if (childCount == 0) {
+                if (node.childCount(NodeType.PIT) == 0) {
+                    throw new RuntimeException("Pit lane has dead-end: " + node.getId());
+                }
                 pit.setValue(null);
-            } else if (childCount < 1) {
-                throw new RuntimeException("Pit lane is dead end");
             } else {
                 node.forEachChild(next -> {
-                    distanceMap.put(next, distanceMap.get(node) + 0.01);
+                    next.setDistance(node.getDistance() + 0.01);
                     pit.setValue(next);
                 });
             }
         }
+    }
+
+    public static List<Node> build(List<Node> nodes, Map<Node, Double> attributes, Map<Node, Double> gridAngles) {
+        updateDistances(nodes, attributes);
+        nodes.stream().filter(n -> n.getDistance() < 0.0).findAny().ifPresent(n -> {
+            throw new RuntimeException("Track contains unreachable node: " + n.getId());
+        });
         final List<Node> grid = new ArrayList<>(gridAngles.keySet());
-        grid.sort((n1, n2) -> TrackLanes.distanceToInt(distanceMap.get(n2)) - TrackLanes.distanceToInt(distanceMap.get(n1)));
+        grid.sort((n1, n2) -> TrackLanes.distanceToInt(n2.getDistance()) - TrackLanes.distanceToInt(n1.getDistance()));
 
         nodes.forEach(node -> {
             final boolean isPit = node.getType() == NodeType.PIT;
-            final double distance = distanceMap.get(node);
+            final double distance = node.getDistance();
             node.forEachChild(next -> {
                 if (next.getType() == NodeType.FINISH) {
                     return;
@@ -253,9 +247,9 @@ public class TrackData implements Serializable {
                 final boolean nextIsPit = next.getType() == NodeType.PIT;
                 if (isPit && !nextIsPit) return;
                 if (nextIsPit && !isPit) return;
-                final double childDistance = distanceMap.get(next);
+                final double childDistance = next.getDistance();
                 if (childDistance <= distance) {
-                    throw new RuntimeException("Track might contain a cycle: " + node.getId() + " -> " + next.getId());
+                    throw new RuntimeException("Distance does not increase when moving forwards, track might contain a cycle: " + node.getId() + " -> " + next.getId());
                 }
             });
         });

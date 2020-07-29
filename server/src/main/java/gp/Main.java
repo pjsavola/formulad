@@ -303,7 +303,6 @@ public class Main extends Game implements Runnable {
         final List<Node> nodes = new ArrayList<>();
         final Map<Node, Double> attributes = new HashMap<>();
         final Map<Node, Double> gridAngleMap = new HashMap<>();
-        final Map<Node, Double> distanceMap = new HashMap<>();
         final Map<Node, Point> coordinates = new HashMap<>();
         try (InputStream is = external ? new FileInputStream(trackId) : Main.class.getResourceAsStream("/" + trackId)) {
             final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes, gridAngleMap, coordinates);
@@ -311,8 +310,7 @@ public class Main extends Game implements Runnable {
                 log.log(errorLevel, "Track validation failed: Proper header is missing from " + trackId);
                 return false;
             }
-            final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
-            final List<Node> grid = TrackData.build(nodes, attributes, gridAngleMap, distanceMap, prevNodeMap);
+            final List<Node> grid = TrackData.build(nodes, attributes, gridAngleMap);
             if (grid.size() < 10) {
                 log.log(errorLevel, "Track validation failed: Starting grid has less than 10 spots");
                 return false;
@@ -327,7 +325,7 @@ public class Main extends Game implements Runnable {
                 log.log(errorLevel, "Track validation failed: Background image " + imageFile + " not found");
                 return false;
             }
-            TrackLanes.buildCollisionMap(nodes, distanceMap);
+            TrackLanes.buildCollisionMap(nodes);
         } catch (IOException e) {
             log.log(errorLevel, "Track validation failed: " + e.getMessage(), e);
             e.printStackTrace();

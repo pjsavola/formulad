@@ -58,6 +58,7 @@ public class MapEditor extends JPanel {
     private final List<Node> debugNeighbors = new ArrayList<>();
     private final UndoStack stack = new UndoStack(nodes, coordinates, attributes, gridAngles);
     private Double previousCurveDistance;
+    private boolean showDistances;
 
     public enum Corner { NE, SE, SW, NW };
 
@@ -238,6 +239,10 @@ public class MapEditor extends JPanel {
         deduceDistances.setEnabled(false);
 
         menuBar.add(validationMenu);
+        final MenuItem showDistances = new MenuItem("Show Distances");
+        showDistances.addActionListener(e -> showDistances());
+        validationMenu.add(showDistances);
+
         final MenuItem validate = new MenuItem("Validate Track");
         validate.addActionListener(e -> validateTrack());
         validate.setShortcut(new MenuShortcut(KeyEvent.VK_V));
@@ -264,10 +269,8 @@ public class MapEditor extends JPanel {
                             break;
                         case KeyEvent.VK_D:
                             debugNeighbors.clear();
-                            final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
-                            final Map<Node, Double> distanceMap = new HashMap<>();
-                            TrackData.build(nodes, attributes, gridAngles, distanceMap, prevNodeMap);
-                            final Map<Node, Set<Node>> collisionMap = TrackLanes.buildCollisionMap(nodes, distanceMap);
+                            TrackData.build(nodes, attributes, gridAngles);
+                            final Map<Node, Set<Node>> collisionMap = TrackLanes.buildCollisionMap(nodes);
                             debugNeighbors.addAll(collisionMap.get(selectedNode));
                             repaint();
                             return;
@@ -311,6 +314,19 @@ public class MapEditor extends JPanel {
             g.drawImage(backgroundImage, 0, 0, null);
         }
         final Graphics2D g2d = (Graphics2D) g;
+        if (showDistances) {
+            for (Node node : nodes) {
+                final double dist = node.getDistance();
+                if (dist < 0.0) continue;
+                final Point p = coordinates.get(node);
+                final int posX = p.x - 5;
+                final int posY = p.y + 3;
+                g2d.setFont(new Font("Arial", Font.PLAIN, 8));
+                g2d.setColor(Color.BLUE);
+                g2d.drawString(Main.getDistanceString(dist), posX, posY);
+            }
+            return;
+        }
         for (Node node : nodes) {
             drawNode(g2d, node);
         }
@@ -339,6 +355,7 @@ public class MapEditor extends JPanel {
             final Point p = coordinates.get(neighbor);
             drawOval(g2d, p.x, p.y, DIAMETER, DIAMETER, true, true, Color.BLUE, 1);
         }
+
     }
 
     boolean open() {
@@ -649,10 +666,7 @@ public class MapEditor extends JPanel {
     private void unifyNodeIdentifiers() {
         try {
             select(null);
-            final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
-            final Map<Node, Double> distanceMap = new HashMap<>();
-            TrackData.build(nodes, attributes, gridAngles, distanceMap, prevNodeMap);
-            nodes.forEach(node -> node.setDistance(distanceMap.get(node)));
+            TrackData.build(nodes, attributes, gridAngles);
             nodes.sort((n1, n2) -> n2.compareTo(n1));
             final List<Node> newNodes = new ArrayList<>();
             final Map<Node, Point> newCoordinates = new HashMap<>();
@@ -688,16 +702,26 @@ public class MapEditor extends JPanel {
         }
     }
 
+    private void showDistances() {
+	    if (!showDistances) {
+	        try {
+                TrackData.updateDistances(nodes, attributes);
+            } catch (Exception e) {
+                JOptionPane.showConfirmDialog(this, "Error when calculating distances: " + e.getMessage(), "Distance calculation error", JOptionPane.DEFAULT_OPTION);
+            }
+        }
+	    showDistances = !showDistances;
+	    repaint();
+    }
+
     private void validateTrack() {
 	    try {
-            final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
-            final Map<Node, Double> distanceMap = new HashMap<>();
-            final List<Node> grid = TrackData.build(nodes, attributes, gridAngles, distanceMap, prevNodeMap);
+            final List<Node> grid = TrackData.build(nodes, attributes, gridAngles);
             if (grid.size() < 10) {
                 JOptionPane.showConfirmDialog(this, "Track validation failed: Starting grid has less than 10 spots", "Validation Error", JOptionPane.DEFAULT_OPTION);
                 return;
             }
-            TrackLanes.buildCollisionMap(nodes, distanceMap);
+            TrackLanes.buildCollisionMap(nodes);
             JOptionPane.showConfirmDialog(this, "Track seems OK", "Success", JOptionPane.DEFAULT_OPTION);
         } catch (Exception e) {
             JOptionPane.showConfirmDialog(this, "Track validation failed: " + e.getMessage(), "Validation Error", JOptionPane.DEFAULT_OPTION);
