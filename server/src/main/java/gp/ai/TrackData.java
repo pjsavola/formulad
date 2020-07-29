@@ -40,14 +40,12 @@ public class TrackData implements Serializable {
         }
         final List<Node> nodes = new ArrayList<>();
         final Map<Node, Double> attributes = new HashMap<>();
-        final Map<Node, Double> gridAngleMap = new HashMap<>();
-        final Map<Node, Point> coordinates = new HashMap<>();
         try (InputStream is = external ? new FileInputStream(trackId) : Main.class.getResourceAsStream("/" + trackId)) {
-            final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes, gridAngleMap, coordinates);
+            final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes);
             if (result == null) {
                 return null;
             }
-            final List<Node> grid = build(nodes, attributes, gridAngleMap);
+            final List<Node> grid = build(nodes, attributes);
             if (grid.size() < 10) {
                 return null;
             }
@@ -59,13 +57,6 @@ public class TrackData implements Serializable {
             if (image == null) {
                 return null;
             }
-            attributes.forEach((node, attr) -> {
-                if (node.getType() == NodeType.PIT && attr != null) {
-                    node.setGarage(true);
-                }
-            });
-            gridAngleMap.forEach(Node::setGridAngle);
-            coordinates.forEach(Node::setLocation);
             final Map<Node, Set<Node>> collisionMap = TrackLanes.buildCollisionMap(nodes);
             return new TrackData(trackId, external, nodes, grid, collisionMap, image, result.getRight());
         } catch (Exception e) {
@@ -229,14 +220,16 @@ public class TrackData implements Serializable {
         }
     }
 
-    public static List<Node> build(List<Node> nodes, Map<Node, Double> attributes, Map<Node, Double> gridAngles) {
+    public static List<Node> build(List<Node> nodes, Map<Node, Double> attributes) {
         updateDistances(nodes, attributes);
         nodes.stream().filter(n -> n.getDistance() < 0.0).findAny().ifPresent(n -> {
             throw new RuntimeException("Track contains unreachable node: " + n.getId());
         });
-        final List<Node> grid = new ArrayList<>(gridAngles.keySet());
-        grid.sort((n1, n2) -> TrackLanes.distanceToInt(n2.getDistance()) - TrackLanes.distanceToInt(n1.getDistance()));
-
+        final List<Node> grid = nodes
+                .stream()
+                .filter(node -> !Double.isNaN(node.getGridAngle()))
+                .sorted((n1, n2) -> TrackLanes.distanceToInt(n2.getDistance()) - TrackLanes.distanceToInt(n1.getDistance()))
+                .collect(Collectors.toList());
         nodes.forEach(node -> {
             final boolean isPit = node.getType() == NodeType.PIT;
             final double distance = node.getDistance();

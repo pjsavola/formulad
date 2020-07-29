@@ -25,7 +25,7 @@ public class CreateNodeItem implements UndoItem {
         this.stack = stack;
         node = new Node(id, type);
         stack.nodes.add(node);
-        stack.coordinates.put(node, point);
+        node.setLocation(point);
         if (parent != null) {
             parent.addChild(node);
         }
@@ -37,7 +37,6 @@ public class CreateNodeItem implements UndoItem {
         if (parent != null) {
             parent.removeChild(node);
         }
-        stack.coordinates.remove(node);
         stack.nodes.remove(node);
     }
 }

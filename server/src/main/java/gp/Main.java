@@ -302,15 +302,13 @@ public class Main extends Game implements Runnable {
         final Level errorLevel = external ? Level.WARNING : Level.SEVERE;
         final List<Node> nodes = new ArrayList<>();
         final Map<Node, Double> attributes = new HashMap<>();
-        final Map<Node, Double> gridAngleMap = new HashMap<>();
-        final Map<Node, Point> coordinates = new HashMap<>();
         try (InputStream is = external ? new FileInputStream(trackId) : Main.class.getResourceAsStream("/" + trackId)) {
-            final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes, gridAngleMap, coordinates);
+            final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes);
             if (result == null) {
                 log.log(errorLevel, "Track validation failed: Proper header is missing from " + trackId);
                 return false;
             }
-            final List<Node> grid = TrackData.build(nodes, attributes, gridAngleMap);
+            final List<Node> grid = TrackData.build(nodes, attributes);
             if (grid.size() < 10) {
                 log.log(errorLevel, "Track validation failed: Starting grid has less than 10 spots");
                 return false;

@@ -298,7 +298,7 @@ public abstract class Game extends JPanel {
      */
     @Nullable
     public Integer getNodeId(int x, int y) {
-        final Node target = MapEditor.getNode(nodes, null, x, y, MapEditor.DIAMETER);
+        final Node target = MapEditor.getNode(nodes, x, y, MapEditor.DIAMETER);
         return target == null ? null : target.getId();
     }
 

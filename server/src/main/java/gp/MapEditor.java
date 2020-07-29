@@ -39,8 +39,6 @@ public class MapEditor extends JPanel {
     private int nextNodeId;
     private final List<Node> nodes = new ArrayList<>();
     private final Map<Node, Double> attributes = new HashMap<>();
-    private final Map<Node, Double> gridAngles = new HashMap<>();
-    private final Map<Node, Point> coordinates = new HashMap<>();
     private Node selectedNode;
     private BufferedImage backgroundImage;
     private String backgroundImageFileName;
@@ -56,7 +54,7 @@ public class MapEditor extends JPanel {
     private final MenuItem setGridAngle;
 
     private final List<Node> debugNeighbors = new ArrayList<>();
-    private final UndoStack stack = new UndoStack(nodes, coordinates, attributes, gridAngles);
+    private final UndoStack stack = new UndoStack(nodes, attributes);
     private Double previousCurveDistance;
     private boolean showDistances;
 
@@ -68,7 +66,7 @@ public class MapEditor extends JPanel {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getButton() == MouseEvent.BUTTON1) {
-                    final Node node = getNode(nodes, coordinates, e.getX(), e.getY(), DIAMETER);
+                    final Node node = getNode(nodes, e.getX(), e.getY(), DIAMETER);
                     if (node == null) {
                         if ((e.getModifiers() & InputEvent.SHIFT_MASK) != 0 && autoSelectMode && selectedNode != null) {
                             final String value = (String) JOptionPane.showInputDialog(
@@ -85,7 +83,7 @@ public class MapEditor extends JPanel {
                                 if (nodeCount < 1) {
                                     return;
                                 }
-                                final Point start = coordinates.get(selectedNode);
+                                final Point start = selectedNode.getLocation();
                                 final int dx = e.getX() - start.x;
                                 final int dy = e.getY() - start.y;
                                 System.out.println(dx + " " + dy + " " + (dx * dx + dy * dy));
@@ -123,7 +121,7 @@ public class MapEditor extends JPanel {
                     }
                     repaint();
                 } else if (e.getButton() == MouseEvent.BUTTON3) {
-                    final Node node = getNode(nodes, coordinates, e.getX(), e.getY(), DIAMETER / 2 + 1);
+                    final Node node = getNode(nodes, e.getX(), e.getY(), DIAMETER / 2 + 1);
                     if (node != null) {
                         if (selectedNode == node) {
                             select(null);
@@ -269,7 +267,7 @@ public class MapEditor extends JPanel {
                             break;
                         case KeyEvent.VK_D:
                             debugNeighbors.clear();
-                            TrackData.build(nodes, attributes, gridAngles);
+                            TrackData.build(nodes, attributes);
                             final Map<Node, Set<Node>> collisionMap = TrackLanes.buildCollisionMap(nodes);
                             debugNeighbors.addAll(collisionMap.get(selectedNode));
                             repaint();
@@ -277,7 +275,7 @@ public class MapEditor extends JPanel {
                         default:
                             return;
                     }
-                    final Point p = coordinates.get(selectedNode);
+                    final Point p = selectedNode.getLocation();
                     p.x += delta.x;
                     p.y += delta.y;
                     repaint();
@@ -318,7 +316,7 @@ public class MapEditor extends JPanel {
             for (Node node : nodes) {
                 final double dist = node.getDistance();
                 if (dist < 0.0) continue;
-                final Point p = coordinates.get(node);
+                final Point p = node.getLocation();
                 final int posX = p.x - 5;
                 final int posY = p.y + 3;
                 g2d.setFont(new Font("Arial", Font.PLAIN, 8));
@@ -334,7 +332,7 @@ public class MapEditor extends JPanel {
         final int x = UIUtil.getX(infoBoxCorner, this, 250);
         final int y = UIUtil.getY(infoBoxCorner, this, 5 + 15 * 10);
         if (selectedNode != null) {
-            final Point p = coordinates.get(selectedNode);
+            final Point p = selectedNode.getLocation();
             drawOval(g2d, p.x, p.y, DIAMETER + 2, DIAMETER + 2, true, false, Color.YELLOW, 1);
             final Double attr = attributes.get(selectedNode);
             if (attr != null) {
@@ -352,7 +350,7 @@ public class MapEditor extends JPanel {
         g.drawString(modeStr, x + 20, y + 15);
         drawArcs(g2d, nodes);
         for (Node neighbor : debugNeighbors) {
-            final Point p = coordinates.get(neighbor);
+            final Point p = neighbor.getLocation();
             drawOval(g2d, p.x, p.y, DIAMETER, DIAMETER, true, true, Color.BLUE, 1);
         }
 
@@ -404,7 +402,7 @@ public class MapEditor extends JPanel {
                 final Map<Node, Integer> idMap = new HashMap<>();
                 for (int i = 0; i < nodes.size(); i++) {
                     final Node node = nodes.get(i);
-                    final Point p = coordinates.get(node);
+                    final Point p = node.getLocation();
                     idMap.put(node, i);
                     writer.print(i);
                     writer.print(" ");
@@ -430,15 +428,19 @@ public class MapEditor extends JPanel {
                         writer.println(entry.getValue());
                     }
                 }
-                if (!gridAngles.isEmpty()) {
+                nodes.stream().filter(Node::hasGarage).forEach(node -> {
+                    writer.print(idMap.get(node));
+                    writer.print(" ");
+                    writer.println(1.0);
+                });
+                if (nodes.stream().anyMatch(node -> !Double.isNaN(node.getGridAngle()))) {
                     writer.println();
-                    for (Map.Entry<Node, Double> entry : gridAngles.entrySet()) {
-                        writer.print(idMap.get(entry.getKey()));
+                    nodes.stream().filter(node -> !Double.isNaN(node.getGridAngle())).forEach(node -> {
+                        writer.print(idMap.get(node));
                         writer.print(" ");
-                        writer.println(entry.getValue());
-                    }
+                        writer.println(node.getGridAngle());
+                    });
                 }
-
             } catch (FileNotFoundException | UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
@@ -456,7 +458,7 @@ public class MapEditor extends JPanel {
         if (result == JFileChooser.APPROVE_OPTION) {
             final File selectedFile = fileChooser.getSelectedFile();
             try (FileInputStream fis = new FileInputStream(selectedFile)) {
-                final Pair<String, Corner> p = loadNodes(fis, nodes, attributes, gridAngles, coordinates);
+                final Pair<String, Corner> p = loadNodes(fis, nodes, attributes);
                 if (p == null) {
                     JOptionPane.showConfirmDialog(this, "Wrong file format: " + selectedFile.getName(), "File Format Error", JOptionPane.DEFAULT_OPTION);
                     return;
@@ -494,7 +496,7 @@ public class MapEditor extends JPanel {
         return null;
     }
 
-    public static Pair<String, Corner> loadNodes(InputStream map, Collection<Node> nodes, Map<Node, Double> attributes, Map<Node, Double> gridAngles, Map<Node, Point> coordinates) {
+    public static Pair<String, Corner> loadNodes(InputStream map, Collection<Node> nodes, Map<Node, Double> attributes) {
 	    Pair<String, Corner> result = null;
         try (InputStreamReader ir = new InputStreamReader(map); final BufferedReader br = new BufferedReader(ir)) {
             final String headerLine = br.readLine();
@@ -540,11 +542,15 @@ public class MapEditor extends JPanel {
             nodes.clear();
             nodes.addAll(idMap.values());
             attributes.clear();
-            attributes.putAll(attrMap);
-            gridAngles.clear();
-            gridAngles.putAll(gridAngleMap);
-            coordinates.clear();
-            coordinates.putAll(coordMap);
+            attrMap.forEach((node, attr) -> {
+                if (node.getType() == NodeType.PIT) {
+                    node.setGarage(true);
+                } else if (node.isCurve()) {
+                    attributes.put(node, attr);
+                }
+            });
+            gridAngleMap.forEach(Node::setGridAngle);
+            coordMap.forEach(Node::setLocation);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -554,12 +560,8 @@ public class MapEditor extends JPanel {
     private void setAttribute() {
 	    if (selectedNode != null) {
 	        if (selectedNode.getType() == NodeType.PIT) {
-	            if (attributes.containsKey(selectedNode)) {
-	                attributes.remove(selectedNode);
-                } else {
-	                attributes.put(selectedNode, 1.0);
-                }
-            } else {
+	            selectedNode.setGarage(!selectedNode.hasGarage());
+            } else if (selectedNode.isCurve()) {
 	            Double initialValue = attributes.get(selectedNode);
 	            if (initialValue == null && previousCurveDistance != null) {
 	                initialValue = previousCurveDistance + 0.5;
@@ -597,6 +599,7 @@ public class MapEditor extends JPanel {
 
     private void setGridAngle() {
         if (selectedNode != null) {
+            final Double initialValue = Double.isNaN(selectedNode.getGridAngle()) ? null : selectedNode.getGridAngle();
             final Object attr = JOptionPane.showInputDialog(
                     this,
                     "Set Grid Angle:",
@@ -604,12 +607,12 @@ public class MapEditor extends JPanel {
                     JOptionPane.PLAIN_MESSAGE,
                     null,
                     null,
-                    gridAngles.get(selectedNode)
+                    initialValue
             );
             if (attr != null && !attr.toString().isEmpty()) {
-                gridAngles.put(selectedNode, Double.valueOf(attr.toString()));
+                selectedNode.setGridAngle(Double.valueOf(attr.toString()));
             } else {
-                gridAngles.remove(selectedNode);
+                selectedNode.setGridAngle(Double.NaN);
             }
             repaint();
         }
@@ -625,7 +628,8 @@ public class MapEditor extends JPanel {
                 final int dx = Integer.parseInt(x.getText());
                 final int dy = Integer.parseInt(y.getText());
                 if (dx != 0 || dy != 0) {
-                    coordinates.values().forEach(p -> {
+                    nodes.forEach(node -> {
+                        final Point p = node.getLocation();
                         p.x += dx;
                         p.y += dy;
                     });
@@ -651,7 +655,8 @@ public class MapEditor extends JPanel {
             try {
                 final double newScale = Double.valueOf(attr.toString());
                 if (newScale != 1.0 && newScale > 0) {
-                    coordinates.values().forEach(p -> {
+                    nodes.forEach(node -> {
+                        final Point p = node.getLocation();
                         p.x *= newScale;
                         p.y *= newScale;
                     });
@@ -666,7 +671,7 @@ public class MapEditor extends JPanel {
     private void unifyNodeIdentifiers() {
         try {
             select(null);
-            TrackData.build(nodes, attributes, gridAngles);
+            TrackData.build(nodes, attributes);
             nodes.sort((n1, n2) -> n2.compareTo(n1));
             final List<Node> newNodes = new ArrayList<>();
             final Map<Node, Point> newCoordinates = new HashMap<>();
@@ -674,13 +679,12 @@ public class MapEditor extends JPanel {
             final Map<Node, Double> newGridAngles = new HashMap<>();
             final Map<Node, Node> oldToNew = new HashMap<>();
             for (Node node : nodes) {
-                final Point point = coordinates.get(node);
                 final Double attr = attributes.get(node);
-                final Double angle = gridAngles.get(node);
                 final Node newNode = new Node(newNodes.size(), node.getType());
-                if (point != null) newCoordinates.put(newNode, point);
+                newNode.setGarage(node.hasGarage());
+                newNode.setLocation(node.getLocation());
+                newNode.setGridAngle(node.getGridAngle());
                 if (attr != null) newAttributes.put(newNode, attr);
-                if (angle != null) newGridAngles.put(newNode, angle);
                 oldToNew.put(node, newNode);
                 newNodes.add(newNode);
             }
@@ -690,12 +694,8 @@ public class MapEditor extends JPanel {
             oldToNew.clear();
             nodes.clear();
             nodes.addAll(newNodes);
-            coordinates.clear();
-            coordinates.putAll(newCoordinates);
             attributes.clear();
             attributes.putAll(newAttributes);
-            gridAngles.clear();
-            gridAngles.putAll(newGridAngles);
             repaint();
         } catch (Exception e) {
             JOptionPane.showConfirmDialog(this, "Failed to unify node identifiers: " + e.getMessage(), "Validation Error", JOptionPane.DEFAULT_OPTION);
@@ -716,7 +716,7 @@ public class MapEditor extends JPanel {
 
     private void validateTrack() {
 	    try {
-            final List<Node> grid = TrackData.build(nodes, attributes, gridAngles);
+            final List<Node> grid = TrackData.build(nodes, attributes);
             if (grid.size() < 10) {
                 JOptionPane.showConfirmDialog(this, "Track validation failed: Starting grid has less than 10 spots", "Validation Error", JOptionPane.DEFAULT_OPTION);
                 return;
@@ -761,15 +761,15 @@ public class MapEditor extends JPanel {
             default:
                 throw new RuntimeException("Unknown node type");
         }
-        final Point p = coordinates.get(node);
-        final Double angle = gridAngles.get(node);
-        if (angle == null) {
+        final Point p = node.getLocation();
+        final double angle = node.getGridAngle();
+        if (Double.isNaN(angle)) {
             drawOval(g2d, p.x, p.y, DIAMETER, DIAMETER, true, true, color, 0);
         } else {
             Player.draw(g2d, p.x, p.y, angle / 180 * Math.PI, Color.BLUE, Color.BLACK, 1.0);
         }
         final Double attr = attributes.get(node);
-        if (attr != null) {
+        if (attr != null || node.hasGarage()) {
             // Draw attribute indicator
             drawOval(g2d, p.x, p.y, 4, 4, true, true, Color.YELLOW, 0);
         }
@@ -778,9 +778,9 @@ public class MapEditor extends JPanel {
     private void drawArcs(Graphics2D g2d, Collection<Node> nodes) {
         final Color tmpC = g2d.getColor();
         for (Node node : nodes) {
-            final Point p = coordinates.get(node);
+            final Point p = node.getLocation();
             node.forEachChild(child -> {
-                final Point np = coordinates.get(child);
+                final Point np = child.getLocation();
                 final int midX = (p.x + np.x) / 2;
                 final int midY = (p.y + np.y) / 2;
                 g2d.setColor(ARC_BEGIN);
@@ -812,9 +812,9 @@ public class MapEditor extends JPanel {
     }
 
     @Nullable
-    public static Node getNode(Collection<Node> nodes, Map<Node, Point> coordinates, int x, int y, int threshold) {
+    public static Node getNode(Collection<Node> nodes, int x, int y, int threshold) {
         for (Node node : nodes) {
-            final Point point = coordinates == null ? node.getLocation() : coordinates.get(node);
+            final Point point = node.getLocation();
             if (Math.hypot(x - point.x, y - point.y) < threshold) {
                 return node;
             }

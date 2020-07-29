@@ -15,8 +15,8 @@ public final class Node implements Serializable {
     private final NodeType type;
     private final Set<Node> nextNodes = new HashSet<>();
     private boolean garage;
-    private double distance;
-    private transient double gridAngle; // Client does not need this
+    private double distance = -1.0;
+    private transient double gridAngle = Double.NaN; // Client does not need this
     private Point point;
 
     public Node(int id, NodeType type) {

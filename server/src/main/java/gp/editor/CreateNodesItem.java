@@ -38,7 +38,7 @@ public class CreateNodesItem implements UndoItem {
             final Node newNode = new Node(firstId + i, type);
             stack.nodes.add(newNode);
             final Point p = new Point(start.x + (i + 1) * dx / count, start.y + (i + 1) * dy / count);
-            stack.coordinates.put(newNode, p);
+            newNode.setLocation(p);
             if (!nodes.isEmpty()) {
                 nodes.get(nodes.size() - 1).addChild(newNode);
             }
@@ -51,7 +51,6 @@ public class CreateNodesItem implements UndoItem {
     @Override
     public void undo() {
         parent.removeChild(nodes.get(0));
-        nodes.forEach(stack.coordinates::remove);
         stack.nodes.removeAll(nodes);
     }
 
