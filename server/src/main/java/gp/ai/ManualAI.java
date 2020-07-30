@@ -4,9 +4,11 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 
 import javax.swing.JFrame;
 
+import gp.Main;
 import gp.Profile;
 import gp.Game;
 import gp.model.*;
@@ -26,24 +28,16 @@ public class ManualAI implements AI {
     private static final int listenerDelay = 50;
     private final Profile profile;
     private boolean initialStandingsReceived;
-    private String trackId;
-    private Map<Integer, Node> nodeMap;
+    private final TrackData data;
+
     public volatile boolean interrupted;
 
-    public ManualAI(AI ai, JFrame frame, Game game, Profile profile) {
+    public ManualAI(AI ai, JFrame frame, Game game, Profile profile, TrackData data) {
         this.ai = ai;
         this.frame = frame;
         this.game = game;
         this.profile = profile;
-    }
-
-    @Override
-    public NameAtStart startGame(Track track) {
-        trackId = track.getGame().getGameId();
-        this.playerId = track.getPlayer().getPlayerId();
-        nodeMap = AIUtil.buildNodeMap(track.getTrack().getNodes(), track.getTrack().getEdges());
-        if (profile == null) return ai.startGame(track);
-        return ai.startGame(track).name(profile.getName()).id(profile.getId());
+        this.data = data;
     }
 
     @Override
@@ -52,7 +46,7 @@ public class ManualAI implements AI {
             if (playerId.equals(playerState.getPlayerId())) {
                 hitpoints = playerState.getHitpoints();
                 gear = playerState.getGear();
-                location = nodeMap.get(playerState.getNodeId());
+                location = data.getNodes().get(playerState.getNodeId());
                 break;
             }
         }
@@ -226,12 +220,20 @@ public class ManualAI implements AI {
         if (notification instanceof FinalStandings) {
             final FinalStandings standings = (FinalStandings) notification;
             if (!initialStandingsReceived) {
-                profile.standingsReceived(standings.getStats(), trackId, standings.isSingleRace());
+                profile.standingsReceived(standings.getStats(), data.getTrackId(), standings.isSingleRace());
                 profile.getManager().saveProfiles();
                 initialStandingsReceived = true;
             } else {
                 profile.standingsReceived(standings.getStats(), null, standings.isSingleRace());
                 profile.getManager().saveProfiles();
+            }
+        } else if (notification instanceof CreatedPlayerNotification) {
+            final CreatedPlayerNotification createdPlayer = (CreatedPlayerNotification) notification;
+            if (createdPlayer.isControlled()) {
+                if (playerId != null) {
+                    Main.log.log(Level.SEVERE, "AI assigneed to control multiple players");
+                }
+                playerId = createdPlayer.getPlayerId();
             }
         }
     }

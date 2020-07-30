@@ -16,7 +16,7 @@ public class Client extends Game implements Runnable {
     private final Socket socket;
     private final ObjectOutputStream oos;
     private final ObjectInputStream ois;
-    private final AI ai;
+    private AI ai;
     private Player current;
     private Player controlledPlayer;
     private final Map<String, Player> playerMap = new HashMap<>();
@@ -30,8 +30,6 @@ public class Client extends Game implements Runnable {
         this.socket = socket;
         oos = new ObjectOutputStream(socket.getOutputStream());
         ois = new ObjectInputStream(socket.getInputStream()); // This may block if connection cannot be established!
-        final AI backupAI = new GreatAI();
-        ai = new ManualAI(backupAI, frame, this, profile);
         setPreferredSize(new Dimension(400, 200));
     }
 
@@ -64,10 +62,7 @@ public class Client extends Game implements Runnable {
                     break;
                 } else {
                     try {
-                        if (request instanceof Track) {
-                            final Track track = (Track) request;
-                            oos.writeObject(ai.startGame(track));
-                        } else if (request instanceof GameState) {
+                        if (request instanceof GameState) {
                             final GameState gameState = (GameState) request;
                             roll = null;
                             setCurrent(controlledPlayer);
@@ -81,6 +76,8 @@ public class Client extends Game implements Runnable {
                             try {
                                 waiting = true;
                                 initTrack((TrackData) request);
+                                final AI backupAI = new GreatAI(data);
+                                ai = new ManualAI(backupAI, frame, this, profile, data);
                             } catch (Exception e) {
                                 final String msg = "Error when receiving track data: " + e.getMessage();
                                 Main.log.log(Level.SEVERE, msg, e);
@@ -184,7 +181,7 @@ public class Client extends Game implements Runnable {
         player.setName(notification.getName());
         player.setHitpoints(notification.getHitpoints());
         player.setLapsRemaining(notification.getLapsRemaining());
-        if (!notification.isOpponent()) {
+        if (notification.isControlled()) {
             if (controlledPlayer != null) {
                 Main.log.log(Level.SEVERE, "Client assigneed to control multiple players");
             }

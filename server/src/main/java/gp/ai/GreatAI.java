@@ -1,43 +1,29 @@
 package gp.ai;
 
 import java.util.*;
+import java.util.logging.Level;
 
-import gp.model.GameState;
-import gp.model.Moves;
-import gp.model.NameAtStart;
-import gp.model.PlayerState;
-import gp.model.SelectedIndex;
-import gp.model.Track;
-import gp.model.ValidMove;
+import gp.Main;
+import gp.model.*;
 
 public class GreatAI implements AI {
 
     private String playerId;
-    private Map<Integer, Node> nodeMap;
+    private final TrackData data;
     private Map<String, PlayerState> playerMap;
-    private Map<Node, List<Node>> prevNodeMap;
-    private Set<Node> garageNodes = new HashSet<>();
     private Node location;
     private PlayerState player;
     private int gear;
     private Random random = new Random();
     public boolean debug;
 
-    public void init(Track track, GameState gameState, int selectedGear) {
-        startGame(track);
-        selectGear(gameState);
-        gear = selectedGear;
+    public GreatAI(TrackData data) {
+        this.data = data;
     }
 
-    @Override
-    public NameAtStart startGame(Track track) {
-        playerId = track.getPlayer().getPlayerId();
-        nodeMap = AIUtil.buildNodeMap(track.getTrack().getNodes(), track.getTrack().getEdges());
-        prevNodeMap = AIUtil.buildPrevNodeMap(nodeMap.values());
-        track.getTrack().getGarageNodes().forEach(node -> {
-            garageNodes.add(nodeMap.get(node.getNodeId()));
-        });
-        return new NameAtStart().name("Great").id(UUID.randomUUID());
+    public void init(GameState gameState, int selectedGear) {
+        selectGear(gameState);
+        gear = selectedGear;
     }
 
     @Override
@@ -47,7 +33,7 @@ public class GreatAI implements AI {
         if (player == null) {
             throw new RuntimeException("No data sent for player: " + playerId);
         }
-        location = nodeMap.get(player.getNodeId());
+        location = data.getNodes().get(player.getNodeId());
         if (location == null) {
             throw new RuntimeException("Unknown location for player: " + playerId);
         }
@@ -269,7 +255,7 @@ public class GreatAI implements AI {
     private int getMinDistance(List<Integer> bestIndices, List<ValidMove> moves, Map<Node, Integer> distances) {
         return bestIndices
             .stream()
-            .map(index -> distances.get(nodeMap.get(moves.get(index).getNodeId())))
+            .map(index -> distances.get(data.getNodes().get(moves.get(index).getNodeId())))
             .mapToInt(Integer::intValue)
             .min()
             .orElse(0);
@@ -278,7 +264,7 @@ public class GreatAI implements AI {
     private int getMaxDistance(List<Integer> bestIndices, List<ValidMove> moves, Map<Node, Integer> distances) {
         return bestIndices
             .stream()
-            .map(index -> distances.get(nodeMap.get(moves.get(index).getNodeId())))
+            .map(index -> distances.get(data.getNodes().get(moves.get(index).getNodeId())))
             .mapToInt(Integer::intValue)
             .max()
             .orElse(0);
@@ -287,7 +273,7 @@ public class GreatAI implements AI {
     private boolean hasCurve(List<Integer> bestIndices, List<ValidMove> moves) {
         return bestIndices
             .stream()
-            .map(i -> nodeMap.get(moves.get(i).getNodeId()))
+            .map(i -> data.getNodes().get(moves.get(i).getNodeId()))
             .filter(Node::isCurve)
             .count() > 0;
     }
@@ -296,7 +282,7 @@ public class GreatAI implements AI {
         final Iterator<Integer> it = bestIndices.iterator();
         while (it.hasNext()) {
             final int i = it.next();
-            final Node node = nodeMap.get(moves.get(i).getNodeId());
+            final Node node = data.getNodes().get(moves.get(i).getNodeId());
             if (!node.isCurve()) {
                 it.remove();
             }
@@ -341,7 +327,7 @@ public class GreatAI implements AI {
                 final Iterator<Integer> it2 = bestIndices.iterator();
                 while (it2.hasNext()) {
                     final int i = it2.next();
-                    final Node node = nodeMap.get(moves.get(i).getNodeId());
+                    final Node node = data.getNodes().get(moves.get(i).getNodeId());
                     final int distance = distances.get(node);
                     if (distance > minDistanceToNextCurve && distance > minDistance) {
                         it2.remove();
@@ -352,21 +338,20 @@ public class GreatAI implements AI {
         }
 
         // Consider pitting
-        boolean canPit = bestIndices.stream().map(i -> nodeMap.get(moves.get(i).getNodeId())).anyMatch(n -> n.getType() == NodeType.PIT);
+        boolean canPit = bestIndices.stream().map(i -> data.getNodes().get(moves.get(i).getNodeId())).anyMatch(n -> n.getType() == NodeType.PIT);
         if (canPit) {
-            final boolean mustPit = bestIndices.stream().map(i -> nodeMap.get(moves.get(i).getNodeId())).noneMatch(n -> n.getType() != NodeType.PIT);
+            final boolean mustPit = bestIndices.stream().map(i -> data.getNodes().get(moves.get(i).getNodeId())).noneMatch(n -> n.getType() != NodeType.PIT);
             if (!mustPit) {
                 // There is actually a choice
-                final boolean canPitNow = bestIndices.stream().map(i -> nodeMap.get(moves.get(i).getNodeId())).anyMatch(n -> n.getType() == NodeType.PIT && garageNodes.contains(n));
+                final boolean canPitNow = bestIndices.stream().map(i -> data.getNodes().get(moves.get(i).getNodeId())).anyMatch(n -> n.getType() == NodeType.PIT && n.hasGarage());
                 if (canPitNow) {
                     final boolean lowHitpoints = player.getHitpoints() <= 12;
                     final Iterator<Integer> it = bestIndices.iterator();
                     while (it.hasNext()) {
                         final int i = it.next();
-                        final Node node = nodeMap.get(moves.get(i).getNodeId());
-                        final boolean isGarage = garageNodes.contains(node);
+                        final Node node = data.getNodes().get(moves.get(i).getNodeId());
                         final boolean isPit = node.getType() == NodeType.PIT;
-                        if (isPit && !isGarage) {
+                        if (isPit && !node.hasGarage()) {
                             // Remove all pit nodes with no garage
                             it.remove();
                         } else if (lowHitpoints) {
@@ -384,7 +369,7 @@ public class GreatAI implements AI {
                     final Iterator<Integer> it = bestIndices.iterator();
                     while (it.hasNext()) {
                         final int i = it.next();
-                        final Node node = nodeMap.get(moves.get(i).getNodeId());
+                        final Node node = data.getNodes().get(moves.get(i).getNodeId());
                         final boolean isPit = node.getType() == NodeType.PIT;
                         if (lowHitpoints) {
                             if (!isPit) {
@@ -402,7 +387,7 @@ public class GreatAI implements AI {
 
         // Can access curve and need to stop more than once after this move -> enter curve but minimize distance
         if (hasCurve(bestIndices, moves)) {
-            final Node curve = recurseUntil(nodeMap.get(player.getNodeId()), false);
+            final Node curve = recurseUntil(data.getNodes().get(player.getNodeId()), false);
             final int stopCount = curve.getStopCount();
             if (stopCount > player.getStops() + 1) {
                 removeNonCurves(bestIndices, moves);
@@ -411,7 +396,7 @@ public class GreatAI implements AI {
                 final Iterator<Integer> it = bestIndices.iterator();
                 while (it.hasNext()) {
                     final int i = it.next();
-                    final Node node = nodeMap.get(moves.get(i).getNodeId());
+                    final Node node = data.getNodes().get(moves.get(i).getNodeId());
                     final int distance = distances.get(node);
                     if (distance > minDistance) {
                         it.remove();
@@ -428,7 +413,7 @@ public class GreatAI implements AI {
         final Iterator<Integer> it = bestIndices.iterator();
         while (it.hasNext()) {
             final int i = it.next();
-            final Node node = nodeMap.get(moves.get(i).getNodeId());
+            final Node node = data.getNodes().get(moves.get(i).getNodeId());
             final int distance = distances.get(node);
             if (distance < maxDistance) {
                 it.remove();
@@ -443,14 +428,14 @@ public class GreatAI implements AI {
             // Priority 3: Minimize distance to next curve
             final int minDistance = bestIndices
                 .stream()
-                .map(index -> getMinDistanceToNextCurve(nodeMap.get(moves.get(index).getNodeId())))
+                .map(index -> getMinDistanceToNextCurve(data.getNodes().get(moves.get(index).getNodeId())))
                 .mapToInt(Integer::intValue)
                 .min()
                 .orElse(0);
             final Iterator<Integer> it2 = bestIndices.iterator();
             while (it2.hasNext()) {
                 final int i = it2.next();
-                final Node node = nodeMap.get(moves.get(i).getNodeId());
+                final Node node = data.getNodes().get(moves.get(i).getNodeId());
                 final int distance = getMinDistanceToNextCurve(node);
                 if (distance > minDistance) {
                     it2.remove();
@@ -483,6 +468,19 @@ public class GreatAI implements AI {
             }
         }
         return distances;
+    }
+
+    @Override
+    public void notify(Object notification) {
+        if (notification instanceof CreatedPlayerNotification) {
+            final CreatedPlayerNotification createdPlayer = (CreatedPlayerNotification) notification;
+            if (createdPlayer.isControlled()) {
+                if (playerId != null) {
+                    Main.log.log(Level.SEVERE, "AI assigneed to control multiple players");
+                }
+                playerId = createdPlayer.getPlayerId();
+            }
+        }
     }
 
     private void debug(String msg) {

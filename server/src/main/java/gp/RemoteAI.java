@@ -73,6 +73,7 @@ public class RemoteAI implements AI {
 
     public ProfileMessage getProfile(TrackData data) {
         if (oos != null && ois != null) {
+            fallback = new GreatAI(data);
             try {
                 oos.writeObject(data);
                 Object response;
@@ -83,29 +84,6 @@ public class RemoteAI implements AI {
             } catch (IOException | ClassNotFoundException e) {
                 close();
             }
-        }
-        return null;
-    }
-
-    @Override
-    public NameAtStart startGame(Track track) {
-        this.track = track; // fallback AI might need this
-        if (oos != null && ois != null) {
-            try {
-                oos.writeObject(track);
-                Object response;
-                do {
-                    response = getResponse();
-                } while (!(response instanceof NameAtStart));
-                return (NameAtStart) response;
-            } catch (IOException | ClassNotFoundException e) {
-                close();
-                fallback = new GreatAI();
-                Main.log.log(Level.WARNING, "Lost connection to client, using fallback AI instead", e);
-            }
-        }
-        if (fallback != null) {
-            return fallback.startGame(track);
         }
         return null;
     }
@@ -124,8 +102,6 @@ public class RemoteAI implements AI {
                 return (Gear) response;
             } catch (IOException | ClassNotFoundException e) {
                 close();
-                fallback = new GreatAI();
-                fallback.startGame(track);
                 Main.log.log(Level.WARNING, "Lost connection to client, using fallback AI instead", e);
             }
         }
@@ -147,8 +123,7 @@ public class RemoteAI implements AI {
                 return (SelectedIndex) response;
             } catch (IOException | ClassNotFoundException e) {
                 close();
-                fallback = new GreatAI();
-                fallback.init(track, gameState, gear);
+                fallback.init(gameState, gear);
                 Main.log.log(Level.WARNING, "Lost connection to client, using fallback AI instead", e);
             }
         }

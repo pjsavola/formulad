@@ -53,7 +53,6 @@ public class Main extends Game implements Runnable {
     private boolean stopped;
     private boolean interrupted;
     private boolean enableTimeout;
-    private final int initTimeoutInMillis;
     private final int gearTimeoutInMillis;
     private final int moveTimeoutInMillis;
     private final Set<LocalPlayer> disconnectedPlayers = new HashSet<>();
@@ -88,7 +87,6 @@ public class Main extends Game implements Runnable {
         final long seed = params.seed == null ? new Random().nextLong() : params.seed;
         this.rng = new Random(seed);
         log.info("Initializing RNG with seed " + seed);
-        initTimeoutInMillis = params.initTimeoutInMillis;
         gearTimeoutInMillis = params.gearTimeoutInMillis;
         moveTimeoutInMillis = params.moveTimeoutInMillis;
         allPlayers = new ArrayList<>();
@@ -113,10 +111,10 @@ public class Main extends Game implements Runnable {
             final ProfileMessage profile = slot.getProfile();
             if (profile != null) {
                 if (profile.isAi()) {
-                    aiToProfile.put(new GreatAI(), profile);
+                    aiToProfile.put(new GreatAI(data), profile);
                 }
                 else if (profile.isLocal()) {
-                    aiToProfile.put(new ManualAI(new GreatAI(), frame, this, profile.originalProfile), profile);
+                    aiToProfile.put(new ManualAI(new GreatAI(data), frame, this, profile.originalProfile, data), profile);
                 }
                 else if (lobby != null) {
                     final RemoteAI client = lobby.getClient(profile.getId());
@@ -141,7 +139,7 @@ public class Main extends Game implements Runnable {
         }
         aiMap.forEach((player, ai) -> {
             notifications.forEach(notification -> {
-                ai.notify(notification.asOpponent(!notification.getPlayerId().equals(player.getId())));
+                ai.notify(notification.controlled(notification.getPlayerId().equals(player.getId())));
             });
         });
         immutablePlayerMap = new HashMap<>(aiToProfile.size());
@@ -158,18 +156,6 @@ public class Main extends Game implements Runnable {
         final LocalPlayer player = new LocalPlayer(playerId, startNode, startNode.getGridAngle(), laps, this, leeway, ai.getValue().getColor1(), ai.getValue().getColor2());
         current = player;
         log.info("Initializing player " + playerId);
-        NameAtStart nameResponse = getAiInput(() -> ai.getKey().startGame(track), initTimeoutInMillis);
-        /*
-        final String name;
-        final UUID id;
-        if (nameResponse == null) {
-            log.warning("Received no name from player " + playerId + ", using name Unresponsive instead");
-            name = "Unresponsive";
-            id = UUID.randomUUID();
-        } else {
-            name = nameResponse.getName();
-            id = nameResponse.getId();
-        }*/
         final String name = ai.getValue().getName();
         final UUID id = ai.getValue().getId();
         log.info("Initialization done, player " + name + " starts from position " + (startingOrder.get(playerCount) + 1));
@@ -415,13 +401,11 @@ public class Main extends Game implements Runnable {
         Params(int laps, int animationDelayMs, int timePerTurnMs, int leewayMs) {
             this.laps = laps;
             this.animationDelayInMillis = animationDelayMs;
-            this.initTimeoutInMillis = timePerTurnMs;
             this.gearTimeoutInMillis = timePerTurnMs;
             this.moveTimeoutInMillis = timePerTurnMs;
             this.leeway = leewayMs;
         }
         private int animationDelayInMillis = 100;
-        private int initTimeoutInMillis = 3000;
         private int gearTimeoutInMillis = 3000;
         private int moveTimeoutInMillis = 3000;
         private int leeway = 3600000;
@@ -483,7 +467,6 @@ public class Main extends Game implements Runnable {
             try {
                 params.laps = laps.getValue();
                 params.animationDelayInMillis = animationDelay.getValue();
-                params.initTimeoutInMillis = time.getValue() * 1000;
                 params.gearTimeoutInMillis = time.getValue() * 1000;
                 params.moveTimeoutInMillis = time.getValue() * 1000;
                 params.leeway = leeway.getValue() * 1000;

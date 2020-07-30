@@ -12,7 +12,7 @@ public class CreatedPlayerNotification extends Notification implements Serializa
     private final int color1;
     private final int color2;
     private final double angle;
-    private boolean isOpponent;
+    private boolean isControlled;
 
     public CreatedPlayerNotification(String playerId, String name, int nodeId, int hitpoints, int lapsToGo, int color1, int color2, double angle) {
         super(playerId);
@@ -53,12 +53,12 @@ public class CreatedPlayerNotification extends Notification implements Serializa
         return angle;
     }
 
-    public boolean isOpponent() {
-        return isOpponent;
+    public boolean isControlled() {
+        return isControlled;
     }
 
-    public CreatedPlayerNotification asOpponent(boolean opponent) {
-        this.isOpponent = opponent;
+    public CreatedPlayerNotification controlled(boolean controlled) {
+        this.isControlled = controlled;
         return this;
     }
 

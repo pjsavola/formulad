@@ -1,36 +1,29 @@
 package gp.ai;
 
 import java.util.*;
+import java.util.logging.Level;
 
-import gp.model.GameState;
-import gp.model.Moves;
-import gp.model.NameAtStart;
-import gp.model.PlayerState;
-import gp.model.SelectedIndex;
-import gp.model.Track;
-import gp.model.ValidMove;
+import gp.Main;
+import gp.model.*;
 
 public class ExampleAI implements AI {
 
     private String playerId;
-    private Map<Integer, Node> nodeMap;
+    private final TrackData data;
     private Map<String, PlayerState> playerMap;
     private Node location;
     private PlayerState player;
     private Random random = new Random();
 
-    @Override
-    public NameAtStart startGame(Track track) {
-        playerId = track.getPlayer().getPlayerId();
-        nodeMap = AIUtil.buildNodeMap(track.getTrack().getNodes(), track.getTrack().getEdges());
-        return new NameAtStart().name("Example").id(UUID.randomUUID());
+    public ExampleAI(TrackData data) {
+        this.data = data;
     }
 
     @Override
     public gp.model.Gear selectGear(GameState gameState) {
         playerMap = AIUtil.buildPlayerMap(gameState);
         player = playerMap.get(playerId);
-        location = nodeMap.get(player.getNodeId());
+        location = data.getNodes().get(player.getNodeId());
 
         // TODO: Implement better AI
         int newGear = player.getGear() + 1;
@@ -60,5 +53,18 @@ public class ExampleAI implements AI {
             return new SelectedIndex().index(0);
         }
         return new SelectedIndex().index(bestTargets.get(random.nextInt(bestTargets.size())));
+    }
+
+    @Override
+    public void notify(Object notification) {
+        if (notification instanceof CreatedPlayerNotification) {
+            final CreatedPlayerNotification createdPlayer = (CreatedPlayerNotification) notification;
+            if (createdPlayer.isControlled()) {
+                if (playerId != null) {
+                    Main.log.log(Level.SEVERE, "AI assigneed to control multiple players");
+                }
+                playerId = createdPlayer.getPlayerId();
+            }
+        }
     }
 }

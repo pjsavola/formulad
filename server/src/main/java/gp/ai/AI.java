@@ -10,15 +10,6 @@ import gp.model.Track;
 public interface AI {
 
     /**
-     * Game server calls each AI server once with this method to send track
-     * data.
-     *
-     * AI is expected to return its name as a String.
-     *
-     */
-    NameAtStart startGame(Track track);
-
-    /**
      * When game server expects AI to make a move, it calls the AI server with
      * this method, providing the current game state as parameter.
      *

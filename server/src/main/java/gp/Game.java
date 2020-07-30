@@ -18,7 +18,7 @@ import java.util.logging.Level;
 
 public abstract class Game extends JPanel implements PlayerRenderer {
     // Parent JFrame and main menu JPanel, used when returning back to the main menu after the race is over.
-    private final JFrame frame;
+    final JFrame frame;
     private final JPanel panel;
     public final Menu actionMenu;
 
