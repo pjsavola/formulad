@@ -159,21 +159,34 @@ public class Season implements Comparable<Season>, TrackSelector {
         }
     }
 
+    private int compare(UUID id1, UUID id2, Map<UUID, List<Integer>> positions) {
+        final int total1 = positions.get(id1).stream().mapToInt(pos -> pointDistribution[pos - 1]).sum();
+        final int total2 = positions.get(id2).stream().mapToInt(pos -> pointDistribution[pos - 1]).sum();
+        if (total1 == total2) {
+            for (int i = 0; i < pointDistribution.length; ++i) {
+                final int relevantPos = i;
+                final long posCount1 = positions.get(id1).stream().filter(pos -> pos == relevantPos).count();
+                final long posCount2 = positions.get(id2).stream().filter(pos -> pos == relevantPos).count();
+                if (posCount1 != posCount2) {
+                    return (int) (posCount2 - posCount1);
+                }
+            }
+        }
+        return total2 - total1;
+    }
+
     private static final int[] pointDistribution = { 10, 6, 4, 3, 2, 1, 0, 0, 0, 0 };
 
     private JPanel createStandingsPanel() {
         final JPanel panel = new JPanel(new GridLayout(0, 3));
         panel.setBorder(new EmptyBorder(20, 0, 20, 80));
-        final Map<UUID, List<Integer>> points = new HashMap<>();
-        final Map<UUID, Integer> totalPoints = new HashMap<>();
-        participants.forEach(participant -> totalPoints.put(participant.getId(), 0));
+        final Map<UUID, List<Integer>> positions = new HashMap<>();
         for (FinalStandings result : results) {
             for (PlayerStats stats :result.getStats()) {
-                points.computeIfAbsent(stats.id, id -> new ArrayList<>()).add(pointDistribution[stats.position - 1]);
+                positions.computeIfAbsent(stats.id, id -> new ArrayList<>()).add(stats.position);
             }
         }
-        points.forEach((id, pointResults) -> totalPoints.put(id, pointResults.stream().mapToInt(Integer::intValue).sum()));
-        sortedParticipants = participants.stream().sorted((p1, p2) -> totalPoints.get(p2.getId()) - totalPoints.get(p1.getId())).collect(Collectors.toList());
+        sortedParticipants = participants.stream().sorted((p1, p2) -> compare(p1.getId(), p2.getId(), positions)).collect(Collectors.toList());
         // Header
         panel.add(new JLabel());
         panel.add(new JLabel());
@@ -232,7 +245,6 @@ public class Season implements Comparable<Season>, TrackSelector {
                     trackInfo.setForeground(Color.BLACK);
                 }
             });
-            // TODO: Draw track icon + reseult info box when clicking the label
         }
         panel.add(trackPanel);
         for (int rank = 0; rank < sortedParticipants.size(); ++rank) {
@@ -240,7 +252,8 @@ public class Season implements Comparable<Season>, TrackSelector {
             final JLabel pos = new JLabel((rank + 1) + ".");
             final JLabel label = new JLabel(player.getName());
             final JPanel ptsTable = new JPanel(new GridLayout(0, tracksAndLaps.size() + 1));
-            final JLabel pts = new JLabel(Integer.toString(totalPoints.get(player.getId())));
+            final int total = positions.get(player.getId()).stream().mapToInt(position -> pointDistribution[position - 1]).sum();
+            final JLabel pts = new JLabel(Integer.toString(total));
             pos.setFont(new Font("Arial", Font.BOLD, 20));
             label.setFont(new Font("Arial", Font.BOLD, 20));
             pts.setFont(new Font("Arial", Font.BOLD, 20));
@@ -257,7 +270,7 @@ public class Season implements Comparable<Season>, TrackSelector {
             for (int i = 0; i < tracksAndLaps.size(); ++i) {
                 final JLabel ptsLabel;
                 if (results.size() > i) {
-                    ptsLabel = new JLabel(Integer.toString(points.get(player.getId()).get(i)));
+                    ptsLabel = new JLabel(Integer.toString(pointDistribution[positions.get(player.getId()).get(i) - 1]));
                 } else {
                     ptsLabel = new JLabel("-");
                 }
