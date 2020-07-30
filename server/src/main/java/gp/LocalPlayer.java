@@ -175,7 +175,11 @@ public final class LocalPlayer extends Player {
         if (route.get(route.size() - 1).getType() != NodeType.PIT) {
             for (int i = route.size() - 2; i >= 0; --i) {
                 if (route.get(i).getType() == NodeType.PIT) {
-                    --lapsToGo;
+                    // Car may exit the pits and then cross the Finish line.
+                    // Do not count the lap counter twice in that case.
+                    if (oldLapsToGo == lapsToGo) {
+                        --lapsToGo;
+                    }
                     ++pitStops;
                     break;
                 }
