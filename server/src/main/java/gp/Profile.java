@@ -35,7 +35,7 @@ public class Profile implements Serializable {
         }
     }
 
-    private static class Result implements Serializable {
+    static class Result implements Serializable {
         private static final long serialVersionUID = -299482035708790406L;
         private final String trackId;
         private final int totalLaps;
@@ -49,22 +49,33 @@ public class Profile implements Serializable {
         private double coveredDistance;
         private long timeUsedMs;
         private List<UUID> standings;
+        private boolean isChampionshipRace;
 
-        private Result(String trackId, int totalLaps, int totalHitpoints, int gridPosition) {
+        private Result(String trackId, int totalLaps, int totalHitpoints, int gridPosition, boolean isSingleRace) {
             this.trackId = trackId;
             this.totalLaps = totalLaps;
             this.totalHitpoints = totalHitpoints;
             this.gridPosition = gridPosition;
+            this.isChampionshipRace = !isSingleRace;
         }
 
         private void complete(int position, int turns, int remainingHitpoints, int completedLaps, double coveredDistance, long timeUsedMs, List<UUID> standings) {
             complete = true;
             this.position = position;
+            this.turns = turns;
             this.remainingHitpoints = remainingHitpoints;
             this.completedLaps = completedLaps;
             this.coveredDistance = coveredDistance;
             this.timeUsedMs = timeUsedMs;
             this.standings = standings;
+        }
+
+        public boolean isComplete() {
+            return complete;
+        }
+
+        public boolean isChampionshipRace() {
+            return isChampionshipRace;
         }
     }
 
@@ -111,6 +122,10 @@ public class Profile implements Serializable {
         return active;
     }
 
+    public List<Result> getResults() {
+        return results;
+    }
+
     public void setManager(Profile.Manager manager) {
         this.manager = manager;
         manager.profiles.add(this);
@@ -120,7 +135,7 @@ public class Profile implements Serializable {
         return manager;
     }
 
-    public void standingsReceived(PlayerStats[] standings, String trackId) {
+    public void standingsReceived(PlayerStats[] standings, String trackId, boolean isSingleRace) {
         final List<UUID> players = new ArrayList<>();
         PlayerStats myStats = null;
         for (PlayerStats stats : standings) {
@@ -131,7 +146,7 @@ public class Profile implements Serializable {
         }
         if (myStats != null) {
             if (trackId != null) {
-                results.add(new Result(trackId, myStats.lapsToGo, myStats.hitpoints, myStats.gridPosition));
+                results.add(new Result(trackId, myStats.lapsToGo, myStats.hitpoints, myStats.gridPosition, isSingleRace));
             } else {
                 final Result lastResult = results.get(results.size() - 1);
                 if (!lastResult.complete) {

@@ -317,8 +317,7 @@ public class Season implements Comparable<Season>, TrackSelector {
                 final int pos = i + 1;
                 slots[i] = new PlayerSlot(sortedParticipants.get(sortedParticipants.size() - pos), pos);
             }
-            final Main server = new Main(new Main.Params(laps, animationDelayMs, timePerTurnMs, leewayMs), null, frame, masterPanel, slots, data);
-            server.storeResultsTo(Season.this);
+            final Main server = new Main(new Main.Params(laps, animationDelayMs, timePerTurnMs, leewayMs), null, frame, masterPanel, slots, data, Season.this);
             listener.contentChanged(server, null, server, "championship race", true);
             Main.setContent(frame, server);
             new Thread(server).start();

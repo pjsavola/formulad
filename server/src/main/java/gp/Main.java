@@ -58,7 +58,7 @@ public class Main extends Game implements Runnable {
     private final int moveTimeoutInMillis;
     private final Set<LocalPlayer> disconnectedPlayers = new HashSet<>();
     private final Lobby lobby;
-    private Season resultStorage;
+    private final Season resultStorage;
     public static final Logger log = Logger.getLogger(Main.class.getName());
     public static int defaultColor1 = 0xFF9966;
     public static int defaultColor2 = 0xCCCC33;
@@ -77,12 +77,13 @@ public class Main extends Game implements Runnable {
         }
     }
 
-    public Main(Params params, Lobby lobby, JFrame frame, JPanel panel, PlayerSlot[] slots, TrackData trackData) {
+    public Main(Params params, Lobby lobby, JFrame frame, JPanel panel, PlayerSlot[] slots, TrackData trackData, Season resultStorage) {
         super(frame, panel);
         initTrack(trackData);
         settings.trackId = trackData.getTrackId();
         settings.external = trackData.isExternal();
         this.lobby = lobby;
+        this.resultStorage = resultStorage;
         LocalPlayer.animationDelayInMillis = params.animationDelayInMillis;
         final long seed = params.seed == null ? new Random().nextLong() : params.seed;
         this.rng = new Random(seed);
@@ -104,10 +105,6 @@ public class Main extends Game implements Runnable {
         standings = new ArrayList<>(allPlayers);
         notifyAll(new FinalStandings(stats, resultStorage != null));
         current = waitingPlayers.remove(0);
-    }
-
-    void storeResultsTo(Season season) {
-        resultStorage = season;
     }
 
     private void createGrid(Params params, PlayerSlot[] slots, JFrame frame) {
@@ -499,7 +496,7 @@ public class Main extends Game implements Runnable {
             settings.animationDelay = params.animationDelayInMillis;
             settings.timePerTurn = time.getValue();
             settings.leeway = leeway.getValue();
-            final Main server = new Main(params, lobby, frame, panel, slots, changeTrackButton.getTrackData());
+            final Main server = new Main(params, lobby, frame, panel, slots, changeTrackButton.getTrackData(), null);
             listener.contentChanged(server, lobby, server, lobby == null ? "race" : "server", true);
             setContent(frame, server);
             new Thread(server).start();
@@ -780,6 +777,9 @@ public class Main extends Game implements Runnable {
                     break;
                 } else if (obj instanceof Profile) {
                     final Profile profile = (Profile) obj;
+                    //System.err.println(profile.getName() + " has " + profile.getResults().size() + " results");
+                    //System.err.println(profile.getResults().stream().filter(Profile.Result::isChampionshipRace).count());
+                    //System.err.println(profile.getResults().stream().filter(Profile.Result::isComplete).count());
                     profiles.add(profile);
                     profile.setManager(profileManager);
                 }

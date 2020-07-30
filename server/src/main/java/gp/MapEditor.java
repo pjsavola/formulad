@@ -91,7 +91,6 @@ public class MapEditor extends JPanel {
                                 final Point start = selectedNode.getLocation();
                                 final int dx = x - start.x;
                                 final int dy = y - start.y;
-                                System.out.println(dx + " " + dy + " " + (dx * dx + dy * dy));
                                 if (dx * dx + dy * dy < 16 * DIAMETER * DIAMETER * nodeCount) {
                                     // Not enough space
                                     return;
