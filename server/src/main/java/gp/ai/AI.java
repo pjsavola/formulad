@@ -3,9 +3,7 @@ package gp.ai;
 import gp.model.GameState;
 import gp.model.Gear;
 import gp.model.Moves;
-import gp.model.NameAtStart;
 import gp.model.SelectedIndex;
-import gp.model.Track;
 
 public interface AI {
 

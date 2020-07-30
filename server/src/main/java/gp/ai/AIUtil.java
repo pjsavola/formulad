@@ -12,7 +12,7 @@ import gp.model.GameState;
 import gp.model.PlayerState;
 
 public abstract class AIUtil {
-    
+
     /**
      * Builds map from player identifier to player state from server input.
      */
