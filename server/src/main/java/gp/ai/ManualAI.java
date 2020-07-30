@@ -42,6 +42,7 @@ public class ManualAI implements AI {
         trackId = track.getGame().getGameId();
         this.playerId = track.getPlayer().getPlayerId();
         nodeMap = AIUtil.buildNodeMap(track.getTrack().getNodes(), track.getTrack().getEdges());
+        if (profile == null) return ai.startGame(track);
         return ai.startGame(track).name(profile.getName()).id(profile.getId());
     }
 
@@ -222,6 +223,7 @@ public class ManualAI implements AI {
 
     @Override
     public void notify(Object notification) {
+        if (profile == null) return; // TODO: save profile info in championship seasons
         if (notification instanceof FinalStandings) {
             final FinalStandings standings = (FinalStandings) notification;
             if (!initialStandingsReceived) {

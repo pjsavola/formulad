@@ -1,6 +1,8 @@
 package gp;
 
 import gp.ai.TrackData;
+import gp.model.FinalStandings;
+import gp.model.PlayerStats;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -12,6 +14,7 @@ import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class Season implements Comparable<Season>, TrackSelector {
     private final String name;
@@ -21,13 +24,15 @@ public class Season implements Comparable<Season>, TrackSelector {
     private int leewayMs;
     private List<Pair<TrackData, Integer>> tracksAndLaps = new ArrayList<>();
     private List<ProfileMessage> participants = new ArrayList<>();
+    private List<FinalStandings> results = new ArrayList<>();
 
     // For UI
     private List<TrackButton> tracks = new ArrayList<>();
     private JPanel buttonPanel;
-    private JDialog dialog;
+    private final JFrame frame;
 
-    Season(String name) {
+    Season(JFrame frame, String name) {
+        this.frame = frame;
         this.name = name;
     }
 
@@ -35,9 +40,7 @@ public class Season implements Comparable<Season>, TrackSelector {
         return name;
     }
 
-    void start(JFrame frame, List<Profile> profiles) {
-        dialog = new JDialog(frame);
-        dialog.setTitle("Configure Championship Season");
+    void start(List<Profile> profiles, WindowChanger listener) {
         final JPanel panel = new JPanel();
         panel.setLayout(new GridLayout(0, 2));
         panel.setBorder(new EmptyBorder(20, 20, 20, 20));
@@ -53,7 +56,7 @@ public class Season implements Comparable<Season>, TrackSelector {
         TrackPreviewButton.getAllTracks(internal, external);
         final JButton addTrackButton = new JButton("Add track...");
         addTrackButton.addActionListener(a -> {
-            TrackPreviewButton.openTrackSelectionDialog(dialog, this);
+            TrackPreviewButton.openTrackSelectionDialog(frame, this);
         });
         buttonPanel.add(addTrackButton);
         internal.stream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).forEach(data -> setTrack(data, null));
@@ -61,7 +64,7 @@ public class Season implements Comparable<Season>, TrackSelector {
         final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
         final PlayerSlot[] slots = new PlayerSlot[10];
         for (int i = 0; i < slots.length; ++i) {
-            final PlayerSlot slot = new PlayerSlot(dialog, localProfiles, null, slots, i + 1) {
+            final PlayerSlot slot = new PlayerSlot(frame, localProfiles, null, slots, i + 1) {
                 @Override
                 public String getText() {
                     return profile == null ? "Free" : profile.getName();
@@ -95,18 +98,18 @@ public class Season implements Comparable<Season>, TrackSelector {
                 final ProfileMessage profile = slot.getProfile();
                 if (profile != null) {
                     if (profile == ProfileMessage.pending) {
-                        JOptionPane.showConfirmDialog(dialog, "Incomplete participant", "Error", JOptionPane.DEFAULT_OPTION);
+                        JOptionPane.showConfirmDialog(frame, "Incomplete participant", "Error", JOptionPane.DEFAULT_OPTION);
                         return;
                     }
                     else if (!profile.isAi() && !ids.add(profile.getId())) {
-                        JOptionPane.showConfirmDialog(dialog, "Duplicate profile: " + profile.getName(), "Error", JOptionPane.DEFAULT_OPTION);
+                        JOptionPane.showConfirmDialog(frame, "Duplicate profile: " + profile.getName(), "Error", JOptionPane.DEFAULT_OPTION);
                         return;
                     }
                     participants.add(profile);
                 }
             }
             if (participants.size() < 6) {
-                JOptionPane.showConfirmDialog(dialog, "Need at least 6 participants", "Error", JOptionPane.DEFAULT_OPTION);
+                JOptionPane.showConfirmDialog(frame, "Need at least 6 participants", "Error", JOptionPane.DEFAULT_OPTION);
                 return;
             }
             try {
@@ -124,24 +127,128 @@ public class Season implements Comparable<Season>, TrackSelector {
                 tracksAndLaps.add(Pair.of(button.data, button.laps.getValue()));
             }
             save();
-            dialog.setVisible(false);
+            showStandings(listener);
         });
-        dialog.setContentPane(panel);
-        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-        dialog.pack();
-        dialog.setModal(true);
-        dialog.setLocationRelativeTo(frame);
-        dialog.setVisible(true);
+        listener.contentChanged(panel, null, null, "Setting up season " + name, false);
+        frame.setContentPane(panel);
+        frame.pack();
+    }
+
+    private class CarIcon implements Icon {
+        private final Color color1;
+        private final Color color2;
+        private CarIcon(int color1, int color2) {
+            this.color1 = new Color(color1);
+            this.color2 = new Color(color2);
+        }
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            Player.draw((Graphics2D) g.create(), x + 16, y + 9, 0, color1, color2, 2.0);
+        }
+        @Override
+        public int getIconWidth() {
+            return 32;
+        }
+        @Override
+        public int getIconHeight() {
+            return 18;
+        }
+    }
+
+    private static final int[] pointDistribution = { 10, 6, 4, 3, 2, 1, 0, 0, 0, 0 };
+
+    void showStandings(WindowChanger listener) {
+        final JPanel masterPanel = new JPanel();
+        masterPanel.setLayout(new BoxLayout(masterPanel, BoxLayout.Y_AXIS));
+        final JPanel panel = new JPanel(new GridLayout(0, 3));
+        panel.setBorder(new EmptyBorder(20, 0, 20, 80));
+        final Map<UUID, List<Integer>> points = new HashMap<>();
+        final Map<UUID, Integer> totalPoints = new HashMap<>();
+        participants.forEach(participant -> totalPoints.put(participant.getId(), 0));
+        for (FinalStandings result : results) {
+            for (PlayerStats stats :result.getStats()) {
+                points.computeIfAbsent(stats.id, id -> new ArrayList<>()).add(pointDistribution[stats.position - 1]);
+            }
+        }
+        points.forEach((id, pointResults) -> totalPoints.put(id, pointResults.stream().mapToInt(Integer::intValue).sum()));
+        final List<ProfileMessage> sortedParticipants = participants.stream().sorted((p1, p2) -> totalPoints.get(p2.getId()) - totalPoints.get(p1.getId())).collect(Collectors.toList());
+        // Header
+        panel.add(new JLabel());
+        panel.add(new JLabel());
+        final JPanel trackPanel = new JPanel(new GridLayout(0, tracksAndLaps.size() + 1));
+        trackPanel.add(new JLabel());
+        for (int i = 0; i < tracksAndLaps.size(); ++i) {
+            final JLabel trackInfo = new JLabel(Integer.toString(i + 1));
+            trackPanel.add(trackInfo);
+            // TODO: Draw track icon + reseult info box when clicking the label
+        }
+        panel.add(trackPanel);
+        for (int rank = 0; rank < sortedParticipants.size(); ++rank) {
+            final ProfileMessage player = sortedParticipants.get(rank);
+            final JLabel pos = new JLabel((rank + 1) + ".");
+            final JLabel label = new JLabel(player.getName());
+            final JPanel ptsTable = new JPanel(new GridLayout(0, tracksAndLaps.size() + 1));
+            final JLabel pts = new JLabel(Integer.toString(totalPoints.get(player.getId())));
+            pos.setFont(new Font("Arial", Font.BOLD, 20));
+            label.setFont(new Font("Arial", Font.BOLD, 20));
+            pts.setFont(new Font("Arial", Font.BOLD, 20));
+            label.setIcon(new CarIcon(player.getColor1(), player.getColor2()));
+            label.setIconTextGap(20);
+            pos.setHorizontalAlignment(SwingConstants.RIGHT);
+            label.setBorder(new EmptyBorder(0, 0, 0, 10));
+            pos.setBorder(new EmptyBorder(0, 0, 0, 10));
+            pts.setBorder(new EmptyBorder(0, 0, 0, 10));
+            panel.add(pos);
+            panel.add(label);
+            panel.add(ptsTable);
+            ptsTable.add(pts);
+            for (int i = 0; i < tracksAndLaps.size(); ++i) {
+                if (results.size() > i) {
+                    ptsTable.add(new JLabel(Integer.toString(points.get(player.getId()).get(i))));
+                } else {
+                    ptsTable.add(new JLabel("-"));
+                }
+            }
+        }
+        masterPanel.add(panel);
+        final JButton continueButton = new JButton("Next Race");
+        continueButton.addActionListener(a -> {
+            final TrackData data = tracksAndLaps.get(results.size()).getLeft();
+            final int laps = tracksAndLaps.get(results.size()).getRight();
+            final PlayerSlot[] slots = new PlayerSlot[sortedParticipants.size()];
+            for (int i = 0; i < slots.length; ++i) {
+                slots[i] = new PlayerSlot(sortedParticipants.get(i), i + 1);
+            }
+            final Main server = new Main(new Main.Params(laps, animationDelayMs, timePerTurnMs, leewayMs), null, frame, masterPanel, slots, data);
+            server.storeResultsTo(results);
+            listener.contentChanged(server, null, server, "championship race", true);
+            Main.setContent(frame, server);
+            new Thread(server).start();
+        });
+        final boolean complete = results.size() == tracksAndLaps.size();
+        if (!complete) {
+            masterPanel.add(continueButton);
+        }
+        listener.contentChanged(masterPanel, null, null, "Season " + name, false);
+        frame.setContentPane(masterPanel);
+        frame.pack();
     }
 
     boolean load() {
         try (InputStreamReader ir = new InputStreamReader(new FileInputStream(name + ".cha")); final BufferedReader br = new BufferedReader(ir)) {
             int phase = 0;
             String line;
+            final List<PlayerStats> stats = new ArrayList<>();
             while ((line = br.readLine()) != null) {
                 if (line.isEmpty()) {
                     ++phase;
-                } else {
+                    if (phase >= 3) {
+                        if (!stats.isEmpty()) {
+                            results.add(new FinalStandings(stats));
+                        }
+                        stats.clear();
+                    }
+                } else if (phase < 3) {
                     final String[] parts = line.split(",");
                     switch (phase) {
                         case 0:
@@ -161,9 +268,9 @@ public class Season implements Comparable<Season>, TrackSelector {
                         case 2:
                             participants.add(ProfileMessage.readProfile(parts));
                             break;
-                        default:
-                            break;
                     }
+                } else {
+                    stats.add(PlayerStats.fromString(line));
                 }
             }
         } catch (Exception e) {
@@ -207,7 +314,12 @@ public class Season implements Comparable<Season>, TrackSelector {
                 }
             }
             writer.println();
-            // TODO: Print results
+            for (FinalStandings fs : results) {
+                for (PlayerStats stats : fs.getStats()) {
+                    writer.println(stats.toString());
+                }
+                writer.println();
+            }
         } catch (Exception e) {
             Main.log.log(Level.SEVERE, "Failed to save Championship Season " + name, e);
         }
@@ -242,12 +354,12 @@ public class Season implements Comparable<Season>, TrackSelector {
         final int count = buttonPanel.getComponentCount();
         buttonPanel.add(button, count - 1);
         buttonPanel.add(laps, count);
-        dialog.pack();
+        frame.pack();
         button.addActionListener(a -> {
             if (tracks.size() < 4) return;
             buttonPanel.remove(button);
             buttonPanel.remove(laps);
-            dialog.pack();
+            frame.pack();
             tracks.remove(button);
         });
         tracks.add(button);

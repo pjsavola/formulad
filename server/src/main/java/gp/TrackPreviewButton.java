@@ -50,12 +50,12 @@ class TrackPreviewButton extends JButton implements TrackSelector {
         });
     }
 
-    static void openTrackSelectionDialog(Container parent, TrackSelector trackSelector) {
+    static void openTrackSelectionDialog(JFrame frame, TrackSelector trackSelector) {
         final List<String> internal = new ArrayList<>();
         final List<String> external = new ArrayList<>();
         getAllTracks(internal, external);
         final JPanel trackPanel = new JPanel(new GridLayout(0, 2));
-        final JDialog trackDialog = parent instanceof JFrame ? new JDialog((JFrame) parent) : new JDialog((JDialog) parent, true);
+        final JDialog trackDialog = new JDialog(frame);
         internal.stream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).forEach(data -> {
             final JButton selectTrackButton = new JButton();
             final ImageIcon icon = createIcon(data.getBackgroundImage());
@@ -82,7 +82,7 @@ class TrackPreviewButton extends JButton implements TrackSelector {
         trackDialog.setContentPane(scrollPane);
         trackDialog.pack();
         trackDialog.setModal(true);
-        trackDialog.setLocationRelativeTo(parent);
+        trackDialog.setLocationRelativeTo(frame);
         trackDialog.setVisible(true);
     }
 

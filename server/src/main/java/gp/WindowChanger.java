@@ -51,6 +51,12 @@ public class WindowChanger extends WindowAdapter {
             }
             if (game != null) {
                 game.exit();
+                final JPanel returnPanel = panel;
+                reset();
+                // Returning from Championship race
+                if (returnPanel != mainMenu) {
+                    panel = returnPanel;
+                }
             } else if (panel != null) {
                 frame.setMenuBar(new MainMenuBar(frame, mainMenu));
                 frame.setContentPane(mainMenu);

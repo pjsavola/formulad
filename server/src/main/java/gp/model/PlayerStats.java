@@ -18,11 +18,34 @@ public class PlayerStats implements Serializable {
 
     @Override
     public String toString() {
-        final String stats = "Turns: " + turns + " Time: " + timeUsed + " Exceptions: " + exceptions;
-        if (hitpoints > 0) {
-            return stats + " Hitpoints: " + hitpoints + " -- FINISHED!";
-        } else {
-            return stats + " -- Distance: " + distance;
-        }
+        String result = playerId;
+        result += "," + id;
+        result += "," + position;
+        result += "," + turns;
+        result += "," + lapsToGo;
+        result += "," + timeUsed;
+        result += "," + exceptions;
+        result += "," + hitpoints;
+        result += "," + distance;
+        result += "," + gridPosition;
+        result += "," + pitStops;
+        return result;
+    }
+
+    public static PlayerStats fromString(String str) {
+        final PlayerStats stats = new PlayerStats();
+        final String[] s = str.split(",");
+        stats.playerId = s[0];
+        stats.id = UUID.fromString(s[1]);
+        stats.position = Integer.parseInt(s[2]);
+        stats.turns = Integer.parseInt(s[3]);
+        stats.lapsToGo = Integer.parseInt(s[4]);
+        stats.timeUsed = Long.parseLong(s[5]);
+        stats.exceptions = Integer.parseInt(s[6]);
+        stats.hitpoints = Integer.parseInt(s[7]);
+        stats.distance = Double.parseDouble(s[8]);
+        stats.gridPosition = Integer.parseInt(s[9]);
+        stats.pitStops = Integer.parseInt(s[10]);
+        return stats;
     }
 }

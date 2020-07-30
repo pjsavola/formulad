@@ -18,11 +18,11 @@ public class PlayerSlot extends JButton {
         }
         @Override
         public int getIconWidth() {
-            return 13;
+            return 16;
         }
         @Override
         public int getIconHeight() {
-            return 7;
+            return 9;
         }
     }
 
@@ -41,7 +41,12 @@ public class PlayerSlot extends JButton {
         return usedNames;
     }
 
-    PlayerSlot(Component parent, List<ProfileMessage> localProfiles, Lobby lobby, PlayerSlot[] slots, int gridPosition) {
+    PlayerSlot(ProfileMessage profile, int gridPosition) {
+        this.profile = profile;
+        this.gridPosition = gridPosition;
+    }
+
+    PlayerSlot(JFrame frame, List<ProfileMessage> localProfiles, Lobby lobby, PlayerSlot[] slots, int gridPosition) {
         this.gridPosition = gridPosition;
         setIcon(new CarIcon());
         addActionListener(e -> {
@@ -51,7 +56,7 @@ public class PlayerSlot extends JButton {
                     return;
                 }
                 profile = ProfileMessage.pending;
-                final JDialog dialog = parent instanceof JFrame ? new JDialog((JFrame) parent) : new JDialog((JDialog) parent, true);
+                final JDialog dialog = new JDialog(frame);
 
                 final DefaultListModel<String> model = new DefaultListModel<>();
                 localProfiles.forEach(profile -> model.addElement(profile.getName()));
@@ -114,7 +119,7 @@ public class PlayerSlot extends JButton {
                 dialog.setContentPane(contents);
                 dialog.pack();
                 dialog.setModal(true);
-                dialog.setLocationRelativeTo(parent);
+                dialog.setLocationRelativeTo(frame);
                 dialog.setVisible(true);
             } else if (profile != ProfileMessage.pending) {
                 if (profile.isLocal()) {

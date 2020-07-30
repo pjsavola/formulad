@@ -57,6 +57,7 @@ public class Main extends Game implements Runnable {
     private final int moveTimeoutInMillis;
     private final Set<LocalPlayer> disconnectedPlayers = new HashSet<>();
     private final Lobby lobby;
+    private List<FinalStandings> resultStorage;
     public static final Logger log = Logger.getLogger(Main.class.getName());
     public static int defaultColor1 = 0xFF9966;
     public static int defaultColor2 = 0xCCCC33;
@@ -102,6 +103,10 @@ public class Main extends Game implements Runnable {
         standings = new ArrayList<>(allPlayers);
         notifyAll(new FinalStandings(stats));
         current = waitingPlayers.remove(0);
+    }
+
+    void storeResultsTo(List<FinalStandings> storage) {
+        resultStorage = storage;
     }
 
     private void createGrid(Params params, PlayerSlot[] slots, JFrame frame) {
@@ -273,6 +278,9 @@ public class Main extends Game implements Runnable {
             stats.add(playerStats);
         }
         final FinalStandings fs = new FinalStandings(stats);
+        if (resultStorage != null) {
+            resultStorage.add(fs);
+        }
         finalStandings = fs.getStats();
         notifyAll(fs);
         if (lobby != null) {
@@ -396,7 +404,17 @@ public class Main extends Game implements Runnable {
         current = waitingPlayers.remove(0);
     }
 
-    private static class Params {
+    static class Params {
+        private Params() {
+        }
+        Params(int laps, int animationDelayMs, int timePerTurnMs, int leewayMs) {
+            this.laps = laps;
+            this.animationDelayInMillis = animationDelayMs;
+            this.initTimeoutInMillis = timePerTurnMs;
+            this.gearTimeoutInMillis = timePerTurnMs;
+            this.moveTimeoutInMillis = timePerTurnMs;
+            this.leeway = leewayMs;
+        }
         private int animationDelayInMillis = 100;
         private int initTimeoutInMillis = 3000;
         private int gearTimeoutInMillis = 3000;
@@ -508,7 +526,7 @@ public class Main extends Game implements Runnable {
         }
     }
 
-    private static void setContent(JFrame f, JPanel p) {
+    static void setContent(JFrame f, JPanel p) {
         p.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseDragged(MouseEvent e) {
@@ -542,7 +560,7 @@ public class Main extends Game implements Runnable {
         }
     }
 
-    private static void showMenu(JFrame f, Params params, List<Profile> profiles) {
+    private static void showMenu(JFrame f, List<Profile> profiles) {
         final JPanel p = new JPanel();
         f.setMenuBar(new MainMenuBar(f, p));
         final WindowChanger listener = new WindowChanger(f, p);
@@ -562,6 +580,7 @@ public class Main extends Game implements Runnable {
         buttonPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         contents.add(buttonPanel);
         contents.add(profilePanel);
+        Params params = new Params();
 
         final JButton singlePlayerButton = new JButton("Single Race");
         singlePlayerButton.addActionListener(e -> {
@@ -576,7 +595,7 @@ public class Main extends Game implements Runnable {
             if (dataFiles != null) {
                 for (File fn : dataFiles) {
                     final String name = fn.getName().substring(0, fn.getName().length() - 4);
-                    final Season season = new Season(name);
+                    final Season season = new Season(f, name);
                     if (season.load()) {
                         existingSeasons.put(name, season);
                     }
@@ -594,9 +613,9 @@ public class Main extends Game implements Runnable {
                     if (existingSeasons.containsKey(result)) {
                         JOptionPane.showConfirmDialog(dialog, "Season with name " + result + " already exists", "Error", JOptionPane.DEFAULT_OPTION);
                     } else {
-                        final Season season = new Season(result);
+                        final Season season = new Season(f, result);
                         dialog.setVisible(false);
-                        season.start(f, profiles);
+                        season.start(profiles, listener);
                     }
                 }
             });
@@ -609,7 +628,7 @@ public class Main extends Game implements Runnable {
                 final Season season = existingSeasons.get(selectedSeason);
                 if (season != null) {
                     dialog.setVisible(false);
-
+                    season.showStandings(listener);
                 }
             });
             deleteButton.addActionListener(e13 -> {
@@ -745,7 +764,6 @@ public class Main extends Game implements Runnable {
     public static void main(String[] args) {
         final JFrame f = new JFrame();
         f.setResizable(false);
-        final Params params = new Params();
         final Profile.Manager profileManager = new Profile.Manager();
         final List<Profile> profiles = new ArrayList<>();
         try {
@@ -789,7 +807,7 @@ public class Main extends Game implements Runnable {
         if (Application.getApplication() != null) {
             Application.getApplication().setDockIconImage(f.getIconImage());
         }*/
-        showMenu(f, params, profiles);
+        showMenu(f, profiles);
     }
 
     @Override
