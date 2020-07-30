@@ -130,6 +130,7 @@ public class Season implements Comparable<Season>, TrackSelector {
             for (TrackButton button : tracks) {
                 tracksAndLaps.add(Pair.of(button.data, button.laps.getValue()));
             }
+            Collections.shuffle(participants);
             save();
             showStandings(listener);
         });
@@ -188,7 +189,6 @@ public class Season implements Comparable<Season>, TrackSelector {
         }
         if (results.isEmpty()) {
             sortedParticipants = new ArrayList<>(participants);
-            Collections.shuffle(sortedParticipants);
         } else {
             sortedParticipants = participants.stream().sorted((p1, p2) -> compare(p1.getId(), p2.getId(), positions)).collect(Collectors.toList());
         }
@@ -384,6 +384,7 @@ public class Season implements Comparable<Season>, TrackSelector {
             if (!pm.isAi()) {
                 final Profile og = profiles.stream().filter(p -> p.getId().equals(pm.getId())).findAny().orElse(null);
                 if (og == null) {
+                    System.err.println("Original profile not found for " + pm.getName());
                     pm.setAi(true);
                 } else {
                     pm.originalProfile = og;
@@ -423,6 +424,7 @@ public class Season implements Comparable<Season>, TrackSelector {
                 writer.println(p.getRight());
             }
             writer.println();
+            System.err.println("Participants: " + participants.size());
             for (ProfileMessage message : participants) {
                 writer.print(message.getId());
                 writer.print(",");
@@ -432,9 +434,7 @@ public class Season implements Comparable<Season>, TrackSelector {
                 writer.print(",");
                 writer.print(message.getColor2());
                 writer.print(",");
-                if (message.isAi()) {
-                    writer.println(message.isAi() ? "gp.ai.GreatAI" : "gp.ai.ManualAI");
-                }
+                writer.println(message.isAi() ? "gp.ai.GreatAI" : "gp.ai.ManualAI");
             }
             writer.println();
             for (FinalStandings fs : results) {
