@@ -19,7 +19,6 @@ public class Client extends Game implements Runnable {
     private final AI ai;
     private Player current;
     private Player controlledPlayer;
-    private String controlledPlayerId;
     private final Map<String, Player> playerMap = new HashMap<>();
     private final Profile profile;
     private boolean initialStandingsReceived;
@@ -67,7 +66,6 @@ public class Client extends Game implements Runnable {
                     try {
                         if (request instanceof Track) {
                             final Track track = (Track) request;
-                            controlledPlayerId = track.getPlayer().getPlayerId();
                             oos.writeObject(ai.startGame(track));
                         } else if (request instanceof GameState) {
                             final GameState gameState = (GameState) request;
@@ -186,7 +184,10 @@ public class Client extends Game implements Runnable {
         player.setName(notification.getName());
         player.setHitpoints(notification.getHitpoints());
         player.setLapsRemaining(notification.getLapsRemaining());
-        if (notification.getPlayerId().equals(controlledPlayerId)) {
+        if (!notification.isOpponent()) {
+            if (controlledPlayer != null) {
+                Main.log.log(Level.SEVERE, "Client assigneed to control multiple players");
+            }
             controlledPlayer = player;
         }
         playerMap.put(notification.getPlayerId(), player);

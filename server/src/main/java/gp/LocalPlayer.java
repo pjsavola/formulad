@@ -172,6 +172,7 @@ public final class LocalPlayer extends Player {
                 }
             }
         }
+        // TODO: Support for pit lanes elsewhere??
         if (route.get(route.size() - 1).getType() != NodeType.PIT) {
             for (int i = route.size() - 2; i >= 0; --i) {
                 if (route.get(i).getType() == NodeType.PIT) {

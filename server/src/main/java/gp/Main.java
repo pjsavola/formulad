@@ -139,7 +139,11 @@ public class Main extends Game implements Runnable {
         for (Map.Entry<AI, ProfileMessage> e : aiToProfile.entrySet()) {
             notifications.add(createAiPlayer(e, grid, startingOrder, params.leeway, params.laps));
         }
-        notifications.forEach(this::notifyAll);
+        aiMap.forEach((player, ai) -> {
+            notifications.forEach(notification -> {
+                ai.notify(notification.asOpponent(!notification.getPlayerId().equals(player.getId())));
+            });
+        });
         immutablePlayerMap = new HashMap<>(aiToProfile.size());
         allPlayers.forEach(player -> immutablePlayerMap.put(player.getId(), player));
     }
