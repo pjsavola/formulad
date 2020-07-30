@@ -25,11 +25,14 @@ public class Season implements Comparable<Season>, TrackSelector {
     private List<Pair<TrackData, Integer>> tracksAndLaps = new ArrayList<>();
     private List<ProfileMessage> participants = new ArrayList<>();
     private List<FinalStandings> results = new ArrayList<>();
+    private List<ProfileMessage> sortedParticipants;
 
     // For UI
     private List<TrackButton> tracks = new ArrayList<>();
     private JPanel buttonPanel;
     private final JFrame frame;
+    private JPanel masterPanel;
+    private JButton continueButton;
 
     Season(JFrame frame, String name) {
         this.frame = frame;
@@ -157,9 +160,7 @@ public class Season implements Comparable<Season>, TrackSelector {
 
     private static final int[] pointDistribution = { 10, 6, 4, 3, 2, 1, 0, 0, 0, 0 };
 
-    void showStandings(WindowChanger listener) {
-        final JPanel masterPanel = new JPanel();
-        masterPanel.setLayout(new BoxLayout(masterPanel, BoxLayout.Y_AXIS));
+    private JPanel createStandingsPanel() {
         final JPanel panel = new JPanel(new GridLayout(0, 3));
         panel.setBorder(new EmptyBorder(20, 0, 20, 80));
         final Map<UUID, List<Integer>> points = new HashMap<>();
@@ -171,7 +172,7 @@ public class Season implements Comparable<Season>, TrackSelector {
             }
         }
         points.forEach((id, pointResults) -> totalPoints.put(id, pointResults.stream().mapToInt(Integer::intValue).sum()));
-        final List<ProfileMessage> sortedParticipants = participants.stream().sorted((p1, p2) -> totalPoints.get(p2.getId()) - totalPoints.get(p1.getId())).collect(Collectors.toList());
+        sortedParticipants = participants.stream().sorted((p1, p2) -> totalPoints.get(p2.getId()) - totalPoints.get(p1.getId())).collect(Collectors.toList());
         // Header
         panel.add(new JLabel());
         panel.add(new JLabel());
@@ -215,8 +216,14 @@ public class Season implements Comparable<Season>, TrackSelector {
                 ptsTable.add(ptsLabel);
             }
         }
-        masterPanel.add(panel);
-        final JButton continueButton = new JButton("Next Race");
+        return panel;
+    }
+
+    void showStandings(WindowChanger listener) {
+        masterPanel = new JPanel();
+        masterPanel.setLayout(new BoxLayout(masterPanel, BoxLayout.Y_AXIS));
+        masterPanel.add(createStandingsPanel());
+        continueButton = new JButton("Next Race");
         continueButton.addActionListener(a -> {
             final TrackData data = tracksAndLaps.get(results.size()).getLeft();
             final int laps = tracksAndLaps.get(results.size()).getRight();
@@ -232,9 +239,8 @@ public class Season implements Comparable<Season>, TrackSelector {
             new Thread(server).start();
         });
         final boolean complete = results.size() == tracksAndLaps.size();
-        if (!complete) {
-            masterPanel.add(continueButton);
-        }
+        masterPanel.add(continueButton);
+        continueButton.setEnabled(!complete);
         listener.contentChanged(masterPanel, null, null, "Season " + name, false);
         frame.setContentPane(masterPanel);
         frame.pack();
@@ -288,6 +294,11 @@ public class Season implements Comparable<Season>, TrackSelector {
 
     void updateResult(FinalStandings fs) {
         results.add(fs);
+        masterPanel.removeAll();
+        masterPanel.add(createStandingsPanel());
+        masterPanel.add(continueButton);
+        final boolean complete = results.size() == tracksAndLaps.size();
+        continueButton.setEnabled(!complete);
         save();
     }
 
