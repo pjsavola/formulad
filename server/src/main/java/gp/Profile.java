@@ -131,6 +131,10 @@ public class Profile implements Serializable {
         manager.profiles.add(this);
     }
 
+    public void delete() {
+        manager.profiles.remove(this);
+    }
+
     public Manager getManager() {
         return manager;
     }

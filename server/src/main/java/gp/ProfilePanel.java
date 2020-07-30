@@ -145,6 +145,7 @@ public class ProfilePanel extends JPanel {
                         final Profile removedProfile = profiles.remove(index);
                         model.remove(index);
                         list.setSelectedIndex(-1);
+                        removedProfile.delete();
                     }
                 });
                 deleteButton.setEnabled(false);
