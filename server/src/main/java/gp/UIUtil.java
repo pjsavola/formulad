@@ -39,14 +39,16 @@ class UIUtil {
     static void drawTurnMarker(Graphics2D g2d, Dimension dim, int playerCount, MapEditor.Corner corner, int i) {
         final int w = 250;
         final int h = 5 + 15 * playerCount;
+        final int x = getX(corner, dim, w);
         final int y = getY(corner, dim, h);
         final int iy = y + 5 + 15 * i;
+        g2d.setColor(Color.GRAY.brighter());
+        g2d.fillRect(x + 1, iy - 2, w - 2, 15);
         int[] px;
         int[] py;
         switch (corner) {
             case NE:
             case SE:
-                final int x = getX(corner, dim, w);
                 px = new int[] { x - 2, x - 7, x - 7 };
                 py = new int[] { iy + 5, iy + 2, iy + 8 };
                 break;

@@ -227,6 +227,8 @@ public class Season implements Comparable<Season>, TrackSelector {
                             @Override
                             public void paintComponent(Graphics g) {
                                 super.paintComponent(g);
+                                g.setColor(Color.GRAY.brighter());
+                                g.fillRect(0, 0, getWidth(), getHeight());
                                 Game.drawStandings((Graphics2D) g, 10, 10, stats, renderer);
                                 icon.paintIcon(this, g, 30, height + 20);
                             }
@@ -246,6 +248,8 @@ public class Season implements Comparable<Season>, TrackSelector {
                             @Override
                             public void paintComponent(Graphics g) {
                                 super.paintComponent(g);
+                                g.setColor(Color.GRAY.brighter());
+                                g.fillRect(0, 0, getWidth(), getHeight());
                                 icon.paintIcon(this, g, 10, 10);
                             }
                         };
