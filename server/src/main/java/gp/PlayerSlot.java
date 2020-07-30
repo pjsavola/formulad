@@ -121,8 +121,9 @@ public class PlayerSlot extends JButton {
                 dialog.setModal(true);
                 dialog.setLocationRelativeTo(frame);
                 dialog.setVisible(true);
-            } else if (profile != ProfileMessage.pending) {
-                if (profile.isLocal()) {
+            } else {
+                final boolean incomingPlayer = profile == ProfileMessage.pending;
+                if (profile.isLocal() && !incomingPlayer) {
                     if (!profile.isAi()) {
                         localProfiles.add(profile);
                     }
