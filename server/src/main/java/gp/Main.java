@@ -294,6 +294,7 @@ public class Main extends Game implements Runnable {
     protected void exit() {
         // This will terminate loop waiting for player input
         stopped = true;
+        resultStorage = null;
         aiMap.values().forEach(ai -> {
             if (ai instanceof ManualAI) {
                 ((ManualAI) ai).interrupted = true;
