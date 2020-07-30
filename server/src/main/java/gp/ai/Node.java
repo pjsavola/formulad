@@ -24,11 +24,6 @@ public final class Node implements Serializable {
         this.type = type;
     }
 
-    public Node(gp.model.Node node) {
-        id = node.getNodeId();
-        type = NodeType.valueOf(node.getType().getValue());
-    }
-
     public void setGarage(boolean garage) {
         this.garage = garage;
     }

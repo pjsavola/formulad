@@ -8,34 +8,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import gp.model.Edge;
 import gp.model.GameState;
 import gp.model.PlayerState;
 
 public abstract class AIUtil {
-
-    /**
-     * Builds map from node identifier to node from server input.
-     */
-    public static Map<Integer, Node> buildNodeMap(List<gp.model.Node> nodes, List<Edge> edges) {
-        final Map<Integer, Node> nodeMap = new HashMap<>();
-        nodes.forEach(node -> {
-            final Node oldNode = nodeMap.put(node.getNodeId(), new Node(node));
-            if (oldNode != null) {
-                throw new RuntimeException("Duplicate node identifier: " + node.getNodeId());
-            }
-        });
-        edges.forEach(edge -> {
-            final Node start = nodeMap.get(edge.getStart().getNodeId());
-            final Node end = nodeMap.get(edge.getEnd().getNodeId());
-            if (start == null || end == null) {
-                throw new RuntimeException("Invalid start or end node identifier for edge");
-            }
-            start.addChild(end);
-        });
-        return nodeMap;
-    }
-
+    
     /**
      * Builds map from player identifier to player state from server input.
      */

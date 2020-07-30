@@ -150,7 +150,6 @@ public class Main extends Game implements Runnable {
         // Recreate track for each player, so nothing bad happens if AI mutates it.
         final int playerCount = allPlayers.size();
         final String playerId = "p" + (playerCount + 1);
-        final Track track = ApiHelper.buildTrack(data.getTrackId(), playerId, nodes);
         final int gridPosition = startingOrder.get(playerCount);
         final Node startNode = grid.get(gridPosition);
         final LocalPlayer player = new LocalPlayer(playerId, startNode, startNode.getGridAngle(), laps, this, leeway, ai.getValue().getColor1(), ai.getValue().getColor2());

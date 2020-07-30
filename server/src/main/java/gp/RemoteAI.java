@@ -20,7 +20,6 @@ public class RemoteAI implements AI {
     private ObjectInputStream ois;
     private ObjectOutputStream oos;
     private GreatAI fallback;
-    private Track track;
     private GameState gameState;
     private int gear;
 
