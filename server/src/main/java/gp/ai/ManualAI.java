@@ -15,9 +15,8 @@ import gp.model.*;
 import gp.model.Gear;
 import org.apache.commons.lang3.mutable.MutableInt;
 
-public class ManualAI implements AI {
+public class ManualAI extends BaseAI {
 
-    private String playerId;
     private int hitpoints;
     private int gear;
     private Node location;
@@ -28,16 +27,15 @@ public class ManualAI implements AI {
     private static final int listenerDelay = 50;
     private final Profile profile;
     private boolean initialStandingsReceived;
-    private final TrackData data;
 
     public volatile boolean interrupted;
 
     public ManualAI(AI ai, JFrame frame, Game game, Profile profile, TrackData data) {
+        super(data);
         this.ai = ai;
         this.frame = frame;
         this.game = game;
         this.profile = profile;
-        this.data = data;
     }
 
     @Override
@@ -217,6 +215,7 @@ public class ManualAI implements AI {
 
     @Override
     public void notify(Object notification) {
+        super.notify(notification);
         if (notification instanceof FinalStandings) {
             final FinalStandings standings = (FinalStandings) notification;
             if (!initialStandingsReceived) {
@@ -226,14 +225,6 @@ public class ManualAI implements AI {
             } else {
                 profile.standingsReceived(standings.getStats(), null, standings.isSingleRace());
                 profile.getManager().saveProfiles();
-            }
-        } else if (notification instanceof CreatedPlayerNotification) {
-            final CreatedPlayerNotification createdPlayer = (CreatedPlayerNotification) notification;
-            if (createdPlayer.isControlled()) {
-                if (playerId != null) {
-                    Main.log.log(Level.SEVERE, "AI assigneed to control multiple players");
-                }
-                playerId = createdPlayer.getPlayerId();
             }
         }
     }

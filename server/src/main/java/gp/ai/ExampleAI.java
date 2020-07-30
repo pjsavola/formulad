@@ -6,17 +6,15 @@ import java.util.logging.Level;
 import gp.Main;
 import gp.model.*;
 
-public class ExampleAI implements AI {
+public class ExampleAI extends BaseAI {
 
-    private String playerId;
-    private final TrackData data;
     private Map<String, PlayerState> playerMap;
     private Node location;
     private PlayerState player;
     private Random random = new Random();
 
     public ExampleAI(TrackData data) {
-        this.data = data;
+        super(data);
     }
 
     @Override
@@ -53,18 +51,5 @@ public class ExampleAI implements AI {
             return new SelectedIndex().index(0);
         }
         return new SelectedIndex().index(bestTargets.get(random.nextInt(bestTargets.size())));
-    }
-
-    @Override
-    public void notify(Object notification) {
-        if (notification instanceof CreatedPlayerNotification) {
-            final CreatedPlayerNotification createdPlayer = (CreatedPlayerNotification) notification;
-            if (createdPlayer.isControlled()) {
-                if (playerId != null) {
-                    Main.log.log(Level.SEVERE, "AI assigneed to control multiple players");
-                }
-                playerId = createdPlayer.getPlayerId();
-            }
-        }
     }
 }

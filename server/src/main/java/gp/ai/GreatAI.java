@@ -6,10 +6,8 @@ import java.util.logging.Level;
 import gp.Main;
 import gp.model.*;
 
-public class GreatAI implements AI {
+public class GreatAI extends BaseAI {
 
-    private String playerId;
-    private final TrackData data;
     private Map<String, PlayerState> playerMap;
     private Node location;
     private PlayerState player;
@@ -18,7 +16,7 @@ public class GreatAI implements AI {
     public boolean debug;
 
     public GreatAI(TrackData data) {
-        this.data = data;
+        super(data);
     }
 
     public void init(GameState gameState, int selectedGear) {
@@ -468,19 +466,6 @@ public class GreatAI implements AI {
             }
         }
         return distances;
-    }
-
-    @Override
-    public void notify(Object notification) {
-        if (notification instanceof CreatedPlayerNotification) {
-            final CreatedPlayerNotification createdPlayer = (CreatedPlayerNotification) notification;
-            if (createdPlayer.isControlled()) {
-                if (playerId != null) {
-                    Main.log.log(Level.SEVERE, "AI assigneed to control multiple players");
-                }
-                playerId = createdPlayer.getPlayerId();
-            }
-        }
     }
 
     private void debug(String msg) {
