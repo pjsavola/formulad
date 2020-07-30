@@ -4,7 +4,6 @@ import gp.ai.Node;
 import gp.ai.TrackData;
 import gp.model.GameState;
 import gp.model.PlayerStats;
-import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 import javax.swing.*;
@@ -12,15 +11,12 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 import java.util.List;
 import java.util.Timer;
 import java.util.logging.Level;
 
-public abstract class Game extends JPanel {
+public abstract class Game extends JPanel implements PlayerRenderer {
     // Parent JFrame and main menu JPanel, used when returning back to the main menu after the race is over.
     private final JFrame frame;
     private final JPanel panel;
@@ -262,50 +258,60 @@ public abstract class Game extends JPanel {
         immutablePlayerMap.values().forEach(player -> player.draw(g2d));
     }
 
+    @Override
+    public void renderPlayer(Graphics2D g2d, int x, int y, int i, String playerId) {
+        final Player player = immutablePlayerMap.get(playerId);
+        final String name = player.getName();
+        g2d.drawString(name, x + 30, y + (i + 1) * 15 + 15);
+        player.draw(g2d, x + 15, y + (i + 1) * 15 + 10, 0);
+    }
+
+    static void drawStandings(Graphics2D g2d, int x, int y, PlayerStats[] finalStandings, PlayerRenderer renderer) {
+        final int height = 5 + 15 * (finalStandings.length + 1);
+        g2d.setColor(Color.BLACK);
+        g2d.setFont(titleFont);
+        final int titleWidth = g2d.getFontMetrics().stringWidth("STANDINGS");
+        g2d.drawString("STANDINGS", x + 220 - titleWidth / 2, y - 20);
+        g2d.setColor(Color.GRAY);
+        g2d.fillRect(x, y, 440, height);
+        g2d.setColor(Color.BLACK);
+        g2d.drawRect(x, y, 440, height);
+        g2d.setColor(Color.BLACK);
+        g2d.setFont(headerFont);
+        g2d.drawString("Name", x + 30, y + 15);
+        g2d.drawString("HP", x + 140, y + 15);
+        g2d.drawString("Turns", x + 190, y + 15);
+        g2d.drawString("Grid", x + 230, y + 15);
+        g2d.drawString("Time", x + 270, y + 15);
+        g2d.drawString("Stops", x + 310, y + 15);
+        g2d.drawString("Laps", x + 350, y + 15);
+        g2d.drawString("Distance", x + 390, y + 15);
+        g2d.setFont(statsFont);
+        for (int i = 0; i < finalStandings.length; ++i) {
+            final PlayerStats stats = finalStandings[i];
+            g2d.setColor(Color.BLACK);
+            renderer.renderPlayer(g2d, x, y, i, stats.playerId);
+            final String hp = stats.hitpoints > 0 ? Integer.toString(stats.hitpoints) : "DNF";
+            g2d.drawString(hp, x + 140, y + (i + 1) * 15 + 15);
+            g2d.drawString(Integer.toString(stats.turns), x + 190, y + (i + 1) * 15 + 15);
+            g2d.drawString(Integer.toString(stats.gridPosition), x + 230, y + (i + 1) * 15 + 15);
+            final long timeUsed = stats.timeUsed / 100;
+            final double timeUsedSecs = timeUsed / 10.0;
+            g2d.drawString(Double.toString(timeUsedSecs), x + 270, y + (i + 1) * 15 + 15);
+            g2d.drawString(Integer.toString(stats.pitStops), x + 310, y + (i + 1) * 15 + 15);
+            if (stats.lapsToGo >= 0) {
+                g2d.drawString(Integer.toString(stats.lapsToGo), x + 350, y + (i + 1) * 15 + 15);
+                g2d.drawString(Main.getDistanceString(stats.distance), x + 390, y + (i + 1) * 15 + 15);
+            }
+        }
+    }
+
     protected void drawStandings(Graphics2D g2d) {
         if (finalStandings != null) {
             final int height = 5 + 15 * (finalStandings.length + 1);
             final int x = panelDim.width / 2 - 220;
             final int y = panelDim.height / 2 - height / 2;
-            g2d.setColor(Color.BLACK);
-            g2d.setFont(titleFont);
-            final int titleWidth = g2d.getFontMetrics().stringWidth("STANDINGS");
-            g2d.drawString("STANDINGS", x + 220 - titleWidth / 2, y - 20);
-            g2d.setColor(Color.GRAY);
-            g2d.fillRect(x, y, 440, height);
-            g2d.setColor(Color.BLACK);
-            g2d.drawRect(x, y, 440, height);
-            g2d.setColor(Color.BLACK);
-            g2d.setFont(headerFont);
-            g2d.drawString("Name", x + 30, y + 15);
-            g2d.drawString("HP", x + 140, y + 15);
-            g2d.drawString("Turns", x + 190, y + 15);
-            g2d.drawString("Grid", x + 230, y + 15);
-            g2d.drawString("Time", x + 270, y + 15);
-            g2d.drawString("Stops", x + 310, y + 15);
-            g2d.drawString("Laps", x + 350, y + 15);
-            g2d.drawString("Distance", x + 390, y + 15);
-            g2d.setFont(statsFont);
-            for (int i = 0; i < finalStandings.length; ++i) {
-                final PlayerStats stats = finalStandings[i];
-                final Player player = immutablePlayerMap.get(stats.playerId);
-                final String name = player.getName();
-                player.draw(g2d, x + 15, y + (i + 1) * 15 + 10, 0);
-                g2d.setColor(Color.BLACK);
-                g2d.drawString(name, x + 30, y + (i + 1) * 15 + 15);
-                final String hp = stats.hitpoints > 0 ? Integer.toString(stats.hitpoints) : "DNF";
-                g2d.drawString(hp, x + 140, y + (i + 1) * 15 + 15);
-                g2d.drawString(Integer.toString(stats.turns), x + 190, y + (i + 1) * 15 + 15);
-                g2d.drawString(Integer.toString(stats.gridPosition), x + 230, y + (i + 1) * 15 + 15);
-                final long timeUsed = stats.timeUsed / 100;
-                final double timeUsedSecs = timeUsed / 10.0;
-                g2d.drawString(Double.toString(timeUsedSecs), x + 270, y + (i + 1) * 15 + 15);
-                g2d.drawString(Integer.toString(stats.pitStops), x + 310, y + (i + 1) * 15 + 15);
-                if (stats.lapsToGo >= 0) {
-                    g2d.drawString(Integer.toString(stats.lapsToGo), x + 350, y + (i + 1) * 15 + 15);
-                    g2d.drawString(Main.getDistanceString(stats.distance), x + 390, y + (i + 1) * 15 + 15);
-                }
-            }
+            drawStandings(g2d, x, y, finalStandings, this);
         }
     }
 

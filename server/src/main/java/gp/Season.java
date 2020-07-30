@@ -9,6 +9,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.*;
 import java.util.*;
 import java.util.List;
@@ -182,6 +184,54 @@ public class Season implements Comparable<Season>, TrackSelector {
             trackInfo.setHorizontalAlignment(SwingConstants.CENTER);
             trackInfo.setFont(new Font("Arial", Font.BOLD, 20));
             trackPanel.add(trackInfo);
+            final int index = i;
+            trackInfo.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (results.size() > index) {
+                        final PlayerStats[] stats = results.get(index).getStats();
+                        Map<String, UUID> idMapper = new HashMap<>();
+                        for (PlayerStats stat : stats) idMapper.put(stat.playerId, stat.id);
+                        final PlayerRenderer renderer = new PlayerRenderer() {
+                            @Override
+                            public void renderPlayer(Graphics2D g2d, int x, int y, int i, String playerId) {
+                                participants.stream().filter(p -> p.getId().equals(idMapper.get(playerId))).findAny().ifPresent(p -> {
+                                    final String name = p.getName();
+                                    g2d.drawString(name, x + 30, y + (i + 1) * 15 + 15);
+                                    Player.draw(g2d, x + 15, y + (i + 1) * 15 + 10, 0, new Color(p.getColor1()), new Color(p.getColor2()), 1.0);
+                                });
+                            }
+                        };
+                        final JDialog dialog = new JDialog(frame);
+                        final int height = 5 + 15 * (stats.length + 1);
+                        final JPanel panel = new JPanel() {
+                            @Override
+                            public void paintComponent(Graphics g) {
+                                super.paintComponent(g);
+                                Game.drawStandings((Graphics2D) g, 10, 10, stats, renderer);
+                                final ImageIcon icon = TrackPreviewButton.createIcon(tracksAndLaps.get(index).getKey().getBackgroundImage());
+                                icon.paintIcon(this, g, 30, height + 20);
+                            }
+                        };
+                        panel.setPreferredSize(new Dimension(460, height + 330));
+                        dialog.setTitle(tracksAndLaps.get(index).getKey().getName() + " results");
+                        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+                        dialog.setContentPane(panel);
+                        dialog.pack();
+                        dialog.setModal(true);
+                        dialog.setLocationRelativeTo(frame);
+                        dialog.setVisible(true);
+                    }
+                }
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    trackInfo.setForeground(Color.RED);
+                }
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    trackInfo.setForeground(Color.BLACK);
+                }
+            });
             // TODO: Draw track icon + reseult info box when clicking the label
         }
         panel.add(trackPanel);
@@ -361,8 +411,7 @@ public class Season implements Comparable<Season>, TrackSelector {
         private final TrackData data;
         private final SettingsField laps;
         private TrackButton(TrackData data, SettingsField laps) {
-            final String id = data.getTrackId();
-            final String name = StringUtils.capitalize(id.substring(0, id.length() - 4));
+            final String name = data.getName();
             setText(name);
             this.data = data;
             this.laps = laps;

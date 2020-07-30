@@ -4,6 +4,7 @@ import gp.ImageCache;
 import gp.Main;
 import gp.MapEditor;
 import gp.TrackLanes;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -251,6 +252,10 @@ public class TrackData implements Serializable {
 
     public String getTrackId() {
         return trackId;
+    }
+
+    public String getName() {
+        return StringUtils.capitalize(trackId.substring(0, trackId.length() - 4));
     }
 
     public boolean isExternal() {
