@@ -19,8 +19,8 @@ public class WindowChanger extends WindowAdapter {
         this.mainMenu = mainMenu;
     }
 
-    public void reset() {
-        this.panel = null;
+    public void reset(JPanel panel) {
+        this.panel = panel == mainMenu ? null : panel;
         this.lobby = null;
         this.game = null;
         this.name = null;
@@ -51,17 +51,11 @@ public class WindowChanger extends WindowAdapter {
             }
             if (game != null) {
                 game.exit();
-                final JPanel returnPanel = panel;
-                reset();
-                // Returning from Championship race
-                if (returnPanel != mainMenu) {
-                    panel = returnPanel;
-                }
             } else if (panel != null) {
                 frame.setMenuBar(new MainMenuBar(frame, mainMenu));
                 frame.setContentPane(mainMenu);
                 frame.pack();
-                reset();
+                reset(null);
             } else {
                 frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
             }

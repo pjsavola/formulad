@@ -179,6 +179,8 @@ public class Season implements Comparable<Season>, TrackSelector {
         trackPanel.add(new JLabel());
         for (int i = 0; i < tracksAndLaps.size(); ++i) {
             final JLabel trackInfo = new JLabel(Integer.toString(i + 1));
+            trackInfo.setHorizontalAlignment(SwingConstants.CENTER);
+            trackInfo.setFont(new Font("Arial", Font.BOLD, 20));
             trackPanel.add(trackInfo);
             // TODO: Draw track icon + reseult info box when clicking the label
         }
@@ -203,11 +205,14 @@ public class Season implements Comparable<Season>, TrackSelector {
             panel.add(ptsTable);
             ptsTable.add(pts);
             for (int i = 0; i < tracksAndLaps.size(); ++i) {
+                final JLabel ptsLabel;
                 if (results.size() > i) {
-                    ptsTable.add(new JLabel(Integer.toString(points.get(player.getId()).get(i))));
+                    ptsLabel = new JLabel(Integer.toString(points.get(player.getId()).get(i)));
                 } else {
-                    ptsTable.add(new JLabel("-"));
+                    ptsLabel = new JLabel("-");
                 }
+                ptsLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                ptsTable.add(ptsLabel);
             }
         }
         masterPanel.add(panel);
@@ -217,10 +222,11 @@ public class Season implements Comparable<Season>, TrackSelector {
             final int laps = tracksAndLaps.get(results.size()).getRight();
             final PlayerSlot[] slots = new PlayerSlot[sortedParticipants.size()];
             for (int i = 0; i < slots.length; ++i) {
-                slots[i] = new PlayerSlot(sortedParticipants.get(i), i + 1);
+                final int pos = i + 1;
+                slots[i] = new PlayerSlot(sortedParticipants.get(sortedParticipants.size() - pos), pos);
             }
             final Main server = new Main(new Main.Params(laps, animationDelayMs, timePerTurnMs, leewayMs), null, frame, masterPanel, slots, data);
-            server.storeResultsTo(results);
+            server.storeResultsTo(Season.this);
             listener.contentChanged(server, null, server, "championship race", true);
             Main.setContent(frame, server);
             new Thread(server).start();
@@ -278,6 +284,11 @@ public class Season implements Comparable<Season>, TrackSelector {
             return false;
         }
         return true;
+    }
+
+    void updateResult(FinalStandings fs) {
+        results.add(fs);
+        save();
     }
 
     void save() {

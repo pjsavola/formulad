@@ -57,7 +57,7 @@ public class Main extends Game implements Runnable {
     private final int moveTimeoutInMillis;
     private final Set<LocalPlayer> disconnectedPlayers = new HashSet<>();
     private final Lobby lobby;
-    private List<FinalStandings> resultStorage;
+    private Season resultStorage;
     public static final Logger log = Logger.getLogger(Main.class.getName());
     public static int defaultColor1 = 0xFF9966;
     public static int defaultColor2 = 0xCCCC33;
@@ -105,8 +105,8 @@ public class Main extends Game implements Runnable {
         current = waitingPlayers.remove(0);
     }
 
-    void storeResultsTo(List<FinalStandings> storage) {
-        resultStorage = storage;
+    void storeResultsTo(Season season) {
+        resultStorage = season;
     }
 
     private void createGrid(Params params, PlayerSlot[] slots, JFrame frame) {
@@ -279,7 +279,7 @@ public class Main extends Game implements Runnable {
         }
         final FinalStandings fs = new FinalStandings(stats);
         if (resultStorage != null) {
-            resultStorage.add(fs);
+            resultStorage.updateResult(fs);
         }
         finalStandings = fs.getStats();
         notifyAll(fs);

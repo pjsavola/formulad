@@ -41,7 +41,7 @@ public class ProfileMessage implements Serializable {
                 line[1],
                 Integer.parseInt(line[2]),
                 Integer.parseInt(line[3]),
-                "gp.ai.ManualAI".equals(line[4])
+                !"gp.ai.ManualAI".equals(line[4])
         );
     }
 
