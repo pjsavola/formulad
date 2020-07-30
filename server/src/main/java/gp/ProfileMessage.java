@@ -33,7 +33,6 @@ public class ProfileMessage implements Serializable {
         profile.color2 = random.nextInt(0xFFFFFF + 1);
         return profile;
     }
-    public static ProfileMessage aiProfile = new ProfileMessage("AI", true);
 
     public static ProfileMessage readProfile(String[] line) {
         return new ProfileMessage(

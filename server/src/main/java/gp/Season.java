@@ -341,7 +341,7 @@ public class Season implements Comparable<Season>, TrackSelector {
                     ++phase;
                     if (phase >= 3) {
                         if (!stats.isEmpty()) {
-                            results.add(new FinalStandings(stats));
+                            results.add(new FinalStandings(stats, true));
                         }
                         stats.clear();
                     }
@@ -375,6 +375,21 @@ public class Season implements Comparable<Season>, TrackSelector {
             return false;
         }
         return true;
+    }
+
+    void updateProfileInfo(List<Profile> profiles) {
+        participants.forEach(pm -> {
+            // Try to find original profile for non-AI players
+            // If profile has been deleted, replace the plyaer with AI player
+            if (!pm.isAi()) {
+                final Profile og = profiles.stream().filter(p -> p.getId().equals(pm.getId())).findAny().orElse(null);
+                if (og == null) {
+                    pm.setAi(true);
+                } else {
+                    pm.originalProfile = og;
+                }
+            }
+        });
     }
 
     void updateResult(FinalStandings fs) {

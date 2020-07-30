@@ -51,6 +51,7 @@ public class Main extends Game implements Runnable {
     private final Map<LocalPlayer, AI> aiMap = new HashMap<>();
     private final Random rng;
     private boolean stopped;
+    private boolean interrupted;
     private boolean enableTimeout;
     private final int initTimeoutInMillis;
     private final int gearTimeoutInMillis;
@@ -101,7 +102,7 @@ public class Main extends Game implements Runnable {
         }
         allPlayers.sort((p1, p2) -> p1.compareTo(p2, stoppedPlayers));
         standings = new ArrayList<>(allPlayers);
-        notifyAll(new FinalStandings(stats));
+        notifyAll(new FinalStandings(stats, resultStorage != null));
         current = waitingPlayers.remove(0);
     }
 
@@ -271,30 +272,32 @@ public class Main extends Game implements Runnable {
             nextPlayer();
             repaint();
         }
-        final List<PlayerStats> stats = new ArrayList<>();
-        for (int i = 0; i < stoppedPlayers.size(); i++) {
-            final LocalPlayer player = stoppedPlayers.get(i);
-            final PlayerStats playerStats = player.getStatistics(i + 1);
-            stats.add(playerStats);
+        if (!interrupted) {
+            final List<PlayerStats> stats = new ArrayList<>();
+            for (int i = 0; i < stoppedPlayers.size(); i++) {
+                final LocalPlayer player = stoppedPlayers.get(i);
+                final PlayerStats playerStats = player.getStatistics(i + 1);
+                stats.add(playerStats);
+            }
+            final FinalStandings fs = new FinalStandings(stats, resultStorage != null);
+            if (resultStorage != null) {
+                resultStorage.updateResult(fs);
+            }
+            finalStandings = fs.getStats();
+            notifyAll(fs);
+            if (lobby != null) {
+                lobby.close();
+            }
+            repaint();
+            clickToExit();
         }
-        final FinalStandings fs = new FinalStandings(stats);
-        if (resultStorage != null) {
-            resultStorage.updateResult(fs);
-        }
-        finalStandings = fs.getStats();
-        notifyAll(fs);
-        if (lobby != null) {
-            lobby.close();
-        }
-        repaint();
-        clickToExit();
     }
 
     @Override
     protected void exit() {
         // This will terminate loop waiting for player input
         stopped = true;
-        resultStorage = null;
+        interrupted = true;
         aiMap.values().forEach(ai -> {
             if (ai instanceof ManualAI) {
                 ((ManualAI) ai).interrupted = true;
@@ -628,6 +631,7 @@ public class Main extends Game implements Runnable {
                 final String selectedSeason = model.getElementAt(index);
                 final Season season = existingSeasons.get(selectedSeason);
                 if (season != null) {
+                    season.updateProfileInfo(profiles);
                     dialog.setVisible(false);
                     season.showStandings(listener);
                 }

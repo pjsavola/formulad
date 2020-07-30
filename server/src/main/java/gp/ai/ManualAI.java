@@ -223,7 +223,6 @@ public class ManualAI implements AI {
 
     @Override
     public void notify(Object notification) {
-        if (profile == null) return; // TODO: save profile info in championship seasons
         if (notification instanceof FinalStandings) {
             final FinalStandings standings = (FinalStandings) notification;
             if (!initialStandingsReceived) {
