@@ -87,7 +87,7 @@ class TrackPreviewButton extends JButton implements TrackSelector {
     }
 
     public static void getAllTracks(List<String> internal, List<String> external) {
-        final boolean ide = true;
+        final boolean ide = false;
         if (ide) {
             try (InputStream in = Main.class.getResourceAsStream("/"); BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
                 String resource;
