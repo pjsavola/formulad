@@ -125,7 +125,6 @@ public class Season implements Comparable<Season>, TrackSelector {
             if (randomTrackOrder.isSelected()) {
                 Collections.shuffle(tracks);
             }
-            timeStamp = System.currentTimeMillis();
             for (TrackButton button : tracks) {
                 tracksAndLaps.add(Pair.of(button.data, button.laps.getValue()));
             }
@@ -303,6 +302,7 @@ public class Season implements Comparable<Season>, TrackSelector {
     }
 
     void save() {
+        timeStamp = System.currentTimeMillis();
         try (final PrintWriter writer = new PrintWriter(name + ".cha", "UTF-8")) {
             writer.print(name);
             writer.print(",");
