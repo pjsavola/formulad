@@ -186,7 +186,12 @@ public class Season implements Comparable<Season>, TrackSelector {
                 positions.computeIfAbsent(stats.id, id -> new ArrayList<>()).add(stats.position);
             }
         }
-        sortedParticipants = participants.stream().sorted((p1, p2) -> compare(p1.getId(), p2.getId(), positions)).collect(Collectors.toList());
+        if (results.isEmpty()) {
+            sortedParticipants = new ArrayList<>(participants);
+            Collections.shuffle(sortedParticipants);
+        } else {
+            sortedParticipants = participants.stream().sorted((p1, p2) -> compare(p1.getId(), p2.getId(), positions)).collect(Collectors.toList());
+        }
         // Header
         panel.add(new JLabel());
         panel.add(new JLabel());
@@ -217,17 +222,35 @@ public class Season implements Comparable<Season>, TrackSelector {
                         };
                         final JDialog dialog = new JDialog(frame);
                         final int height = 5 + 15 * (stats.length + 1);
+                        final ImageIcon icon = TrackPreviewButton.createIcon(tracksAndLaps.get(index).getKey().getBackgroundImage());
                         final JPanel panel = new JPanel() {
                             @Override
                             public void paintComponent(Graphics g) {
                                 super.paintComponent(g);
                                 Game.drawStandings((Graphics2D) g, 10, 10, stats, renderer);
-                                final ImageIcon icon = TrackPreviewButton.createIcon(tracksAndLaps.get(index).getKey().getBackgroundImage());
                                 icon.paintIcon(this, g, 30, height + 20);
                             }
                         };
                         panel.setPreferredSize(new Dimension(460, height + 330));
                         dialog.setTitle(tracksAndLaps.get(index).getKey().getName() + " results");
+                        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+                        dialog.setContentPane(panel);
+                        dialog.pack();
+                        dialog.setModal(true);
+                        dialog.setLocationRelativeTo(frame);
+                        dialog.setVisible(true);
+                    } else {
+                        final JDialog dialog = new JDialog(frame);
+                        final ImageIcon icon = TrackPreviewButton.createIcon(tracksAndLaps.get(index).getKey().getBackgroundImage());
+                        final JPanel panel = new JPanel() {
+                            @Override
+                            public void paintComponent(Graphics g) {
+                                super.paintComponent(g);
+                                icon.paintIcon(this, g, 10, 10);
+                            }
+                        };
+                        panel.setPreferredSize(new Dimension(20 + icon.getIconWidth(), 20 + icon.getIconHeight()));
+                        dialog.setTitle("Upcoming track: " + tracksAndLaps.get(index).getKey().getName());
                         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
                         dialog.setContentPane(panel);
                         dialog.pack();
@@ -252,7 +275,7 @@ public class Season implements Comparable<Season>, TrackSelector {
             final JLabel pos = new JLabel((rank + 1) + ".");
             final JLabel label = new JLabel(player.getName());
             final JPanel ptsTable = new JPanel(new GridLayout(0, tracksAndLaps.size() + 1));
-            final int total = positions.get(player.getId()).stream().mapToInt(position -> pointDistribution[position - 1]).sum();
+            final int total = results.isEmpty() ? 0 : positions.get(player.getId()).stream().mapToInt(position -> pointDistribution[position - 1]).sum();
             final JLabel pts = new JLabel(Integer.toString(total));
             pos.setFont(new Font("Arial", Font.BOLD, 20));
             label.setFont(new Font("Arial", Font.BOLD, 20));
