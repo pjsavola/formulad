@@ -384,7 +384,6 @@ public class Season implements Comparable<Season>, TrackSelector {
             if (!pm.isAi()) {
                 final Profile og = profiles.stream().filter(p -> p.getId().equals(pm.getId())).findAny().orElse(null);
                 if (og == null) {
-                    System.err.println("Original profile not found for " + pm.getName());
                     pm.setAi(true);
                 } else {
                     pm.originalProfile = og;
@@ -424,7 +423,6 @@ public class Season implements Comparable<Season>, TrackSelector {
                 writer.println(p.getRight());
             }
             writer.println();
-            System.err.println("Participants: " + participants.size());
             for (ProfileMessage message : participants) {
                 writer.print(message.getId());
                 writer.print(",");
