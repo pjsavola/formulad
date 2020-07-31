@@ -1,8 +1,10 @@
 package gp.ai;
 
 import gp.model.*;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class MagnificentAI extends BaseAI {
 
@@ -15,6 +17,24 @@ public class MagnificentAI extends BaseAI {
 
     public MagnificentAI(TrackData data) {
         super(data);
+    }
+
+    private static Pair<Integer, Integer> findGarage(Node node) {
+        int min = -1;
+        int max = -1;
+        if (node.isPit()) {
+            Node pitLaneNode = node;
+            int len = 0;
+            while (pitLaneNode != null) {
+                if (pitLaneNode.hasGarage()) {
+                    max = len;
+                    if (min == -1) min = len;
+                }
+                pitLaneNode = pitLaneNode.childStream().filter(Node::isPit).findAny().orElse(null);
+                ++len;
+            }
+        }
+        return Pair.of(min, max);
     }
 
     public void init(GameState gameState, int selectedGear) {
@@ -33,116 +53,71 @@ public class MagnificentAI extends BaseAI {
         if (location == null) {
             throw new RuntimeException("Unknown location for player: " + playerId);
         }
-        final boolean inPits = location.getType() == NodeType.PIT;
-        final int maxGear = inPits ? 4 : 6;
+        final Set<Node> blockedNodes = playerMap
+                .values()
+                .stream()
+                .map(p -> data.getNodes().get(p.getNodeId()))
+                .collect(Collectors.toSet());
+        final int minGear = Math.max(1, player.getGear() - Math.min(4, player.getHitpoints() - 1));
+        final int maxGear = Math.min(location.isPit() ? 4 : 6, player.getGear() + 1);
         final int stopsDone = player.getStops();
-        if (stopsDone < location.getStopCount()) {
-            // This can only happen in curves, find max distance to the last curve node.
-            final int maxDistance = AIUtil.getMaxDistanceToNextStraight(location) - 1;
-            // Select the largest gear for which we might be able to stop in the curve.
-            int bestGear = 2; // Never switch to gear 1, as it's intuitively a bad idea.
-            for (int gear = Math.min(maxGear, player.getGear() + 1); gear >= 3; gear--) {
-                final int[] distribution = Gear.getDistribution(gear);
-                if (distribution[distribution.length - 1] >= maxDistance + player.getHitpoints()) {
-                    // Rolling max from this dice would cause DNF.
-                    continue;
-                }
-                if (distribution[0] < maxDistance) {
-                    bestGear = gear;
-                    break;
-                }
+        final int stopsToDo = location.getStopCount() - stopsDone;
+        final int movePermit = AIUtil.getMaxDistanceWithoutDamage(location, stopsDone, blockedNodes);
+        final int movePermitWithoutOthers = AIUtil.getMaxDistanceWithoutDamage(location, stopsDone, Collections.emptySet());
+        final int minDistanceToNextCurve = AIUtil.getMinDistanceToNextCurve(location, blockedNodes);
+        int minRoll = Gear.getMin(minGear); // Strict minimum
+        int maxRoll = Gear.getMax(maxGear); // Strict maximum
+        maxRoll = Math.min(maxRoll, movePermit + player.getHitpoints() - 1);
+        int idealRoll = movePermit;
+        if (location.isPit()) {
+            if (player.getHitpoints() < 18) {
+                final Pair<Integer, Integer> garageDistances = findGarage(location);
+                final int min = garageDistances.getLeft();
+                final int max = garageDistances.getRight();
+                if (min != -1) minRoll = Math.max(minRoll, min);
+                if (max != -1) maxRoll = Math.min(maxRoll, max + player.getHitpoints() - 1);
+                idealRoll = Math.min(maxRoll, movePermit);
             }
-            if (bestGear == 2) {
-                debug("Forced to select low gear 2 because need to stop");
-            } else {
-                debug("Found gear " + bestGear + " which is good to get out of the curve");
+        } else if (location.isCurve() && stopsToDo > 0) {
+            if (stopsToDo > 1) {
+                idealRoll = Math.min(movePermit, movePermitWithoutOthers / stopsToDo);
             }
-            if (AIUtil.validateGear(player, bestGear, inPits)) {
-                gear = bestGear;
-            } else {
-                // This happens only if it would seem to be a good idea to switch
-                // down gears rapidly but we don't have hitpoints for it. This probably
-                // means we're going to DNF, but let's at least send a valid move. :(
-                gear = player.getGear() - 1;
-            }
-        } else {
-            final int minDistance = getMinDistanceToNextCurve(location);
+        } else if (minDistanceToNextCurve != -1 && maxRoll >= minDistanceToNextCurve && movePermit >= minDistanceToNextCurve) {
+            minRoll = Math.max(minRoll, minDistanceToNextCurve);
             if (AIUtil.getStopsRequiredInNextCurve(location) > 1) {
-                // We really want to get to the next curve, but just barely. Select smallest
-                // gear which guarantees that we get to the next curve. If not possible,
-                // select largest gear.
-                int bestGear = Math.min(maxGear, player.getGear() + 1);
-                int gearCandidate = bestGear;
-                // Switching to gear 1 or 2 is intuitively bad idea!?
-                boolean found = false;
-                while (gearCandidate >= 3) {
-                    final int[] distribution = Gear.getDistribution(gearCandidate);
-                    if (distribution[0] >= minDistance) {
-                        bestGear = gearCandidate;
-                        found = true;
-                    }
-                    gearCandidate--;
-                }
-                if (found) {
-                    debug("Found gear " + bestGear + " which guarantees entrance to next corner");
-                } else {
-                    debug("Cannot guarantee entrance to next corner, selecting largest possible gear " + bestGear);
-                }
-                if (AIUtil.validateGear(player, bestGear, inPits)) {
-                    gear = bestGear;
-                } else {
-                    // This happens only if it would seem to be a good idea to switch
-                    // down gears rapidly but we don't have hitpoints for it. This probably
-                    // means we're going to DNF, but let's at least send a valid move. :(
-                    gear = player.getGear() - 1;
-                }
-            } else {
-                // Try to get to the next curve, if possible. Collect all valid gears which are
-                // good enough to guarantee entry to next curve. Avoid gear 1, it's horrible.
-                final List<Integer> bestGears = new ArrayList<>();
-                for (int i = 2; i < Math.min(maxGear, player.getGear() + 1); i++) {
-                    final int[] distribution = Gear.getDistribution(i);
-                    if (distribution[0] >= minDistance) {
-                        bestGears.add(i);
-                    }
-                }
-                if (bestGears.isEmpty()) {
-                    // No gear is good enough, just return largest possible gear.
-                    gear = Math.min(maxGear, player.getGear() + 1);
-                    debug("Cannot guarantee reaching next corner so selecting largest gear " + gear);
-                } else if (bestGears.size() == 1) {
-                    // Found a single valid gear, use that.
-                    gear = bestGears.get(0);
-                    debug("Gear " + gear + " is perfect because we will make it to the next corner");
-                } else {
-                    // Found multiple possibilities, find the gear for which maximum
-                    // dice roll is closest to the start of next straight.
-                    int maxDistance = !location.isCurve() ? AIUtil.getMaxDistanceToNextStraight(location) : AIUtil.getMaxDistanceToStraightAfterNextCurve(location);
-                    int bestGear = Math.min(maxGear, player.getGear() + 1);
-                    int score = 100;
-                    for (int gear : bestGears) {
-                        final int[] distribution = Gear.getDistribution(gear);
-                        final int newScore;
-                        if (distribution[distribution.length - 1] > maxDistance) {
-                            newScore = 2 * (distribution[distribution.length - 1] - maxDistance);
-                        } else {
-                            newScore = maxDistance - distribution[distribution.length - 1];
-                        }
-                        if (newScore < score) {
-                            score = newScore;
-                            bestGear = gear;
-                        }
-                    }
-                    debug("Gear " + bestGear + " is best for covering distance " + maxDistance);
-                    gear = bestGear;
-                }
-                if (!AIUtil.validateGear(player, gear, inPits)) {
-                    // This happens only if it would seem to be a good idea to switch
-                    // down gears rapidly but we don't have hitpoints for it. This probably
-                    // means we're going to DNF, but let's at least send a valid move. :(
-                    gear = player.getGear() - 1;
-                }
+                idealRoll = minRoll;
             }
+        }
+        // TODO: Decide when it's a good idea to visit pits if you're not in pits yet.
+        final int distanceToPits = AIUtil.getMinDistanceToPits(location, blockedNodes);
+        System.out.println(minRoll + " - " + idealRoll + " - " + maxRoll);
+        final int max = Gear.getMax(maxGear);
+        final int min = Gear.getMin(minGear);
+        if (max <= minRoll) {
+            if (debug) System.out.println("Trivial decision max gear: " + maxGear);
+            gear = maxGear;
+        } else if (min >= maxRoll) {
+            if (debug) System.out.println("Trivial decision min gear: " + minGear);
+            gear = minGear;
+        } else {
+            int bestGear = minGear;
+            int bestScore = Integer.MIN_VALUE;
+            for (int gear = minGear; gear <= maxGear; ++gear) {
+                int score = 30;
+                final int gearMin = Gear.getMin(gear);
+                final int gearMax = Gear.getMax(gear);
+                if (gearMin >= minRoll) score += 10;
+                if (gearMax <= maxRoll) score += 7;
+                final int avg = (gearMin + gearMax) / 2;
+                score -= Math.abs(avg - idealRoll);
+                if (score >= bestScore) {
+                    bestScore = score;
+                    bestGear = gear;
+                }
+                if (debug) System.out.println("Gear " + gear + " has score " + score);
+            }
+            if (debug) System.out.println("Selected: " + bestGear);
+            gear = bestGear;
         }
         return new gp.model.Gear().gear(gear);
     }

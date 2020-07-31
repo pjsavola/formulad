@@ -99,6 +99,29 @@ public abstract class AIUtil {
                 .orElse(0);
     }
 
+    public static int getMinDistanceToPits(Node startNode, Set<Node> blockedNodes) {
+        final Deque<Node> work = new ArrayDeque<>();
+        final Map<Node, Integer> distances = new HashMap<>();
+        distances.put(startNode, 0);
+        work.addLast(startNode);
+        while (!work.isEmpty()) {
+            final Node node = work.removeFirst();
+            final int newDistance = distances.get(node) + 1;
+            node.childStream().filter(child -> !blockedNodes.contains(child)).forEach(child -> {
+                final Integer distance = distances.get(child);
+                if (distance == null) {
+                    distances.put(child, newDistance);
+                    if (child.isPit()) {
+                        work.clear();
+                    } else {
+                        work.addLast(child);
+                    }
+                }
+            });
+        }
+        return distances.values().stream().mapToInt(Integer::intValue).max().orElse(-1);
+    }
+
     private static int findMaxDistanceInThisArea(Node startNode, Set<Node> blockedNodes) {
         final boolean startNodeIsCurve = startNode.isCurve();
         final Deque<Node> work = new ArrayDeque<>();

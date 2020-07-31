@@ -67,8 +67,9 @@ public class ManualAI extends BaseAI {
         game.actionMenu.removeAll();
         for (int newGear = 1; newGear <= 6; ++newGear) {
             if (AIUtil.validateGear(hitpoints, gear, newGear, inPits)) {
-                final int[] distribution = gp.ai.Gear.getDistribution(newGear);
-                String label = "Gear " + newGear + " (" + distribution[0] + "-" + distribution[distribution.length -1] + ")";
+                final int min = gp.ai.Gear.getMin(newGear);
+                final int max = gp.ai.Gear.getMax(newGear);
+                String label = "Gear " + newGear + " (" + min + "-" + max + ")";
                 if (gear > newGear + 1) {
                     label += " -" + (gear - newGear - 1) + " HP";
                 }
@@ -123,6 +124,9 @@ public class ManualAI extends BaseAI {
                         case 'F':
                             System.out.println("Min distances to next area start: " + AIUtil.findMinDistancesToNextAreaStart(location, false).values());
                             System.out.println("Min distances to next area start (allow non-optimal last): " + AIUtil.findMinDistancesToNextAreaStart(location, true).values());
+                            break;
+                        case 'G':
+                            System.out.println("Min distance to pits: " + AIUtil.getMinDistanceToPits(location, blockedNodes));
                             break;
                     }
                 }

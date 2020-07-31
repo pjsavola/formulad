@@ -21,4 +21,14 @@ public enum Gear {
     public static int[] getDistribution(int gear) {
         return Gear.values()[gear - 1].getDistribution();
     }
+
+    public static int getMax(int gear) {
+        final int[] distribution = getDistribution(gear);
+        return distribution[distribution.length - 1];
+    }
+
+    public static int getMin(int gear) {
+        final int[] distribution = getDistribution(gear);
+        return distribution[0];
+    }
 }
