@@ -3,7 +3,9 @@ package gp.ai;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 
 import javax.swing.JFrame;
@@ -38,14 +40,23 @@ public class ManualAI extends BaseAI {
         this.profile = profile;
     }
 
+    private String getAidText(int distance) {
+        return distance == -1 ? ": N/A" : ": " + distance;
+    }
+
     @Override
     public Gear selectGear(GameState gameState) {
+        final Set<Node> blockedNodes = new HashSet<>();
+        int stopCount = 0;
         for (PlayerState playerState : gameState.getPlayers()) {
             if (playerId.equals(playerState.getPlayerId())) {
                 hitpoints = playerState.getHitpoints();
                 gear = playerState.getGear();
                 location = data.getNodes().get(playerState.getNodeId());
+                stopCount = playerState.getStops();
                 break;
+            } else {
+                blockedNodes.add(data.getNodes().get(playerState.getNodeId()));
             }
         }
         if (hitpoints == 0) {
@@ -70,6 +81,11 @@ public class ManualAI extends BaseAI {
                 game.actionMenu.add(item);
             }
         }
+        if (!location.isPit()) data.getNodes().stream().filter(Node::isPit).forEach(blockedNodes::add);
+        final MenuItem item1 = new MenuItem("Min distance to next curve" + getAidText(AIUtil.getMinDistanceToNextCurve(location, blockedNodes)));
+        final MenuItem item2 = new MenuItem("Max distance without taking damage" + getAidText(AIUtil.getMaxDistanceWithoutDamage(location, stopCount, blockedNodes)));
+        game.drivingAids.add(item1);
+        game.drivingAids.add(item2);
         final KeyListener keyListener = new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
@@ -87,6 +103,28 @@ public class ManualAI extends BaseAI {
                 } else if (c == 'd') {
                     game.debug = !game.debug;
                     game.repaint();
+                } else {
+                    switch (c) {
+                        case 'A':
+                            System.out.println("Stops required in next curve: " + AIUtil.getStopsRequiredInNextCurve(location));
+                            break;
+                        case 'B':
+                            System.out.println("Max distance to straight: " + AIUtil.findMaxDistanceToStraight(location));
+                            break;
+                        case 'C':
+                            System.out.println("Max distance to next straight: " + AIUtil.getMaxDistanceToNextStraight(location));
+                            break;
+                        case 'D':
+                            System.out.println("Max distance to straight after next curve: " + AIUtil.getMaxDistanceToStraightAfterNextCurve(location));
+                            break;
+                        case 'E':
+                            System.out.println("Max distances to next area start: " + AIUtil.findMaxDistancesToNextAreaStart(location).values());
+                            break;
+                        case 'F':
+                            System.out.println("Min distances to next area start: " + AIUtil.findMinDistancesToNextAreaStart(location, false).values());
+                            System.out.println("Min distances to next area start (allow non-optimal last): " + AIUtil.findMinDistancesToNextAreaStart(location, true).values());
+                            break;
+                    }
                 }
             }
         };
@@ -102,6 +140,7 @@ public class ManualAI extends BaseAI {
             if (newGear != 0) {
                 frame.removeKeyListener(keyListener);
                 game.actionMenu.removeAll();
+                game.drivingAids.removeAll();
                 return new Gear().gear(newGear);
             }
         }
@@ -227,5 +266,6 @@ public class ManualAI extends BaseAI {
                 profile.getManager().saveProfiles();
             }
         }
+        ai.notify(notification);
     }
 }

@@ -21,6 +21,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
     final JFrame frame;
     private final JPanel panel;
     public final Menu actionMenu;
+    public final Menu drivingAids;
 
     private BufferedImage backgroundImage;
 
@@ -91,6 +92,8 @@ public abstract class Game extends JPanel implements PlayerRenderer {
         menuBar.add(actionMenu);
         final Menu view = new Menu("View");
         menuBar.add(view);
+        drivingAids = new Menu("Aids");
+        menuBar.add(drivingAids);
         final MenuItem zoomIn = new MenuItem("Zoom In");
         final MenuItem zoomOut = new MenuItem("Zoom Out");
         view.add(zoomIn);

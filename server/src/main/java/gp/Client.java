@@ -76,7 +76,7 @@ public class Client extends Game implements Runnable {
                             try {
                                 waiting = true;
                                 initTrack((TrackData) request);
-                                final AI backupAI = new GreatAI(data);
+                                final AI backupAI = new MagnificentAI(data);
                                 ai = new ManualAI(backupAI, frame, this, profile, data);
                             } catch (Exception e) {
                                 final String msg = "Error when receiving track data: " + e.getMessage();

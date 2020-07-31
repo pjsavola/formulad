@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 
-public final class Node implements Serializable {
+public final class Node implements Serializable, Comparable<Node> {
     private final int id;
     private final NodeType type;
     private final Set<Node> nextNodes = new HashSet<>();
@@ -101,6 +101,10 @@ public final class Node implements Serializable {
         return nextNodes.stream();
     }
 
+    public boolean isPit() {
+        return type == NodeType.PIT;
+    }
+
     /**
      * Returns minimum distance to the next area for which isCurve() returns a different
      * value, does not take obstacles into account.
@@ -151,6 +155,7 @@ public final class Node implements Serializable {
         return false;
     }
 
+    @Override
     public int compareTo(Node node) {
         if (distance == node.distance) {
             if (isCurve() && !node.isCurve()) {
@@ -164,5 +169,10 @@ public final class Node implements Serializable {
             return isCurve() ? delta : -delta;
         }
         return TrackLanes.distanceToInt(node.distance - distance);
+    }
+
+    @Override
+    public String toString() {
+        return id + " " + type.toString();
     }
 }

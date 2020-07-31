@@ -111,10 +111,10 @@ public class Main extends Game implements Runnable {
             final ProfileMessage profile = slot.getProfile();
             if (profile != null) {
                 if (profile.isAi()) {
-                    aiToProfile.put(new GreatAI(data), profile);
+                    aiToProfile.put(profile.createAI(data), profile);
                 }
                 else if (profile.isLocal()) {
-                    aiToProfile.put(new ManualAI(new GreatAI(data), frame, this, profile.originalProfile, data), profile);
+                    aiToProfile.put(new ManualAI(new MagnificentAI(data), frame, this, profile.originalProfile, data), profile);
                 }
                 else if (lobby != null) {
                     final RemoteAI client = lobby.getClient(profile.getId());

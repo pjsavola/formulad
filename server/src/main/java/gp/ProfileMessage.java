@@ -1,5 +1,10 @@
 package gp;
 
+import gp.ai.AI;
+import gp.ai.GreatAI;
+import gp.ai.MagnificentAI;
+import gp.ai.TrackData;
+
 import java.awt.*;
 import java.io.Serializable;
 import java.util.*;
@@ -13,6 +18,7 @@ public class ProfileMessage implements Serializable {
     private int color2;
     private boolean local;
     private boolean ai;
+    private transient AI.Type aiType;
     public transient Profile originalProfile;
 
     public static ProfileMessage pending = new ProfileMessage("...", false);
@@ -31,6 +37,18 @@ public class ProfileMessage implements Serializable {
         final ProfileMessage profile = new ProfileMessage(validNames.get(random.nextInt(validNames.size())), true);
         profile.color1 = random.nextInt(0xFFFFFF + 1);
         profile.color2 = random.nextInt(0xFFFFFF + 1);
+        switch (profile.getName()) {
+            case "Kimi":
+            case "Michael":
+            case "Lewis":
+            case "Sebastian":
+            case "Fernando":
+                profile.aiType = AI.Type.MAGNIFICENT;
+                break;
+            default:
+                profile.aiType = AI.Type.GREAT;
+                break;
+        }
         return profile;
     }
 
@@ -40,17 +58,22 @@ public class ProfileMessage implements Serializable {
                 line[1],
                 Integer.parseInt(line[2]),
                 Integer.parseInt(line[3]),
-                !"gp.ai.ManualAI".equals(line[4])
+                AI.fromString(line[4])
         );
     }
 
-    private ProfileMessage(UUID id, String name, int color1, int color2, boolean ai) {
+    public String toLine() {
+        return id + "," + name + "," + color1 + "," + color2 + "," + AI.toString(aiType);
+    }
+
+    private ProfileMessage(UUID id, String name, int color1, int color2, AI.Type aiType) {
         this.id = id;
         this.name = name;
         this.color1 = color1;
         this.color2 = color2;
         local = true;
-        this.ai = ai;
+        this.ai = aiType != AI.Type.MANUAL;
+        this.aiType = aiType;
     }
 
     private ProfileMessage(String name, boolean ai) {
@@ -100,5 +123,14 @@ public class ProfileMessage implements Serializable {
 
     public boolean isAi() {
         return ai;
+    }
+
+    public AI createAI(TrackData data) {
+        if (aiType == null) return null;
+        switch (aiType) {
+            case GREAT: return new GreatAI(data);
+            case MAGNIFICENT: return new MagnificentAI(data);
+        }
+        return null;
     }
 }

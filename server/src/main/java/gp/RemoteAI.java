@@ -10,6 +10,7 @@ import java.util.logging.Level;
 import gp.ai.AI;
 
 import gp.ai.GreatAI;
+import gp.ai.MagnificentAI;
 import gp.ai.TrackData;
 import gp.model.*;
 
@@ -19,7 +20,7 @@ public class RemoteAI implements AI {
     private final Socket socket;
     private ObjectInputStream ois;
     private ObjectOutputStream oos;
-    private GreatAI fallback;
+    private MagnificentAI fallback;
     private GameState gameState;
     private int gear;
 
@@ -71,8 +72,8 @@ public class RemoteAI implements AI {
     }
 
     public ProfileMessage getProfile(TrackData data) {
+        fallback = new MagnificentAI(data);
         if (oos != null && ois != null) {
-            fallback = new GreatAI(data);
             try {
                 oos.writeObject(data);
                 Object response;
