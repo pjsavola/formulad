@@ -71,11 +71,12 @@ public class MagnificentAI extends BaseAI {
                 .stream()
                 .map(p -> data.getNodes().get(p.getNodeId()))
                 .collect(Collectors.toSet());
+        final Set<Node> pitNodes = data.getNodes().stream().filter(Node::isPit).collect(Collectors.toSet());
         gearMaskToScores.clear();
         gearMaskToMaxScore.clear();
         gearMaskToMinScore.clear();
-        final GearEvaluator evaluator = new GearEvaluator(location, blockedNodes, player.getGear(), player.getStops(), player.getHitpoints());
-        for (int i = 0; i < 1; ++i) {
+        final GearEvaluator evaluator = new GearEvaluator(location, blockedNodes, pitNodes, player.getGear(), player.getStops(), player.getHitpoints());
+        for (int i = 0; i < 100; ++i) {
             evaluator.randomWalk();
         }
         final Map<Integer, Integer> gearToMaxScore = new HashMap<>();
@@ -185,6 +186,8 @@ public class MagnificentAI extends BaseAI {
         private final int minDistanceToNextCurveWithoutOthers;
         private final boolean inPits;
         private final boolean enteredNextCurve;
+        private final int garageMin;
+        private final int garageMax;
 
         public String toString() {
             String s = "Sequence " + gearMask + "\n";
@@ -207,7 +210,7 @@ public class MagnificentAI extends BaseAI {
 
         private static final int searchDepth = 4;
 
-        private GearEvaluator(Node location, Set<Node> blockedNodes, int gear, int stopCount, int hitpoints) {
+        private GearEvaluator(Node location, Set<Node> blockedNodes, Set<Node> pitNodes, int gear, int stopCount, int hitpoints) {
             turns = 0;
             this.gear = gear;
             gearMask = gear;
@@ -216,21 +219,29 @@ public class MagnificentAI extends BaseAI {
             minGear = Math.max(1, gear - Math.min(4, hitpoints - 1));
             maxGear = Math.min(inPits ? 4 : 6, gear + 1);
             stopsToDo = location.getStopCount() - stopCount;
+            if (!inPits) blockedNodes.addAll(pitNodes);
             movePermit = AIUtil.getMaxDistanceWithoutDamage(location, stopCount, blockedNodes);
-            movePermitWithoutOthers = AIUtil.getMaxDistanceWithoutDamage(location, stopCount, Collections.emptySet());
-            movePermitToNextCornerWithoutOthers = AIUtil.getMaxDistanceWithoutDamage(location, location.getStopCount(), Collections.emptySet());
+            movePermitWithoutOthers = AIUtil.getMaxDistanceWithoutDamage(location, stopCount, !inPits ? pitNodes : Collections.emptySet());
+            movePermitToNextCornerWithoutOthers = AIUtil.getMaxDistanceWithoutDamage(location, location.getStopCount(), !inPits ? pitNodes : Collections.emptySet());
             minDistanceToNextCurve = AIUtil.getMinDistanceToNextCurve(location, blockedNodes);
-            minDistanceToNextCurveWithoutOthers = AIUtil.getMinDistanceToNextCurve(location, Collections.emptySet());
+            minDistanceToNextCurveWithoutOthers = AIUtil.getMinDistanceToNextCurve(location, !inPits ? pitNodes : Collections.emptySet());
             minMovesToTakeDamageWithoutOthers = AIUtil.getMinDistanceToTakeDamage(location, stopCount);
             stopsInNextCurve = AIUtil.getStopsRequiredInNextCurve(location);
             enteredNextCurve = false;
+            if (location.isPit()) {
+                final Pair<Integer, Integer> p = findGarage(location);
+                garageMin = p.getLeft();
+                garageMax = p.getRight();
+            } else {
+                garageMin = -1;
+                garageMax = -1;
+            }
         }
 
         private GearEvaluator(GearEvaluator old,
                               int gear,
                               int moveSteps,
                               boolean inPits) {
-            // TODO: Calculate new movePermit...
             turns = old.turns + 1;
             this.gear = gear;
             gearMask = 10 * old.gearMask + gear;
@@ -238,7 +249,9 @@ public class MagnificentAI extends BaseAI {
             final int damage = Math.max(0, moveSteps - ((old.stopsToDo > 0 && minDistanceToNextCurve >= 1) ? old.movePermit : old.movePermitToNextCornerWithoutOthers)) + Math.max(0, old.gear - gear - 1);
             minDistanceToNextCurveWithoutOthers = old.minDistanceToNextCurveWithoutOthers - moveSteps;
             enteredNextCurve = minDistanceToNextCurve < 1;
-            hitpoints = old.hitpoints - damage;
+            hitpoints = (inPits && moveSteps >= old.garageMin && moveSteps <= old.garageMax) ? 18 : old.hitpoints - damage;
+            garageMin = old.garageMin - moveSteps;
+            garageMax = old.garageMax - moveSteps;
             minGear = Math.max(1, gear - Math.min(4, hitpoints - 1));
             maxGear = Math.min(inPits ? 4 : 6, gear + 1);
             stopsToDo = enteredNextCurve ? old.stopsInNextCurve - 1 : old.stopsToDo - 1;
@@ -255,7 +268,7 @@ public class MagnificentAI extends BaseAI {
         }
 
         private void randomWalk() {
-            if (!canEvaluateNext() || gearMask > Math.pow(10, searchDepth)) {
+            if (!canEvaluateNext() || gearMask > Math.pow(10, inPits ? 1 : searchDepth)) {
                 final int score = getScore();
                 gearMaskToScores.computeIfAbsent(gearMask, gm -> new ArrayList<>()).add(score);
                 final Integer min = gearMaskToMinScore.get(gearMask);
@@ -315,7 +328,7 @@ public class MagnificentAI extends BaseAI {
             int score = canEvaluateNext() ? 0 : 100;
             score -= 10 * (turns + stopsToDo);
             score += 2 * hitpoints;
-            final int[] initialScores = { 0, 3, 6, 8, 8, 4 };
+            final int[] initialScores = { 0, 6, 9, 11, 12, 8 };
             score += initialScores[gear - 1];
             if (stopsToDo > 0) {
                 score += enteredNextCurve ? movePermitToNextCornerWithoutOthers : movePermitWithoutOthers;
