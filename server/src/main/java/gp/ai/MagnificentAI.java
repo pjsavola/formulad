@@ -42,6 +42,15 @@ public class MagnificentAI extends BaseAI {
         gear = selectedGear;
     }
 
+    private static int getNextGear(int gearMask) {
+        double digitCount = ((int) Math.log10(gearMask)) + 1;
+        int nextGear = gearMask;
+        while (--digitCount > 1) {
+            nextGear = nextGear / 10;
+        }
+        return nextGear % 10;
+    }
+
     @Override
     public gp.model.Gear selectGear(GameState gameState) {
         playerMap = AIUtil.buildPlayerMap(gameState);
@@ -53,11 +62,41 @@ public class MagnificentAI extends BaseAI {
         if (location == null) {
             throw new RuntimeException("Unknown location for player: " + playerId);
         }
+        if (player.getGear() == 0) {
+            gear = 1;
+            return new gp.model.Gear().gear(1);
+        }
         final Set<Node> blockedNodes = playerMap
                 .values()
                 .stream()
                 .map(p -> data.getNodes().get(p.getNodeId()))
                 .collect(Collectors.toSet());
+        gearMaskToScores.clear();
+        gearMaskToMaxScore.clear();
+        gearMaskToMinScore.clear();
+        final GearEvaluator evaluator = new GearEvaluator(location, blockedNodes, player.getGear(), player.getStops(), player.getHitpoints());
+        for (int i = 0; i < 1; ++i) {
+            evaluator.randomWalk();
+        }
+        final Map<Integer, Integer> gearToMaxScore = new HashMap<>();
+        gearMaskToMaxScore.forEach((gearMask, score) -> {
+            final int nextGear = getNextGear(gearMask);
+            final Integer oldScore = gearToMaxScore.get(nextGear);
+            if (oldScore == null || score > oldScore) gearToMaxScore.put(nextGear, score);
+        });
+        final int riskGear = gearToMaxScore.entrySet().stream().max((e1, e2) -> e1.getValue() - e2.getValue()).map(e -> e.getKey()).orElse(-1);
+        final int avgGear = gearMaskToScores.entrySet().stream().max(Comparator.comparingInt(e -> e.getValue().stream().mapToInt(Integer::intValue).sum() / e.getValue().size())).map(e -> e.getKey()).map(MagnificentAI::getNextGear).orElse(-1);
+        final int safeGear = gearMaskToMinScore.entrySet().stream().max((e1, e2) -> e1.getValue() - e2.getValue()).map(e -> e.getKey()).map(MagnificentAI::getNextGear).orElse(-1);
+        System.out.println("Risk gear: " + riskGear);
+        System.out.println("Safe gear: " + safeGear);
+        System.out.println("Best gear: " + avgGear);
+
+        if (true) return new gp.model.Gear().gear(avgGear);
+        // Find gear sequences for:
+        // - max of mins (safe option)
+        // - min of maxs (risky option)
+        // - max of averages
+
         final int minGear = Math.max(1, player.getGear() - Math.min(4, player.getHitpoints() - 1));
         final int maxGear = Math.min(location.isPit() ? 4 : 6, player.getGear() + 1);
         final int stopsDone = player.getStops();
@@ -90,7 +129,7 @@ public class MagnificentAI extends BaseAI {
         }
         // TODO: Decide when it's a good idea to visit pits if you're not in pits yet.
         final int distanceToPits = AIUtil.getMinDistanceToPits(location, blockedNodes);
-        System.out.println(minRoll + " - " + idealRoll + " - " + maxRoll);
+        if (debug) System.out.println(minRoll + " - " + idealRoll + " - " + maxRoll);
         final int max = Gear.getMax(maxGear);
         final int min = Gear.getMin(minGear);
         if (max <= minRoll) {
@@ -102,8 +141,9 @@ public class MagnificentAI extends BaseAI {
         } else {
             int bestGear = minGear;
             int bestScore = Integer.MIN_VALUE;
+            final int[] initialScores = { 0, 3, 6, 7, 8, 4 }; // may depend on damage
             for (int gear = minGear; gear <= maxGear; ++gear) {
-                int score = 30;
+                int score = Math.min(player.getHitpoints(), initialScores[gear - 1]);
                 final int gearMin = Gear.getMin(gear);
                 final int gearMax = Gear.getMax(gear);
                 if (gearMin >= minRoll) score += 10;
@@ -120,6 +160,195 @@ public class MagnificentAI extends BaseAI {
             gear = bestGear;
         }
         return new gp.model.Gear().gear(gear);
+    }
+
+    private Random r = new Random();
+
+    private Map<Integer, List<Integer>> gearMaskToScores = new HashMap<>();
+    private Map<Integer, Integer> gearMaskToMaxScore = new HashMap<>();
+    private Map<Integer, Integer> gearMaskToMinScore = new HashMap<>();
+
+    class GearEvaluator {
+        private final int turns;
+        private final int gear;
+        private final int gearMask;
+        private final int hitpoints;
+        private final int minGear;
+        private final int maxGear;
+        private final int stopsToDo;
+        private final int stopsInNextCurve;
+        private final int movePermit;
+        private final int movePermitWithoutOthers;
+        private final int movePermitToNextCornerWithoutOthers;
+        private final int minMovesToTakeDamageWithoutOthers;
+        private final int minDistanceToNextCurve;
+        private final int minDistanceToNextCurveWithoutOthers;
+        private final boolean inPits;
+        private final boolean enteredNextCurve;
+
+        public String toString() {
+            String s = "Sequence " + gearMask + "\n";
+            s += "Turns: " + turns + "\n";
+            s += "Gear: " + gear + "\n";
+            s += "Hitpoints: " + hitpoints + "\n";
+            s += "Min/Max Gear: " + minGear + "-" + maxGear + "\n";
+            s += "Stops to do: " + stopsToDo + "\n";
+            s += "Stops in next curve: " + stopsInNextCurve + "\n";
+            s += "Move permit: " + movePermit + "\n";
+            s += "Move permit without others: " + movePermitWithoutOthers + "\n";
+            s += "Move permit to next corner without others: " + movePermitToNextCornerWithoutOthers + "\n";
+            s += "Min move to take damage without others: " + minMovesToTakeDamageWithoutOthers + "\n";
+            s += "Min distance to next curve: " + minDistanceToNextCurve + "\n";
+            s += "Min distance to next curve without others: " + minDistanceToNextCurveWithoutOthers + "\n";
+            s += "Entered next curve: " + enteredNextCurve + "\n";
+            s += "SCORE: " + getScore() + "\n";
+            return s;
+        }
+
+        private static final int searchDepth = 4;
+
+        private GearEvaluator(Node location, Set<Node> blockedNodes, int gear, int stopCount, int hitpoints) {
+            turns = 0;
+            this.gear = gear;
+            gearMask = gear;
+            this.hitpoints = hitpoints;
+            inPits = location.isPit();
+            minGear = Math.max(1, gear - Math.min(4, hitpoints - 1));
+            maxGear = Math.min(inPits ? 4 : 6, gear + 1);
+            stopsToDo = location.getStopCount() - stopCount;
+            movePermit = AIUtil.getMaxDistanceWithoutDamage(location, stopCount, blockedNodes);
+            movePermitWithoutOthers = AIUtil.getMaxDistanceWithoutDamage(location, stopCount, Collections.emptySet());
+            movePermitToNextCornerWithoutOthers = AIUtil.getMaxDistanceWithoutDamage(location, location.getStopCount(), Collections.emptySet());
+            minDistanceToNextCurve = AIUtil.getMinDistanceToNextCurve(location, blockedNodes);
+            minDistanceToNextCurveWithoutOthers = AIUtil.getMinDistanceToNextCurve(location, Collections.emptySet());
+            minMovesToTakeDamageWithoutOthers = AIUtil.getMinDistanceToTakeDamage(location, stopCount);
+            stopsInNextCurve = AIUtil.getStopsRequiredInNextCurve(location);
+            enteredNextCurve = false;
+        }
+
+        private GearEvaluator(GearEvaluator old,
+                              int gear,
+                              int moveSteps,
+                              boolean inPits) {
+            // TODO: Calculate new movePermit...
+            turns = old.turns + 1;
+            this.gear = gear;
+            gearMask = 10 * old.gearMask + gear;
+            minDistanceToNextCurve = old.minDistanceToNextCurveWithoutOthers - moveSteps;
+            final int damage = Math.max(0, moveSteps - ((old.stopsToDo > 0 && minDistanceToNextCurve >= 1) ? old.movePermit : old.movePermitToNextCornerWithoutOthers)) + Math.max(0, old.gear - gear - 1);
+            minDistanceToNextCurveWithoutOthers = old.minDistanceToNextCurveWithoutOthers - moveSteps;
+            enteredNextCurve = minDistanceToNextCurve < 1;
+            hitpoints = old.hitpoints - damage;
+            minGear = Math.max(1, gear - Math.min(4, hitpoints - 1));
+            maxGear = Math.min(inPits ? 4 : 6, gear + 1);
+            stopsToDo = enteredNextCurve ? old.stopsInNextCurve - 1 : old.stopsToDo - 1;
+            stopsInNextCurve = enteredNextCurve ? -1 : old.stopsInNextCurve;
+            movePermit = old.movePermitWithoutOthers - moveSteps;
+            movePermitWithoutOthers = old.movePermitWithoutOthers - moveSteps;
+            movePermitToNextCornerWithoutOthers = old.movePermitToNextCornerWithoutOthers - moveSteps;
+            minMovesToTakeDamageWithoutOthers = old.minMovesToTakeDamageWithoutOthers - moveSteps;
+            this.inPits = inPits;
+        }
+
+        private boolean canEvaluateNext() {
+            return minDistanceToNextCurveWithoutOthers > 0 || stopsToDo > 0;
+        }
+
+        private void randomWalk() {
+            if (!canEvaluateNext() || gearMask > Math.pow(10, searchDepth)) {
+                final int score = getScore();
+                gearMaskToScores.computeIfAbsent(gearMask, gm -> new ArrayList<>()).add(score);
+                final Integer min = gearMaskToMinScore.get(gearMask);
+                final Integer max = gearMaskToMaxScore.get(gearMask);
+                if (min == null || score < min) gearMaskToMinScore.put(gearMask, score);
+                if (max == null || score > max) gearMaskToMaxScore.put(gearMask, score);
+                //System.out.println(toString());
+            } else {
+                int i = minGear;
+                if (minDistanceToNextCurve > 0 && stopsToDo <= 0) {
+                    while (Gear.getMax(i) < minDistanceToNextCurve) {
+                        if (i == maxGear) {
+                            break;
+                        }
+                        ++i;
+                    }
+                }
+                boolean canBreak = false;
+                while (i <= maxGear) {
+                    if (!AIUtil.validateGear(hitpoints, gear, i, inPits)) continue;
+                    if (canBreak) {
+                        if (movePermitToNextCornerWithoutOthers < Gear.getMin(i)) break; // maybe something else in final corner(s)?
+                        if (stopsToDo > 0 && !enteredNextCurve && movePermit < Gear.getMin(i)) break;
+                    }
+                    final int[] distribution = Gear.getDistribution(i);
+                    final int roll = distribution[r.nextInt(distribution.length)];
+                    final GearEvaluator next = new GearEvaluator(this, i, roll, inPits);
+                    next.randomWalk();
+                    canBreak = true;
+                    ++i;
+                }
+            }
+        }
+
+        private List<GearEvaluator> nextTurn() {
+            final List<GearEvaluator> candidates = new ArrayList<>();
+            if (canEvaluateNext()) {
+                int i = minGear;
+                if (minDistanceToNextCurve > 0 && stopsToDo <= 0 && Gear.getMax(maxGear) <= minDistanceToNextCurve) {
+                    i = maxGear;
+                }
+                while (i <= maxGear) {
+                    if (!AIUtil.validateGear(hitpoints, gear, i, inPits)) continue;
+                    final int[] distribution = Gear.getDistribution(i);
+                    for (int moveSteps : distribution) {
+                        final GearEvaluator next = new GearEvaluator(this, i, moveSteps, false);
+                        if (next.hitpoints <= 0) continue;
+                        candidates.add(next);
+                    }
+                    ++i;
+                }
+            }
+            return candidates;
+        }
+
+        private int getScore() {
+            int score = canEvaluateNext() ? 0 : 100;
+            score -= 10 * (turns + stopsToDo);
+            score += 2 * hitpoints;
+            final int[] initialScores = { 0, 3, 6, 8, 8, 4 };
+            score += initialScores[gear - 1];
+            if (stopsToDo > 0) {
+                score += enteredNextCurve ? movePermitToNextCornerWithoutOthers : movePermitWithoutOthers;
+            } else if (!enteredNextCurve) {
+                score -= Math.max(0, minMovesToTakeDamageWithoutOthers - 1);
+            } else {
+                score -= Math.max(0, movePermitToNextCornerWithoutOthers) / 2;
+            }
+            return score;
+        }
+
+        private Pair<Integer, Integer> getMinMaxScore(Deque<GearEvaluator> stack) {
+            final GearEvaluator evaluator = stack.getLast();
+            final List<GearEvaluator> nextEvaluators = evaluator.nextTurn();
+            if (nextEvaluators.isEmpty()) {
+                final int score = evaluator.getScore();
+                return Pair.of(score, score);
+            } else {
+                final int maxScore = nextEvaluators.stream().map(nextEvaluator -> {
+                    stack.addLast(nextEvaluator);
+                    final int score = getMinMaxScore(stack).getRight();
+                    stack.removeLast();
+                    return score;
+                }).mapToInt(Integer::intValue).max().orElse(Integer.MIN_VALUE);
+                final int minScore = nextEvaluators.stream().map(nextEvaluator -> {
+                    stack.addLast(nextEvaluator);
+                    final int score = getMinMaxScore(stack).getLeft();
+                    stack.removeLast();
+                    return score;
+                }).mapToInt(Integer::intValue).min().orElse(Integer.MAX_VALUE);
+                return Pair.of(minScore, maxScore);
+            }
+        }
     }
 
     // Return value 0 would be a bug.

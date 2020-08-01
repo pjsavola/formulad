@@ -99,6 +99,24 @@ public abstract class AIUtil {
                 .orElse(0);
     }
 
+    // Returns the minimum distance to take damage without opponents.
+    public static int getMinDistanceToTakeDamage(Node startNode, int stopCount) {
+        final Map<Node, Integer> nextAreaStart = findMinDistancesToNextAreaStart(startNode, false);
+        if (nextAreaStart.isEmpty()) {
+            return 1;
+        }
+        if (startNode.getStopCount() > stopCount) {
+            return nextAreaStart.values().stream().mapToInt(Integer::intValue).min().orElse(1);
+        }
+        return nextAreaStart
+                .entrySet()
+                .stream()
+                .map(e -> getMinDistanceToTakeDamage(e.getKey(), 0) + e.getValue())
+                .mapToInt(Integer::intValue)
+                .min()
+                .orElse(1);
+    }
+
     public static int getMinDistanceToPits(Node startNode, Set<Node> blockedNodes) {
         final Deque<Node> work = new ArrayDeque<>();
         final Map<Node, Integer> distances = new HashMap<>();

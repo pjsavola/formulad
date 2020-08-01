@@ -62,6 +62,7 @@ public class ManualAI extends BaseAI {
         if (hitpoints == 0) {
             throw new RuntimeException("No data sent for player: " + playerId);
         }
+        final int finalStopCount = stopCount;
         final MutableInt selectedGear = new MutableInt(0);
         final boolean inPits = location != null && location.getType() == NodeType.PIT;
         game.actionMenu.removeAll();
@@ -127,6 +128,9 @@ public class ManualAI extends BaseAI {
                             break;
                         case 'G':
                             System.out.println("Min distance to pits: " + AIUtil.getMinDistanceToPits(location, blockedNodes));
+                            break;
+                        case 'H':
+                            ai.selectGear(gameState);
                             break;
                     }
                 }
