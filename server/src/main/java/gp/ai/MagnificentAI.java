@@ -5,6 +5,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
 
 public class MagnificentAI extends BaseAI {
 
@@ -13,7 +15,7 @@ public class MagnificentAI extends BaseAI {
     private PlayerState player;
     private int gear;
     private Random random = new Random();
-    public boolean debug;
+    public boolean debug = false;
 
     public MagnificentAI(TrackData data) {
         super(data);
@@ -58,7 +60,7 @@ public class MagnificentAI extends BaseAI {
         if (player == null) {
             throw new RuntimeException("No data sent for player: " + playerId);
         }
-        location = data.getNodes().get(player.getNodeId());
+        location = nodes.get(player.getNodeId());
         if (location == null) {
             throw new RuntimeException("Unknown location for player: " + playerId);
         }
@@ -69,13 +71,13 @@ public class MagnificentAI extends BaseAI {
         final Set<Node> blockedNodes = playerMap
                 .values()
                 .stream()
-                .map(p -> data.getNodes().get(p.getNodeId()))
+                .map(p -> nodes.get(p.getNodeId()))
                 .collect(Collectors.toSet());
-        final Set<Node> pitNodes = data.getNodes().stream().filter(Node::isPit).collect(Collectors.toSet());
+        final Set<Node> pitNodes = nodes.stream().filter(Node::isPit).collect(Collectors.toSet());
         gearMaskToScores.clear();
         gearMaskToMaxScore.clear();
         gearMaskToMinScore.clear();
-        final GearEvaluator evaluator = new GearEvaluator(location, blockedNodes, pitNodes, player.getGear(), player.getStops(), player.getHitpoints());
+        final GearEvaluator evaluator = new GearEvaluator(location, blockedNodes, pitNodes, player.getGear(), player.getStops(), player.getHitpoints(), player.getLapsToGo());
         for (int i = 0; i < 100; ++i) {
             evaluator.randomWalk();
         }
@@ -91,6 +93,7 @@ public class MagnificentAI extends BaseAI {
         System.out.println("Risk gear: " + riskGear);
         System.out.println("Safe gear: " + safeGear);
         System.out.println("Best gear: " + avgGear);
+
 
         if (true) return new gp.model.Gear().gear(avgGear);
         // Find gear sequences for:
@@ -188,6 +191,7 @@ public class MagnificentAI extends BaseAI {
         private final boolean enteredNextCurve;
         private final int garageMin;
         private final int garageMax;
+        private final int searchDepth;
 
         public String toString() {
             String s = "Sequence " + gearMask + "\n";
@@ -208,17 +212,15 @@ public class MagnificentAI extends BaseAI {
             return s;
         }
 
-        private static final int searchDepth = 4;
-
-        private GearEvaluator(Node location, Set<Node> blockedNodes, Set<Node> pitNodes, int gear, int stopCount, int hitpoints) {
+        private GearEvaluator(Node location, Set<Node> blockedNodes, Set<Node> pitNodes, int gear, int stopCount, int hitpoints, int lapsToGo) {
             turns = 0;
             this.gear = gear;
             gearMask = gear;
             this.hitpoints = hitpoints;
             inPits = location.isPit();
             minGear = Math.max(1, gear - Math.min(4, hitpoints - 1));
-            maxGear = Math.min(inPits ? 4 : 6, gear + 1);
             stopsToDo = location.getStopCount() - stopCount;
+            final int minDistanceToPits = AIUtil.getMinDistanceToPits(location, blockedNodes);
             if (!inPits) blockedNodes.addAll(pitNodes);
             movePermit = AIUtil.getMaxDistanceWithoutDamage(location, stopCount, blockedNodes);
             movePermitWithoutOthers = AIUtil.getMaxDistanceWithoutDamage(location, stopCount, !inPits ? pitNodes : Collections.emptySet());
@@ -235,6 +237,15 @@ public class MagnificentAI extends BaseAI {
             } else {
                 garageMin = -1;
                 garageMax = -1;
+            }
+            final int maxGear = Math.min(inPits ? 4 : 6, gear + 1);
+            if (lapsToGo > 0 && minDistanceToPits < movePermit && minDistanceToPits < Gear.getMin(maxGear) && hitpoints < r.nextInt(18) && minGear <= 4) {
+                System.out.println("Decided to pit");
+                this.maxGear = 4;
+                searchDepth = 1;
+            } else {
+                this.maxGear = maxGear;
+                searchDepth = inPits ? 1 : 4;
             }
         }
 
@@ -261,6 +272,7 @@ public class MagnificentAI extends BaseAI {
             movePermitToNextCornerWithoutOthers = old.movePermitToNextCornerWithoutOthers - moveSteps;
             minMovesToTakeDamageWithoutOthers = old.minMovesToTakeDamageWithoutOthers - moveSteps;
             this.inPits = inPits;
+            searchDepth = old.searchDepth;
         }
 
         private boolean canEvaluateNext() {
@@ -268,7 +280,7 @@ public class MagnificentAI extends BaseAI {
         }
 
         private void randomWalk() {
-            if (!canEvaluateNext() || gearMask > Math.pow(10, inPits ? 1 : searchDepth)) {
+            if (!canEvaluateNext() || gearMask > Math.pow(10, searchDepth)) {
                 final int score = getScore();
                 gearMaskToScores.computeIfAbsent(gearMask, gm -> new ArrayList<>()).add(score);
                 final Integer min = gearMaskToMinScore.get(gearMask);
@@ -326,7 +338,7 @@ public class MagnificentAI extends BaseAI {
 
         private int getScore() {
             int score = canEvaluateNext() ? 0 : 100;
-            score -= 10 * (turns + stopsToDo);
+            score -= 10 * turns;
             score += 2 * hitpoints;
             final int[] initialScores = { 0, 6, 9, 11, 12, 8 };
             score += initialScores[gear - 1];
@@ -382,7 +394,7 @@ public class MagnificentAI extends BaseAI {
     private int getMinDistance(List<Integer> bestIndices, List<ValidMove> moves, Map<Node, Integer> distances) {
         return bestIndices
             .stream()
-            .map(index -> distances.get(data.getNodes().get(moves.get(index).getNodeId())))
+            .map(index -> distances.get(nodes.get(moves.get(index).getNodeId())))
             .mapToInt(Integer::intValue)
             .min()
             .orElse(0);
@@ -391,7 +403,7 @@ public class MagnificentAI extends BaseAI {
     private int getMaxDistance(List<Integer> bestIndices, List<ValidMove> moves, Map<Node, Integer> distances) {
         return bestIndices
             .stream()
-            .map(index -> distances.get(data.getNodes().get(moves.get(index).getNodeId())))
+            .map(index -> distances.get(nodes.get(moves.get(index).getNodeId())))
             .mapToInt(Integer::intValue)
             .max()
             .orElse(0);
@@ -400,7 +412,7 @@ public class MagnificentAI extends BaseAI {
     private boolean hasCurve(List<Integer> bestIndices, List<ValidMove> moves) {
         return bestIndices
             .stream()
-            .map(i -> data.getNodes().get(moves.get(i).getNodeId()))
+            .map(i -> nodes.get(moves.get(i).getNodeId()))
             .anyMatch(Node::isCurve);
     }
 
@@ -408,7 +420,7 @@ public class MagnificentAI extends BaseAI {
         final Iterator<Integer> it = bestIndices.iterator();
         while (it.hasNext()) {
             final int i = it.next();
-            final Node node = data.getNodes().get(moves.get(i).getNodeId());
+            final Node node = nodes.get(moves.get(i).getNodeId());
             if (!node.isCurve()) {
                 it.remove();
             }
@@ -426,10 +438,17 @@ public class MagnificentAI extends BaseAI {
 
         // Priority 1: Minimize damage
         int leastDamage = player.getHitpoints();
+        int bestGarageIndex = -1;
         final List<Integer> bestIndices = new ArrayList<>();
         for (int i = 0; i < moves.size(); i++) {
             final ValidMove vm = moves.get(i);
             final int damage = vm.getBraking() + vm.getOvershoot();
+            final Node node = nodes.get(vm.getNodeId());
+            if (node.hasGarage()) {
+                if (bestGarageIndex == -1 || node.getDistance() > nodes.get(moves.get(bestGarageIndex).getNodeId()).getDistance()) {
+                    bestGarageIndex = i;
+                }
+            }
             if (damage < leastDamage) {
                 leastDamage = damage;
                 bestIndices.clear();
@@ -438,44 +457,27 @@ public class MagnificentAI extends BaseAI {
                 bestIndices.add(i);
             }
         }
-
-        debug("Minimizing damage, candidates left: " + bestIndices);
-        if (hasCurve(bestIndices, moves)) {
-            final int stopsInNextCurve = AIUtil.getStopsRequiredInNextCurve(location);
-            if (stopsInNextCurve > 1) {
-                // Select only curve.
-                final int minDistanceToNextCurve = getMinDistanceToNextCurve(location);
-                removeNonCurves(bestIndices, moves);
-                debug("Selecting only curves, candidates left: " + bestIndices);
-                // Minimize distance
-                final int minDistance = getMinDistance(bestIndices, moves, distances);
-                debug("Min distance to next curve: " + minDistanceToNextCurve + " min distance: " + minDistance);
-                final Iterator<Integer> it2 = bestIndices.iterator();
-                while (it2.hasNext()) {
-                    final int i = it2.next();
-                    final Node node = data.getNodes().get(moves.get(i).getNodeId());
-                    final int distance = distances.get(node);
-                    if (distance > minDistanceToNextCurve && distance > minDistance) {
-                        it2.remove();
-                    }
-                }
-                debug("Minimizing distance if next curve is accessible, candidates left: " + bestIndices);
-            }
+        if (bestGarageIndex != -1) {
+            bestIndices.add(bestGarageIndex);
         }
+        debug("Minimizing damage, candidates left: " + bestIndices);
+
+        if (bestIndices.size() == 1) return new SelectedIndex().index(bestIndices.get(0));
 
         // Consider pitting
-        boolean canPit = bestIndices.stream().map(i -> data.getNodes().get(moves.get(i).getNodeId())).anyMatch(n -> n.getType() == NodeType.PIT);
+        boolean canPit = bestIndices.stream().map(i -> nodes.get(moves.get(i).getNodeId())).anyMatch(n -> n.getType() == NodeType.PIT);
         if (canPit) {
-            final boolean mustPit = bestIndices.stream().map(i -> data.getNodes().get(moves.get(i).getNodeId())).noneMatch(n -> n.getType() != NodeType.PIT);
+            debug("Considering pitting");
+            final boolean mustPit = bestIndices.stream().map(i -> nodes.get(moves.get(i).getNodeId())).noneMatch(n -> n.getType() != NodeType.PIT);
             if (!mustPit) {
                 // There is actually a choice
-                final boolean canPitNow = bestIndices.stream().map(i -> data.getNodes().get(moves.get(i).getNodeId())).anyMatch(n -> n.getType() == NodeType.PIT && n.hasGarage());
+                final boolean canPitNow = bestIndices.stream().map(i -> nodes.get(moves.get(i).getNodeId())).anyMatch(n -> n.getType() == NodeType.PIT && n.hasGarage());
                 if (canPitNow) {
                     final boolean lowHitpoints = player.getHitpoints() <= 12;
                     final Iterator<Integer> it = bestIndices.iterator();
                     while (it.hasNext()) {
                         final int i = it.next();
-                        final Node node = data.getNodes().get(moves.get(i).getNodeId());
+                        final Node node = nodes.get(moves.get(i).getNodeId());
                         final boolean isPit = node.getType() == NodeType.PIT;
                         if (isPit && !node.hasGarage()) {
                             // Remove all pit nodes with no garage
@@ -495,7 +497,7 @@ public class MagnificentAI extends BaseAI {
                     final Iterator<Integer> it = bestIndices.iterator();
                     while (it.hasNext()) {
                         final int i = it.next();
-                        final Node node = data.getNodes().get(moves.get(i).getNodeId());
+                        final Node node = nodes.get(moves.get(i).getNodeId());
                         final boolean isPit = node.getType() == NodeType.PIT;
                         if (lowHitpoints) {
                             if (!isPit) {
@@ -511,53 +513,72 @@ public class MagnificentAI extends BaseAI {
             }
         }
 
-        // Can access curve and need to stop more than once after this move -> enter curve but minimize distance
+        if (bestIndices.size() == 1) return new SelectedIndex().index(bestIndices.get(0));
+
+        boolean minimizeDistanceForNextCurve = false;
         if (hasCurve(bestIndices, moves)) {
-            final Node curve = AIUtil.recurseWhile(data.getNodes().get(player.getNodeId()), false, data.getNodes().get(player.getNodeId()).isPit());
-            final int stopCount = curve.getStopCount();
-            if (stopCount > player.getStops() + 1) {
-                removeNonCurves(bestIndices, moves);
-                final int minDistance = getMinDistance(bestIndices, moves, distances);
-                final int oldSize = bestIndices.size();
-                final Iterator<Integer> it = bestIndices.iterator();
-                while (it.hasNext()) {
-                    final int i = it.next();
-                    final Node node = data.getNodes().get(moves.get(i).getNodeId());
-                    final int distance = distances.get(node);
-                    if (distance > minDistance) {
-                        it.remove();
-                    }
+            // TODO: Make this better using AIUtil.getMaxDistanceWithoutDamage
+            final boolean needToStop = location.isCurve() && location.getStopCount() > player.getStops();
+            final boolean minimize;
+            if (needToStop) {
+                minimize = location.getStopCount() > player.getStops() + 1;
+            } else {
+                final boolean thisCurve;
+                if (location.isCurve()) {
+                    // Make sure that bestIndices are not for the current curve...
+                    final Node straight = AIUtil.recurseWhile(location, true, false);
+                    final double min = location.getDistance();
+                    final double max = straight.getDistance();
+                    thisCurve = bestIndices
+                            .stream()
+                            .map(i -> nodes.get(moves.get(i).getNodeId()))
+                            .filter(Node::isCurve)
+                            .map(Node::getDistance)
+                            .anyMatch(d -> d >= min && d <= max);
+                } else {
+                    thisCurve = false;
                 }
-                if (bestIndices.size() < oldSize) {
-                    debug("Removed " + (oldSize - bestIndices.size()) + " candidates because of stop counts.");
+                if (thisCurve) {
+                    minimize = false;
+                } else {
+                    final int stopsInNextCurve = AIUtil.getStopsRequiredInNextCurve(location);
+                    minimize = stopsInNextCurve > 1;
                 }
             }
+            final DoubleStream distanceStream = bestIndices
+                    .stream()
+                    .map(i -> nodes.get(moves.get(i).getNodeId()))
+                    .filter(Node::isCurve)
+                    .map(Node::getDistance)
+                    .mapToDouble(Double::doubleValue);
+            final double limit = minimize ? distanceStream.min().orElse(0) : distanceStream.max().orElse(0);
+            debug((minimize ? "Minimizing distance for the curve! " : "Maximizing distance for the curve! ") + limit);
+            final Iterator<Integer> it = bestIndices.iterator();
+            while (it.hasNext()) {
+                final int i = it.next();
+                final Node node = nodes.get(moves.get(i).getNodeId());
+                if (minimize ? (node.getDistance() > limit) : (node.getDistance() < limit)) {
+                    it.remove();
+                }
+            }
+            if (minimize) {
+                removeNonCurves(bestIndices, moves);
+            } else {
+                minimizeDistanceForNextCurve = true;
+            }
+            debug("Curve optimized, candidates left: " + bestIndices);
         }
 
-        // Priority 2: Maximize distance
-        final int maxDistance = getMaxDistance(bestIndices, moves, distances);
-        final Iterator<Integer> it = bestIndices.iterator();
-        while (it.hasNext()) {
-            final int i = it.next();
-            final Node node = data.getNodes().get(moves.get(i).getNodeId());
-            final int distance = distances.get(node);
-            if (distance < maxDistance) {
-                it.remove();
-            }
-        }
-        debug("Maximizing distance, candidates left: " + bestIndices);
-        if (hasCurve(bestIndices, moves)) {
-            // Priority 3: Enter the curve
-            removeNonCurves(bestIndices, moves);
-            debug("Considering only curves, candidates left: " + bestIndices);
-        } else {
-            // Priority 3: Minimize distance to next curve
+        if (bestIndices.size() == 1) return new SelectedIndex().index(bestIndices.get(0));
+
+        // Priority 2: Maximize or minimize distance depending on stops required
+        if (minimizeDistanceForNextCurve || !hasCurve(bestIndices, moves)) {
             final int minDistance = bestIndices
-                .stream()
-                .map(index -> getMinDistanceToNextCurve(data.getNodes().get(moves.get(index).getNodeId())))
-                .mapToInt(Integer::intValue)
-                .min()
-                .orElse(0);
+                    .stream()
+                    .map(index -> getMinDistanceToNextCurve(data.getNodes().get(moves.get(index).getNodeId())))
+                    .mapToInt(Integer::intValue)
+                    .min()
+                    .orElse(0);
             final Iterator<Integer> it2 = bestIndices.iterator();
             while (it2.hasNext()) {
                 final int i = it2.next();
@@ -569,7 +590,9 @@ public class MagnificentAI extends BaseAI {
             }
             debug("Minimizing distance (" + minDistance + ") to next curve, candidates left: " + bestIndices);
         }
+
         if (bestIndices.isEmpty()) {
+            debug("No candidiates left, using default move");
             return new SelectedIndex().index(0);
         }
         return new SelectedIndex().index(bestIndices.get(random.nextInt(bestIndices.size())));

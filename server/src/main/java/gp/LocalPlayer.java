@@ -380,6 +380,7 @@ public final class LocalPlayer extends Player {
         playerState.setGear(gear);
         playerState.setStops(curveStops);
         playerState.setLeeway(leeway);
+        playerState.setLapsToGo(lapsToGo);
     }
 
     public void reduceLeeway(long amount) {

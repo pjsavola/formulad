@@ -14,6 +14,7 @@ public class PlayerState implements Serializable {
   private Integer hitpoints = null;
   private Integer stops = null;
   private Integer leeway = null;
+  private Integer lapsToGo = null;
 
   public PlayerState playerId(String playerId) {
     this.playerId = playerId;
@@ -105,6 +106,19 @@ public class PlayerState implements Serializable {
     this.leeway = leeway;
   }
 
+  public PlayerState lapsToGo(Integer lapsToGo) {
+    this.lapsToGo = lapsToGo;
+    return this;
+  }
+
+  public Integer getLapsToGo() {
+    return lapsToGo;
+  }
+
+  public void setLapsToGo(Integer lapsToGo) {
+    this.lapsToGo = lapsToGo;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -120,12 +134,13 @@ public class PlayerState implements Serializable {
         Objects.equals(this.nodeId, playerState.nodeId) &&
         Objects.equals(this.hitpoints, playerState.hitpoints) &&
         Objects.equals(this.stops, playerState.stops) &&
-        Objects.equals(this.leeway, playerState.leeway);
+        Objects.equals(this.leeway, playerState.leeway) &&
+        Objects.equals(this.lapsToGo, playerState.lapsToGo);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(playerId, gear, type, nodeId, hitpoints, stops, leeway);
+    return Objects.hash(playerId, gear, type, nodeId, hitpoints, stops, leeway, lapsToGo);
   }
 
   @Override
@@ -139,6 +154,7 @@ public class PlayerState implements Serializable {
     sb.append("    hitpoints: ").append(toIndentedString(hitpoints)).append("\n");
     sb.append("    stops: ").append(toIndentedString(stops)).append("\n");
     sb.append("    leeway: ").append(toIndentedString(leeway)).append("\n");
+    sb.append("    lapsToGo: ").append(toIndentedString(lapsToGo)).append("\n");
     sb.append("}");
     return sb.toString();
   }

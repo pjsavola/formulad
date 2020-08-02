@@ -13,9 +13,11 @@ public abstract class BaseAI implements AI {
 
     String playerId;
     final TrackData data;
+    final List<Node> nodes;
 
     public BaseAI(TrackData data) {
         this.data = data;
+        nodes = data.getNodes();
     }
 
     @Override
