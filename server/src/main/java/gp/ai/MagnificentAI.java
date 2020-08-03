@@ -546,17 +546,22 @@ public class MagnificentAI extends BaseAI {
             }
             if (minimize) {
                 removeNonCurves(bestIndices, moves);
-                final int maxDistanceToNextArea = bestIndices
+                // Maximize next turn move permit only up to the max roll of next turn.
+                final int limit = Gear.getMax(player.getGear() + 1);
+                final boolean useLimit = player.getStops() + 1 == location.getStopCount();
+                final int maxMovePermit = bestIndices
                         .stream()
                         .map(i -> nodes.get(moves.get(i).getNodeId()))
                         .map(n -> AIUtil.getMaxDistanceWithoutDamage(n, 0, Collections.emptySet()))
                         .mapToInt(Integer::intValue)
                         .max()
                         .orElse(0);
-                debug("Minimizing distance. (max distance without damage " + maxDistanceToNextArea + ")");
+                debug("Minimizing distance. (max distance without damage " + maxMovePermit + ")");
                 bestIndices.removeIf(i -> {
                     final Node node = nodes.get(moves.get(i).getNodeId());
-                    return AIUtil.getMaxDistanceWithoutDamage(node, 0, Collections.emptySet()) < maxDistanceToNextArea;
+                    final int movePermit = AIUtil.getMaxDistanceWithoutDamage(node, 0, Collections.emptySet());
+                    if (useLimit && movePermit >= limit) return false;
+                    return movePermit < maxMovePermit;
                 });
             } else {
                 final double maxDistance = bestIndices
