@@ -1,9 +1,7 @@
 package gp.ai;
 
 import java.util.*;
-import java.util.logging.Level;
 
-import gp.Main;
 import gp.model.*;
 
 public class GreatAI extends BaseAI {
@@ -241,12 +239,12 @@ public class GreatAI extends BaseAI {
             return findDistancesToNextAreaStart(startNode)
                 .entrySet()
                 .stream()
-                .map(e -> e.getKey().getDistanceToNextArea() + e.getValue())
+                .map(e -> e.getKey().getMinDistanceToNextArea() + e.getValue())
                 .mapToInt(Integer::intValue)
                 .min()
                 .orElse(0);
         } else {
-            return startNode.getDistanceToNextArea();
+            return startNode.getMinDistanceToNextArea();
         }
     }
 

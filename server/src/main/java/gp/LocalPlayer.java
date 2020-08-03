@@ -1,6 +1,5 @@
 package gp;
 
-import java.awt.Point;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -70,8 +69,8 @@ public final class LocalPlayer extends Player {
             if (gear == player.gear) {
                 if (node.isCurve() && !player.node.isCurve()) return 1;
                 else if (!node.isCurve() && player.node.isCurve()) return -1;
-                final int distanceToNextArea1 = node.getDistanceToNextArea();
-                final int distanceToNextArea2 = player.node.getDistanceToNextArea();
+                final int distanceToNextArea1 = node.getMinDistanceToNextArea();
+                final int distanceToNextArea2 = player.node.getMinDistanceToNextArea();
                 if (distanceToNextArea1 == distanceToNextArea2) {
                     final int index1 = stoppedPlayers.indexOf(this);
                     final int index2 = stoppedPlayers.indexOf(player);

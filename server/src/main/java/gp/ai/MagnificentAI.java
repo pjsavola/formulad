@@ -15,7 +15,7 @@ public class MagnificentAI extends BaseAI {
     private PlayerState player;
     private int gear;
     private Random random = new Random();
-    public boolean debug = false;
+    public boolean debug = true;
 
     public MagnificentAI(TrackData data) {
         super(data);
@@ -382,12 +382,12 @@ public class MagnificentAI extends BaseAI {
             return AIUtil.findMinDistancesToNextAreaStart(startNode, false)
                 .entrySet()
                 .stream()
-                .map(e -> e.getKey().getDistanceToNextArea() + e.getValue())
+                .map(e -> e.getKey().getMinDistanceToNextArea() + e.getValue())
                 .mapToInt(Integer::intValue)
                 .min()
                 .orElse(0);
         } else {
-            return startNode.getDistanceToNextArea();
+            return startNode.getMinDistanceToNextArea();
         }
     }
 
@@ -457,7 +457,7 @@ public class MagnificentAI extends BaseAI {
                 bestIndices.add(i);
             }
         }
-        if (bestGarageIndex != -1) {
+        if (bestGarageIndex != -1 && !bestIndices.contains(bestGarageIndex)) {
             bestIndices.add(bestGarageIndex);
         }
         debug("Minimizing damage, candidates left: " + bestIndices);
@@ -517,7 +517,6 @@ public class MagnificentAI extends BaseAI {
 
         boolean minimizeDistanceForNextCurve = false;
         if (hasCurve(bestIndices, moves)) {
-            // TODO: Make this better using AIUtil.getMaxDistanceWithoutDamage
             final boolean needToStop = location.isCurve() && location.getStopCount() > player.getStops();
             final boolean minimize;
             if (needToStop) {
@@ -545,25 +544,34 @@ public class MagnificentAI extends BaseAI {
                     minimize = stopsInNextCurve > 1;
                 }
             }
-            final DoubleStream distanceStream = bestIndices
-                    .stream()
-                    .map(i -> nodes.get(moves.get(i).getNodeId()))
-                    .filter(Node::isCurve)
-                    .map(Node::getDistance)
-                    .mapToDouble(Double::doubleValue);
-            final double limit = minimize ? distanceStream.min().orElse(0) : distanceStream.max().orElse(0);
-            debug((minimize ? "Minimizing distance for the curve! " : "Maximizing distance for the curve! ") + limit);
-            final Iterator<Integer> it = bestIndices.iterator();
-            while (it.hasNext()) {
-                final int i = it.next();
-                final Node node = nodes.get(moves.get(i).getNodeId());
-                if (minimize ? (node.getDistance() > limit) : (node.getDistance() < limit)) {
-                    it.remove();
-                }
-            }
             if (minimize) {
                 removeNonCurves(bestIndices, moves);
+                final int maxDistanceToNextArea = bestIndices
+                        .stream()
+                        .map(i -> nodes.get(moves.get(i).getNodeId()))
+                        .map(n -> AIUtil.getMaxDistanceWithoutDamage(n, 0, Collections.emptySet()))
+                        .mapToInt(Integer::intValue)
+                        .max()
+                        .orElse(0);
+                debug("Minimizing distance. (max distance without damage " + maxDistanceToNextArea + ")");
+                bestIndices.removeIf(i -> {
+                    final Node node = nodes.get(moves.get(i).getNodeId());
+                    return AIUtil.getMaxDistanceWithoutDamage(node, 0, Collections.emptySet()) < maxDistanceToNextArea;
+                });
             } else {
+                final double maxDistance = bestIndices
+                        .stream()
+                        .map(i -> nodes.get(moves.get(i).getNodeId()))
+                        .filter(Node::isCurve)
+                        .map(Node::getDistance)
+                        .mapToDouble(Double::doubleValue)
+                        .max()
+                        .orElse(0);
+                debug("Maximizing distance for the curve. (max " + maxDistance + ")");
+                bestIndices.removeIf(i -> {
+                    final Node node = nodes.get(moves.get(i).getNodeId());
+                    return node.getDistance() < maxDistance;
+                });
                 minimizeDistanceForNextCurve = true;
             }
             debug("Curve optimized, candidates left: " + bestIndices);

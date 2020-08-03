@@ -109,8 +109,9 @@ public final class Node implements Serializable, Comparable<Node> {
      * Returns minimum distance to the next area for which isCurve() returns a different
      * value, does not take obstacles into account.
      */
-    public int getDistanceToNextArea() {
+    public int getMinDistanceToNextArea() {
         final boolean startNodeIsCurve = isCurve();
+        final boolean inPits = isPit();
         final List<Node> work = new ArrayList<>();
         final Map<Node, Integer> visited = new HashMap<>();
         work.add(this);
@@ -118,6 +119,9 @@ public final class Node implements Serializable, Comparable<Node> {
         while (!work.isEmpty()) {
             final Node node = work.remove(0);
             for (Node next : node.nextNodes) {
+                if (next.isPit() && !inPits) {
+                    continue;
+                }
                 if (next.isCurve() == !startNodeIsCurve) {
                     return visited.get(node) + 1;
                 }
@@ -163,8 +167,8 @@ public final class Node implements Serializable, Comparable<Node> {
             } else if (!isCurve() && node.isCurve()) {
                 return -1;
             }
-            final int distanceToNextArea1 = getDistanceToNextArea();
-            final int distanceToNextArea2 = node.getDistanceToNextArea();
+            final int distanceToNextArea1 = getMinDistanceToNextArea();
+            final int distanceToNextArea2 = node.getMinDistanceToNextArea();
             final int delta = distanceToNextArea1 - distanceToNextArea2;
             return isCurve() ? delta : -delta;
         }
