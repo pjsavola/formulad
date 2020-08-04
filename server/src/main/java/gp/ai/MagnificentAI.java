@@ -14,6 +14,7 @@ public class MagnificentAI extends BaseAI {
     private Node location;
     private PlayerState player;
     private int gear;
+    private int stopsNeeded;
     private Random random = new Random();
     public boolean debug = true;
 
@@ -68,6 +69,11 @@ public class MagnificentAI extends BaseAI {
             gear = 1;
             return new gp.model.Gear().gear(1);
         }
+        if (location.isCurve()) {
+            stopsNeeded = Math.max(0, location.getStopCount() - player.getStops());
+        } else {
+            stopsNeeded = 0;
+        }
         final Set<Node> blockedNodes = playerMap
                 .values()
                 .stream()
@@ -90,9 +96,9 @@ public class MagnificentAI extends BaseAI {
         final int riskGear = gearToMaxScore.entrySet().stream().max((e1, e2) -> e1.getValue() - e2.getValue()).map(e -> e.getKey()).orElse(-1);
         final int avgGear = gearMaskToScores.entrySet().stream().max(Comparator.comparingInt(e -> e.getValue().stream().mapToInt(Integer::intValue).sum() / e.getValue().size())).map(e -> e.getKey()).map(MagnificentAI::getNextGear).orElse(-1);
         final int safeGear = gearMaskToMinScore.entrySet().stream().max((e1, e2) -> e1.getValue() - e2.getValue()).map(e -> e.getKey()).map(MagnificentAI::getNextGear).orElse(-1);
-        System.out.println("Risk gear: " + riskGear);
-        System.out.println("Safe gear: " + safeGear);
-        System.out.println("Best gear: " + avgGear);
+        //System.out.println("Risk gear: " + riskGear);
+        //System.out.println("Safe gear: " + safeGear);
+        //System.out.println("Best gear: " + avgGear);
 
 
         if (true) return new gp.model.Gear().gear(avgGear);
@@ -427,6 +433,35 @@ public class MagnificentAI extends BaseAI {
         }
     }
 
+    private boolean minimizeMovement(List<Integer> bestIndices, List<ValidMove> moves) {
+        final boolean needToStop = location.isCurve() && location.getStopCount() > player.getStops();
+        if (needToStop) {
+            return location.getStopCount() > player.getStops() + 1;
+        } else {
+            final boolean thisCurve;
+            if (location.isCurve()) {
+                // Make sure that bestIndices are not for the current curve...
+                final Node straight = AIUtil.recurseWhile(location, true, false);
+                final double min = location.getDistance();
+                final double max = straight.getDistance();
+                thisCurve = bestIndices
+                        .stream()
+                        .map(i -> nodes.get(moves.get(i).getNodeId()))
+                        .filter(Node::isCurve)
+                        .map(Node::getDistance)
+                        .anyMatch(d -> d >= min && d <= max);
+            } else {
+                thisCurve = false;
+            }
+            if (thisCurve) {
+                return false;
+            } else {
+                final int stopsInNextCurve = AIUtil.getStopsRequiredInNextCurve(location);
+                return stopsInNextCurve > 1;
+            }
+        }
+    }
+
     @Override
     public SelectedIndex selectMove(Moves allMoves) {
         if (allMoves.getMoves().isEmpty()) {
@@ -436,10 +471,10 @@ public class MagnificentAI extends BaseAI {
         final int[] distribution = Gear.getDistribution(gear);
         final Map<Node, Integer> distances = getNodeDistances(location, distribution[distribution.length - 1]);
 
+        final List<Integer> bestIndices = new ArrayList<>();
         // Priority 1: Minimize damage
         int leastDamage = player.getHitpoints();
         int bestGarageIndex = -1;
-        final List<Integer> bestIndices = new ArrayList<>();
         for (int i = 0; i < moves.size(); i++) {
             final ValidMove vm = moves.get(i);
             final int damage = vm.getBraking() + vm.getOvershoot();
@@ -517,37 +552,10 @@ public class MagnificentAI extends BaseAI {
 
         boolean minimizeDistanceForNextCurve = false;
         if (hasCurve(bestIndices, moves)) {
-            final boolean needToStop = location.isCurve() && location.getStopCount() > player.getStops();
-            final boolean minimize;
-            if (needToStop) {
-                minimize = location.getStopCount() > player.getStops() + 1;
-            } else {
-                final boolean thisCurve;
-                if (location.isCurve()) {
-                    // Make sure that bestIndices are not for the current curve...
-                    final Node straight = AIUtil.recurseWhile(location, true, false);
-                    final double min = location.getDistance();
-                    final double max = straight.getDistance();
-                    thisCurve = bestIndices
-                            .stream()
-                            .map(i -> nodes.get(moves.get(i).getNodeId()))
-                            .filter(Node::isCurve)
-                            .map(Node::getDistance)
-                            .anyMatch(d -> d >= min && d <= max);
-                } else {
-                    thisCurve = false;
-                }
-                if (thisCurve) {
-                    minimize = false;
-                } else {
-                    final int stopsInNextCurve = AIUtil.getStopsRequiredInNextCurve(location);
-                    minimize = stopsInNextCurve > 1;
-                }
-            }
-            if (minimize) {
+            if (minimizeMovement(bestIndices, moves)) {
                 removeNonCurves(bestIndices, moves);
                 // Maximize next turn move permit only up to the max roll of next turn.
-                final int limit = Gear.getMax(player.getGear() + 1);
+                final int limit = Gear.getMax(Math.min(6, player.getGear() + 1));
                 final boolean useLimit = player.getStops() + 1 == location.getStopCount();
                 final int maxMovePermit = bestIndices
                         .stream()

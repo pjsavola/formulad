@@ -219,6 +219,22 @@ public class TrackData implements Serializable {
                 });
             }
         }
+        work.clear();
+        nodes.stream().filter(n -> n.getType() == NodeType.FINISH).forEach(finishLine -> {
+            finishLine.setStepsToFinishLine(0);
+            work.addAll(prevNodeMap.get(finishLine));
+        });
+        while (!work.isEmpty()) {
+            final Node node = work.removeFirst();
+            if (node.getStepsToFinishLine() < 0) {
+                final boolean isPit = node.isPit();
+                final int min = node.childStream().filter(n -> isPit || !n.isPit()).map(Node::getStepsToFinishLine).mapToInt(Integer::intValue).min().orElse(-1) + 1;
+                if (min > 0) {
+                    node.setStepsToFinishLine(min);
+                    work.addAll(prevNodeMap.get(node));
+                }
+            }
+        }
     }
 
     public static List<Node> build(List<Node> nodes, Map<Node, Double> attributes) {

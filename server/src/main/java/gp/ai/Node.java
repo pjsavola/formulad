@@ -16,6 +16,7 @@ public final class Node implements Serializable, Comparable<Node> {
     private final Set<Node> nextNodes = new HashSet<>();
     private boolean garage;
     private double distance = -1.0;
+    private transient int stepsToFinishLine = -1;
     private transient double gridAngle = Double.NaN; // Client does not need this
     private Point point;
 
@@ -40,6 +41,10 @@ public final class Node implements Serializable, Comparable<Node> {
         this.point = point;
     }
 
+    public void setStepsToFinishLine(int steps) {
+        stepsToFinishLine = steps;
+    }
+
     public int getId() {
         return id;
     }
@@ -62,6 +67,10 @@ public final class Node implements Serializable, Comparable<Node> {
 
     public Point getLocation() {
         return point;
+    }
+
+    public int getStepsToFinishLine() {
+        return stepsToFinishLine;
     }
 
     /**

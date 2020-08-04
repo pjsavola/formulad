@@ -37,6 +37,8 @@ public class ProfileMessage implements Serializable {
         final ProfileMessage profile = new ProfileMessage(validNames.get(random.nextInt(validNames.size())), true);
         profile.color1 = random.nextInt(0xFFFFFF + 1);
         profile.color2 = random.nextInt(0xFFFFFF + 1);
+        profile.aiType = AI.Type.MAGNIFICENT;
+        /*
         switch (profile.getName()) {
             case "Kimi":
             case "Michael":
@@ -48,7 +50,7 @@ public class ProfileMessage implements Serializable {
             default:
                 profile.aiType = AI.Type.GREAT;
                 break;
-        }
+        }*/
         return profile;
     }
 
