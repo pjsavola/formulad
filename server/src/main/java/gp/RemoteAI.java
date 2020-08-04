@@ -9,7 +9,6 @@ import java.util.logging.Level;
 
 import gp.ai.AI;
 
-import gp.ai.GreatAI;
 import gp.ai.MagnificentAI;
 import gp.ai.TrackData;
 import gp.model.*;

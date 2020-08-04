@@ -219,7 +219,7 @@ public class TrackData implements Serializable {
                 if (node.childCount(NodeType.PIT) == 0) {
                     throw new RuntimeException("Pit lane has dead-end: " + node.getId());
                 }
-                pit.setValue(null);
+                break;
             } else {
                 node.forEachChild(next -> {
                     next.setDistance(node.getDistance() + 0.01);
@@ -235,13 +235,21 @@ public class TrackData implements Serializable {
         });
         while (!work.isEmpty()) {
             final Node node = work.removeFirst();
+            if (node.isPit()) continue;
             if (node.getStepsToFinishLine() < 0) {
-                final boolean isPit = node.isPit();
-                int min = node.childStream().filter(n -> isPit || !n.isPit()).map(Node::getStepsToFinishLine).mapToInt(Integer::intValue).min().orElse(-1) + 1;
+                int min = node.childStream().filter(n -> !n.isPit()).map(Node::getStepsToFinishLine).mapToInt(Integer::intValue).min().orElse(-1) + 1;
                 if (min > 0) {
                     node.setStepsToFinishLine(min);
                     work.addAll(prevNodeMap.get(node));
                 }
+            }
+        }
+        if (pit.getValue() != null) {
+            Node pitNode = pit.getValue();
+            int stepsToPitLaneEnd = 1;
+            while (pitNode != null) {
+                pitNode.setStepsToFinishLine(stepsToPitLaneEnd++);
+                pitNode = prevNodeMap.get(pitNode).stream().filter(Node::isPit).findAny().orElse(null);
             }
         }
     }
