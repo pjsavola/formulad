@@ -51,6 +51,11 @@ public abstract class BaseAI implements AI {
         int score = 2 * hp;
         score -= lapsToGo * lapLengthInSteps + steps;
 
+        if (node.isPit()) {
+            score -= (4 - gear) * 3;
+            return score;
+        }
+
         int stopsToDo = node.getStopCount() - stops;
         if (stopsToDo <= 0) {
             final int distanceToNextCurve = AIUtil.getMinDistanceToNextCurve(node, pitLane);
