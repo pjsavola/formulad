@@ -1,14 +1,14 @@
 package gp.ai;
 
+import gp.DamageAndPath;
+import gp.NodeUtil;
 import gp.model.*;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
 
-public class MagnificentAI extends BaseAI {
+public class BestAI extends BaseAI {
 
     private Map<String, PlayerState> playerMap;
     private Node location;
@@ -18,7 +18,7 @@ public class MagnificentAI extends BaseAI {
     private Random random = new Random();
     public boolean debug = true;
 
-    public MagnificentAI(TrackData data) {
+    public BestAI(TrackData data) {
         super(data);
     }
 
@@ -54,6 +54,32 @@ public class MagnificentAI extends BaseAI {
         return nextGear % 10;
     }
 
+    private static class Scores implements Comparable<Scores> {
+        final int gear;
+        final int min;
+        final int median;
+        final int max;
+        Scores(int gear, int min, int median, int max) {
+            this.gear = gear;
+            this.min = min;
+            this.median = median;
+            this.max = max;
+        }
+        @Override
+        public int compareTo(Scores scores) {
+            if (scores.median == median) {
+                if (scores.max == max) {
+                    if (scores.min == min) {
+                        return scores.gear - gear;
+                    }
+                    return scores.min - min;
+                }
+                return scores.max - max;
+            }
+            return scores.median - median;
+        }
+    }
+
     @Override
     public gp.model.Gear selectGear(GameState gameState) {
         playerMap = AIUtil.buildPlayerMap(gameState);
@@ -69,106 +95,53 @@ public class MagnificentAI extends BaseAI {
             gear = 1;
             return new gp.model.Gear().gear(1);
         }
-        if (location.isCurve()) {
-            stopsNeeded = Math.max(0, location.getStopCount() - player.getStops());
-        } else {
-            stopsNeeded = 0;
-        }
         final Set<Node> blockedNodes = playerMap
                 .values()
                 .stream()
                 .map(p -> nodes.get(p.getNodeId()))
                 .collect(Collectors.toSet());
-        final Set<Node> pitNodes = nodes.stream().filter(Node::isPit).collect(Collectors.toSet());
-        gearMaskToScores.clear();
-        gearMaskToMaxScore.clear();
-        gearMaskToMinScore.clear();
-        final GearEvaluator evaluator = new GearEvaluator(location, blockedNodes, pitNodes, player.getGear(), player.getStops(), player.getHitpoints(), player.getLapsToGo());
-        for (int i = 0; i < 100; ++i) {
-            evaluator.randomWalk();
-        }
-        final Map<Integer, Integer> gearToMaxScore = new HashMap<>();
-        gearMaskToMaxScore.forEach((gearMask, score) -> {
-            final int nextGear = getNextGear(gearMask);
-            final Integer oldScore = gearToMaxScore.get(nextGear);
-            if (oldScore == null || score > oldScore) gearToMaxScore.put(nextGear, score);
-        });
-        final int riskGear = gearToMaxScore.entrySet().stream().max((e1, e2) -> e1.getValue() - e2.getValue()).map(e -> e.getKey()).orElse(-1);
-        final int avgGear = gearMaskToScores.entrySet().stream().max(Comparator.comparingInt(e -> e.getValue().stream().mapToInt(Integer::intValue).sum() / e.getValue().size())).map(e -> e.getKey()).map(MagnificentAI::getNextGear).orElse(-1);
-        final int safeGear = gearMaskToMinScore.entrySet().stream().max((e1, e2) -> e1.getValue() - e2.getValue()).map(e -> e.getKey()).map(MagnificentAI::getNextGear).orElse(-1);
-        //System.out.println("Risk gear: " + riskGear);
-        //System.out.println("Safe gear: " + safeGear);
-        //System.out.println("Best gear: " + avgGear);
-
-
-        if (true) return new gp.model.Gear().gear(riskGear);
-        // Find gear sequences for:
-        // - max of mins (safe option)
-        // - min of maxs (risky option)
-        // - max of averages
-
         final int minGear = Math.max(1, player.getGear() - Math.min(4, player.getHitpoints() - 1));
         final int maxGear = Math.min(location.isPit() ? 4 : 6, player.getGear() + 1);
-        final int stopsDone = player.getStops();
-        final int stopsToDo = location.getStopCount() - stopsDone;
-        final int movePermit = AIUtil.getMaxDistanceWithoutDamage(location, stopsDone, blockedNodes);
-        final int movePermitWithoutOthers = AIUtil.getMaxDistanceWithoutDamage(location, stopsDone, Collections.emptySet());
-        final int minDistanceToNextCurve = AIUtil.getMinDistanceToNextCurve(location, blockedNodes);
-        int minRoll = Gear.getMin(minGear); // Strict minimum
-        int maxRoll = Gear.getMax(maxGear); // Strict maximum
-        maxRoll = Math.min(maxRoll, movePermit + player.getHitpoints() - 1);
-        int idealRoll = movePermit;
-        if (location.isPit()) {
-            if (player.getHitpoints() < 18) {
-                final Pair<Integer, Integer> garageDistances = findGarage(location);
-                final int min = garageDistances.getLeft();
-                final int max = garageDistances.getRight();
-                if (min != -1) minRoll = Math.max(minRoll, min);
-                if (max != -1) maxRoll = Math.min(maxRoll, max + player.getHitpoints() - 1);
-                idealRoll = Math.min(maxRoll, movePermit);
-            }
-        } else if (location.isCurve() && stopsToDo > 0) {
-            if (stopsToDo > 1) {
-                idealRoll = Math.min(movePermit, movePermitWithoutOthers / stopsToDo);
-            }
-        } else if (minDistanceToNextCurve != -1 && maxRoll >= minDistanceToNextCurve && movePermit >= minDistanceToNextCurve) {
-            minRoll = Math.max(minRoll, minDistanceToNextCurve);
-            if (AIUtil.getStopsRequiredInNextCurve(location) > 1) {
-                idealRoll = minRoll;
-            }
-        }
-        // TODO: Decide when it's a good idea to visit pits if you're not in pits yet.
-        final int distanceToPits = AIUtil.getMinDistanceToPits(location, blockedNodes);
-        if (debug) System.out.println(minRoll + " - " + idealRoll + " - " + maxRoll);
-        final int max = Gear.getMax(maxGear);
-        final int min = Gear.getMin(minGear);
-        if (max <= minRoll) {
-            if (debug) System.out.println("Trivial decision max gear: " + maxGear);
-            gear = maxGear;
-        } else if (min >= maxRoll) {
-            if (debug) System.out.println("Trivial decision min gear: " + minGear);
-            gear = minGear;
-        } else {
-            int bestGear = minGear;
-            int bestScore = Integer.MIN_VALUE;
-            final int[] initialScores = { 0, 3, 6, 7, 8, 4 }; // may depend on damage
-            for (int gear = minGear; gear <= maxGear; ++gear) {
-                int score = Math.min(player.getHitpoints(), initialScores[gear - 1]);
-                final int gearMin = Gear.getMin(gear);
-                final int gearMax = Gear.getMax(gear);
-                if (gearMin >= minRoll) score += 10;
-                if (gearMax <= maxRoll) score += 7;
-                final int avg = (gearMin + gearMax) / 2;
-                score -= Math.abs(avg - idealRoll);
-                if (score >= bestScore) {
-                    bestScore = score;
-                    bestGear = gear;
+        final Map<Integer, List<Integer>> gearToScore = new HashMap<>();
+        for (int gear = minGear; gear <= maxGear; ++gear) {
+            final int[] distribution = Gear.getDistribution(gear);
+            for (int roll : distribution) {
+                final Map<Node, DamageAndPath> res = NodeUtil.findTargetNodes(location, gear, roll, player.getHitpoints(), player.getStops(), player.getLapsToGo(), blockedNodes);
+                int maxScore = -1000000;
+                for (Map.Entry<Node, DamageAndPath> e : res.entrySet()) {
+                    final Node endNode = e.getKey();
+                    final int damage = e.getValue().getDamage();
+                    final int stops = endNode.isCurve() ? (endNode.getAreaIndex() == location.getAreaIndex() ? player.getStops() + 1 : 1) : 0;
+                    int lapsToGo = player.getLapsToGo();
+                    if (!endNode.isPit()) {
+                        if (location.isPit() || location.getAreaIndex() > endNode.getAreaIndex()) --lapsToGo;
+                    }
+                    final int score = evaluate(endNode, player.getHitpoints() - damage, gear, lapsToGo, stops);
+                    if (score > maxScore) {
+                        maxScore = score;
+                    }
                 }
-                if (debug) System.out.println("Gear " + gear + " has score " + score);
+                gearToScore.computeIfAbsent(gear, g -> new ArrayList<>()).add(maxScore);
             }
-            if (debug) System.out.println("Selected: " + bestGear);
-            gear = bestGear;
         }
+        // Safe option: Pick gear with largest worst score.
+        // Normal option: Pick gear with largest median scoree.
+        // Risky option: Pick gear with largest best score.
+        // TODO: Choose risk based on position and maybe HP
+        final List<Scores> results = new ArrayList<>();
+        for (Map.Entry<Integer, List<Integer>> e : gearToScore.entrySet()) {
+            final List<Integer> scores = e.getValue();
+            if (scores.isEmpty()) continue;
+            scores.sort(Integer::compareTo);
+            final int minScore = scores.get(0);
+            final int medianScore = scores.get(scores.size() / 2);
+            final int maxScore = scores.get(scores.size() - 1);
+            debug("Gear " + e.getKey() + ": " + minScore + " - " + medianScore + " - " + maxScore);
+            results.add(new Scores(e.getKey(), minScore, medianScore, maxScore));
+        }
+        results.sort(Scores::compareTo);
+        gear = results.get(0).gear;
+        debug("Chose gear " + gear);
         return new gp.model.Gear().gear(gear);
     }
 

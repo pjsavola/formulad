@@ -109,4 +109,17 @@ public abstract class NodeUtil {
         }
         return result;
     }
+
+    public static Map<Node, DamageAndPath> findTargetNodes(Node node, int gear, int roll, int hitpoints, int curveStops, int lapsToGo, Set<Node> forbiddenNodes) {
+        final boolean finalLap = lapsToGo == 0;
+        final boolean allowPitEntry = !finalLap && gear < 5;
+        final Map<Node, DamageAndPath> result = NodeUtil.findNodes(node, roll, forbiddenNodes, true, curveStops, finalLap, allowPitEntry);
+        final Map<Node, DamageAndPath> targets = new HashMap<>();
+        for (Map.Entry<Node, DamageAndPath> entry : result.entrySet()) {
+            if (entry.getValue().getDamage() < hitpoints) {
+                targets.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return targets;
+    }
 }

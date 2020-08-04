@@ -284,16 +284,7 @@ public final class LocalPlayer extends Player {
     }
 
     private Map<Node, DamageAndPath> findTargetNodes(int roll, Set<Node> forbiddenNodes) {
-        final boolean finalLap = lapsToGo == 0;
-        final boolean allowPitEntry = !finalLap && gear < 5;
-        final Map<Node, DamageAndPath> result = NodeUtil.findNodes(node, roll, forbiddenNodes, true, curveStops, finalLap, allowPitEntry);
-        final Map<Node, DamageAndPath> targets = new HashMap<>();
-        for (Map.Entry<Node, DamageAndPath> entry : result.entrySet()) {
-            if (entry.getValue().getDamage() < hitpoints) {
-                targets.put(entry.getKey(), entry.getValue());
-            }
-        }
-        return targets;
+        return NodeUtil.findTargetNodes(node, gear, roll, hitpoints, curveStops, lapsToGo, forbiddenNodes);
     }
 
     public static void possiblyAddEngineDamage(List<LocalPlayer> players, Random rng) {

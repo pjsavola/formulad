@@ -90,6 +90,7 @@ public class TrackData implements Serializable {
         } else {
             throw new RuntimeException("Finish line seems to be disjoint");
         }
+        int areaIndex = 0;
         final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
         final Deque<Node> work = new ArrayDeque<>();
         work.addLast(center);
@@ -100,6 +101,7 @@ public class TrackData implements Serializable {
             if (node.childCount(NodeType.PIT) == 0) {
                 throw new RuntimeException("Found dead-end node: " + node.getId());
             }
+            node.setAreaIndex(areaIndex);
             final Set<Node> grandChildren = new HashSet<>();
             node.forEachChild(child -> {
                 if (child.getType() == NodeType.PIT) return;
@@ -136,6 +138,7 @@ public class TrackData implements Serializable {
                 work.addLast(next);
             });
             if (work.isEmpty() && !curves.isEmpty()) {
+                ++areaIndex;
                 final double maxDistance = nodes.stream().map(Node::getDistance).mapToDouble(Double::doubleValue).max().orElse(0);
                 while (!curves.isEmpty()) {
                     final Node curve = curves.removeFirst();
@@ -143,6 +146,7 @@ public class TrackData implements Serializable {
                     if (relativeDistance == null) {
                         throw new RuntimeException("Found curve without distance attribute: " + curve.getId());
                     }
+                    curve.setAreaIndex(areaIndex);
                     curve.setDistance(maxDistance + relativeDistance);
                     if (curve.childCount(NodeType.PIT) == 0) {
                         throw new RuntimeException("Found dead-end curve: " + curve.getId());
@@ -163,6 +167,7 @@ public class TrackData implements Serializable {
                 if (work.isEmpty()) {
                     throw new RuntimeException("Track cannot end in a curve");
                 }
+                ++areaIndex;
                 for (Node straight : work) {
                     boolean allCurves = true;
                     for (Node prev : prevNodeMap.get(straight)) {
@@ -176,6 +181,7 @@ public class TrackData implements Serializable {
                     }
                     if (allCurves) {
                         straight.setDistance(newMaxDistance);
+                        straight.setAreaIndex(areaIndex);
                         for (Node otherStraight : work) {
                             if (straight.hasChild(otherStraight)) {
                                 center = otherStraight;
@@ -195,12 +201,14 @@ public class TrackData implements Serializable {
                 work.addLast(center);
             }
         }
+        ++areaIndex;
         final Node pitEntry = pit.getValue();
         if (pitEntry != null) {
             prevNodeMap.get(pitEntry).stream().map(Node::getDistance).min(Double::compareTo).ifPresent(min -> pitEntry.setDistance(min - 0.4));
         }
         while (pit.getValue() != null) {
             final Node node = pit.getValue();
+            node.setAreaIndex(areaIndex);
             if (node.childStream().filter(n -> n.getType() != NodeType.PIT).anyMatch(n -> n.getDistance() < 0.0)) {
                 throw new RuntimeException("Distance not defined at pit lane exit");
             }
@@ -220,15 +228,16 @@ public class TrackData implements Serializable {
             }
         }
         work.clear();
-        nodes.stream().filter(n -> n.getType() == NodeType.FINISH).forEach(finishLine -> {
-            finishLine.setStepsToFinishLine(0);
-            work.addAll(prevNodeMap.get(finishLine));
+        nodes.stream().filter(n -> n.getDistance() == 0.0).map(prevNodeMap::get).forEach(work::addAll);
+        work.stream().distinct().forEach(n -> {
+            n.setStepsToFinishLine(1);
+            work.addAll(prevNodeMap.get(n));
         });
         while (!work.isEmpty()) {
             final Node node = work.removeFirst();
             if (node.getStepsToFinishLine() < 0) {
                 final boolean isPit = node.isPit();
-                final int min = node.childStream().filter(n -> isPit || !n.isPit()).map(Node::getStepsToFinishLine).mapToInt(Integer::intValue).min().orElse(-1) + 1;
+                int min = node.childStream().filter(n -> isPit || !n.isPit()).map(Node::getStepsToFinishLine).mapToInt(Integer::intValue).min().orElse(-1) + 1;
                 if (min > 0) {
                     node.setStepsToFinishLine(min);
                     work.addAll(prevNodeMap.get(node));
