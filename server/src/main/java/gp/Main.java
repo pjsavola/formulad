@@ -214,7 +214,7 @@ public class Main extends Game implements Runnable {
         while (!stopped) {
             current.beginTurn();
             final AI ai = aiMap.get(current);
-            final GameState gameState = ApiHelper.buildGameState(data.getTrackId(), players);
+            final GameState gameState = ApiHelper.buildGameState(data.getTrackId(), allPlayers);
             log.info("Querying gear input from AI " + current.getNameAndId());
             final Gear gearResponse = getAiInput(() -> ai.selectGear(gameState), gearTimeoutInMillis);
             if (ai instanceof ManualAI || allPlayers.stream().filter(pl -> !pl.isStopped()).map(aiMap::get).noneMatch(p -> p instanceof ManualAI)) {

@@ -214,6 +214,15 @@ public class ManualAI extends BaseAI {
                 } else if (c == ',' && b + 1 < hitpoints && brakingMap.containsKey(b + 1)) {
                     braking.setValue(b + 1);
                     game.highlightNodes(brakingMap.get(b + 1));
+                } else if (c == 'D') {
+                    final Map<Integer, Integer> debugMap = new HashMap<>(brakingMap.get(b));
+                    if (ai instanceof ProAI) {
+                        debugMap.forEach((nodeId, damage) -> {
+                            final int score = ((ProAI) ai).evaluate(nodes.get(nodeId), damage);
+                            debugMap.put(nodeId, score);
+                        });
+                    }
+                    game.highlightNodes(debugMap);
                 }
             }
         };

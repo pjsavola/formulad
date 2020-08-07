@@ -2,6 +2,7 @@ package gp.ai;
 
 import gp.DamageAndPath;
 import gp.NodeUtil;
+import gp.Player;
 import gp.model.*;
 
 import java.util.*;
@@ -50,14 +51,17 @@ public class ProAI extends BaseAI {
             areaToValue.put(pitLaneAreaIndex, cumulativeValue);
         }
         //System.err.println(areaToValue);
-        /*
+/*
         nodes.forEach(n -> {
             int bestGearScore = Integer.MIN_VALUE;
             int bestGear = 0;
             //int maxMaxScore = Integer.MIN_VALUE;
             //int lowHPScore = Integer
-            for (int gear = 1; gear <= 6; ++gear) {
-                final int score = evaluate(n, 18, gear, 0, n.getStopCount() > 0 ? 1 : 0);
+            final int stops = n.getStopCount();// > 0 ? 1 : 0;
+            final int distance = AIUtil.getMinDistanceToNextCurve(n, n.isPit() ? Collections.emptySet() : pitLane);
+            final int movePermit = AIUtil.getMaxDistanceWithoutDamage(n, stops, n.isPit() ? Collections.emptySet() : pitLane);
+            for (int gear = 2; gear <= 2; ++gear) {
+                final int score = evaluate(n, 18, gear, 0, stops, distance, movePermit);
                 //final int maxScore = evaluate(n, 18, gear, 0, n.getStopCount());
                 //final int lowHPScore = evaluate(n, 1, gear, 0, n.getStopCount());
                 //System.err.println("Gear " + gear + ": " + n.getId() + ": " + score + " - " + maxScore);
@@ -70,7 +74,7 @@ public class ProAI extends BaseAI {
         });*/
     }
 
-    private int evaluate(Node endNode, int damage) {
+    int evaluate(Node endNode, int damage) {
         final int stops = endNode.isCurve() ? (endNode.getAreaIndex() == location.getAreaIndex() ? player.getStops() + 1 : 1) : 0;
         int lapsToGo = player.getLapsToGo();
         if (!endNode.isPit()) {
@@ -84,18 +88,21 @@ public class ProAI extends BaseAI {
     }
 
     private int evaluate(Node node, int hp, int gear, int lapsToGo, int stops, int distance, int movePermit) {
-        if (lapsToGo < 0) {
-            return Scores.MAX;
-        }
         // TODO: Non-linear evaulation of hitpoints
-        int score = 3 * hp;
-        //String description = "Score from HP: " + score + "\n";
+        final boolean finalStraight = !node.isCurve() && lapsToGo == 0 && areaToValue.get(node.getAreaIndex()) == cumulativeValue && hp > 1;
+        //if (finalStraight) debug("Final straight!!! HP does not matter");
+        int score = 3 * (finalStraight ? Math.min(18, hp) : hp);
+        String description = "Score from HP: " + score + "\n";
+
+        if (lapsToGo < 0) {
+            return Scores.MAX + score; // Prefer finishing without wasting hitpoints
+        }
 
         // Take number of steps to finish line into account
-        final int steps = node.getStepsToFinishLine();
+        //final int steps = node.getStepsToFinishLine();
         //score -= lapsToGo * lapLengthInSteps + steps;
         score -= distance;
-        //description += "Penalty from distance: " + distance + "\n";
+        description += "Penalty from distance: " + distance + "\n";
 
         // Each curve accumulates value depending on the following straight length
         int stopsToDo = Math.max(0, node.getStopCount() - stops);
@@ -104,11 +111,11 @@ public class ProAI extends BaseAI {
             final int value = areaToValue.get(node.getAreaIndex());
             final int stopValue = (value - previousValue) / node.getStopCount();
             score -= stopsToDo * stopValue;
-            //description += "Penalty from missing stops in the curve: " + (stopsToDo * stopValue) + "\n";
+            description += "Penalty from missing stops in the curve: " + (stopsToDo * stopValue) + "\n";
         }
         final int value = 2 * (areaToValue.get(node.getAreaIndex()) - lapsToGo * cumulativeValue);
         score += value;
-        //description += "Score from cumulative area value: " + value + "\n";
+        description += "Score from cumulative area value: " + value + "\n";
 
         if (node.isPit()) {
             score -= getPenaltyForLowGear(node, gear, distance, movePermit);
@@ -118,8 +125,9 @@ public class ProAI extends BaseAI {
         }
 
         if (stopsToDo <= 0) {
-            score -= getPenaltyForLowGear(node, gear, distance, movePermit);
-            //description += "Penalty from low gear: " + getPenaltyForLowGear(node, gear) + "\n";
+            final int penalty = getPenaltyForLowGear(node, gear, distance, movePermit);
+            score -= penalty;
+            description += "Penalty from low gear: " + penalty + "\n";
             stopsToDo = AIUtil.getStopsRequiredInNextCurve(node);
         }
 
@@ -133,16 +141,16 @@ public class ProAI extends BaseAI {
             return Scores.MIN;
         }
 
-        int minStepsWithoutDamage = Gear.getMin(Math.max(1, gear - 1));
+        int minStepsWithoutDamage = Gear.getMax(Math.max(1, gear - 1));
         for (int i = 2; i <= stopsToDo; ++i) {
-            minStepsWithoutDamage += Gear.getMin(Math.max(1, gear - i));
+            minStepsWithoutDamage += Gear.getMax(Math.max(1, gear - i));
         }
         if (minStepsWithoutDamage > movePermit) {
             // Too large gear --> take into account in evaluation
             score -= 2 * (minStepsWithoutDamage - movePermit);
-            //description += "Penalty from high gear: " + (4 * (minStepsWithoutDamage - movePermit)) + "\n";
+            description += "Penalty from high gear: " + (4 * (minStepsWithoutDamage - movePermit)) + "\n";
         }
-        //if (node.getId() == 179) System.err.print("Gear: " + gear + ": " + description);
+        //if (node.getId() > 500) debug(description);
         return score;
     }
 
@@ -249,6 +257,10 @@ public class ProAI extends BaseAI {
             gear = 1;
             return new gp.model.Gear().gear(1);
         }
+        final int pos = gameState.getPlayers().indexOf(player) + 1;
+        final List<PlayerState> competingPlayers = gameState.getPlayers().stream().filter(p -> p.getLapsToGo() >= 0 && p.getHitpoints() > 0).collect(Collectors.toList());
+        final int posAmongCompeting = competingPlayers.indexOf(player) + 1;
+
         final Set<Node> blockedNodes = playerMap
                 .values()
                 .stream()
