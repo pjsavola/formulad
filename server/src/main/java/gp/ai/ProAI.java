@@ -14,7 +14,7 @@ public class ProAI extends BaseAI {
     private PlayerState player;
     private int gear;
     private final Random random = new Random();
-    public boolean debug = false;
+    public boolean debug = true;
 
     private int cumulativeValue = 0;
     //private final Map<Integer, Integer> areaToStops = new HashMap<>();
@@ -78,33 +78,24 @@ public class ProAI extends BaseAI {
         }
         final boolean enterPits = endNode.hasGarage() || (endNode.isPit() && !location.isPit());
         final int hp = enterPits ? 18 : player.getHitpoints() - damage;
-        return evaluate(endNode, hp, gear, lapsToGo, stops);
+        final int distance = AIUtil.getMinDistanceToNextCurve(endNode, endNode.isPit() ? Collections.emptySet() : pitLane);
+        final int movePermit = AIUtil.getMaxDistanceWithoutDamage(endNode, stops, endNode.isPit() ? Collections.emptySet() : pitLane);
+        return evaluate(endNode, hp, gear, lapsToGo, stops, distance, movePermit);
     }
 
-    private int evaluate(PlayerState playerState) {
-        final Node node = nodes.get(playerState.getNodeId());
-        final int hp = playerState.getHitpoints();
-        final int gear = playerState.getGear();
-        final int lapsToGo = playerState.getLapsToGo();
-        final int stops = playerState.getStops();
-        return evaluate(node, hp, gear, lapsToGo, stops);
-    }
-
-    // TODO: Improve evaluation
-    private int evaluate(Node node, int hp, int gear, int lapsToGo, int stops) {
+    private int evaluate(Node node, int hp, int gear, int lapsToGo, int stops, int distance, int movePermit) {
         if (lapsToGo < 0) {
             return Scores.MAX;
         }
         // TODO: Non-linear evaulation of hitpoints
         int score = 3 * hp;
-        String description = "Score from HP: " + score + "\n";
+        //String description = "Score from HP: " + score + "\n";
 
         // Take number of steps to finish line into account
         final int steps = node.getStepsToFinishLine();
         //score -= lapsToGo * lapLengthInSteps + steps;
-        final int distance = AIUtil.getMinDistanceToNextCurve(node, node.isPit() ? Collections.emptySet() : pitLane);
         score -= distance;
-        description += "Penalty from distance: " + distance + "\n";
+        //description += "Penalty from distance: " + distance + "\n";
 
         // Each curve accumulates value depending on the following straight length
         int stopsToDo = Math.max(0, node.getStopCount() - stops);
@@ -113,25 +104,24 @@ public class ProAI extends BaseAI {
             final int value = areaToValue.get(node.getAreaIndex());
             final int stopValue = (value - previousValue) / node.getStopCount();
             score -= stopsToDo * stopValue;
-            description += "Penalty from missing stops in the curve: " + (stopsToDo * stopValue) + "\n";
+            //description += "Penalty from missing stops in the curve: " + (stopsToDo * stopValue) + "\n";
         }
         final int value = 2 * (areaToValue.get(node.getAreaIndex()) - lapsToGo * cumulativeValue);
         score += value;
-        description += "Score from cumulative area value: " + value + "\n";
+        //description += "Score from cumulative area value: " + value + "\n";
 
         if (node.isPit()) {
-            score -= getPenaltyForLowGear(node, gear);
-            description += "Penalty from low gear (pits): " + getPenaltyForLowGear(node, gear) + "\n";
+            score -= getPenaltyForLowGear(node, gear, distance, movePermit);
+            //description += "Penalty from low gear (pits): " + getPenaltyForLowGear(node, gear, distance, movePermit) + "\n";
             //System.err.print(description);
             return score;
         }
 
         if (stopsToDo <= 0) {
-            score -= getPenaltyForLowGear(node, gear);
-            description += "Penalty from low gear: " + getPenaltyForLowGear(node, gear) + "\n";
+            score -= getPenaltyForLowGear(node, gear, distance, movePermit);
+            //description += "Penalty from low gear: " + getPenaltyForLowGear(node, gear) + "\n";
             stopsToDo = AIUtil.getStopsRequiredInNextCurve(node);
         }
-        final int movePermit = AIUtil.getMaxDistanceWithoutDamage(node, stops, pitLane);
 
         final int minGear = Math.max(1, gear - Math.min(4, hp - 1));
         int minSteps = Gear.getMin(minGear);
@@ -150,23 +140,21 @@ public class ProAI extends BaseAI {
         if (minStepsWithoutDamage > movePermit) {
             // Too large gear --> take into account in evaluation
             score -= 2 * (minStepsWithoutDamage - movePermit);
-            description += "Penalty from high gear: " + (4 * (minStepsWithoutDamage - movePermit)) + "\n";
+            //description += "Penalty from high gear: " + (4 * (minStepsWithoutDamage - movePermit)) + "\n";
         }
         //if (node.getId() == 179) System.err.print("Gear: " + gear + ": " + description);
         return score;
     }
 
-    private int getPenaltyForLowGear(Node node, int gear) {
+    private int getPenaltyForLowGear(Node node, int gear, int distanceToNextCurve, int movePermit) {
         final boolean inPits = node.isPit();
         if (gear >= (inPits ? 3 : 5)) {
             return 0;
         }
-        final int distanceToNextCurve = AIUtil.getMinDistanceToNextCurve(node, inPits ? Collections.emptySet() : pitLane);
         final int minRoll = Gear.getMin(Math.min(inPits ? 4 : 6, gear + 1));
         final int penalty = Math.max(0, distanceToNextCurve - minRoll);
         if (penalty == 0 && !node.isCurve()) {
             // Approaching a corner, check that the gear is not too low for that corner.
-            final int movePermit = AIUtil.getMaxDistanceWithoutDamage(node, 0, inPits ? Collections.emptySet() : pitLane);
             int maxSteps = Gear.getMax(Math.min(inPits ? 4 : 6, gear + 1));
             int stops = AIUtil.getStopsRequiredInNextCurve(node);
             for (int i = 2; i <= stops; ++i) {
@@ -229,7 +217,7 @@ public class ProAI extends BaseAI {
         @Override
         public int compareTo(Scores scores) {
             final int sum1 = median + min + max;
-            final int sum2 = median + min + max;
+            final int sum2 = scores.median + scores.min + scores.max;
             if (sum2 == sum1) {
                 if (scores.median == median) {
                     if (scores.max == max) {
