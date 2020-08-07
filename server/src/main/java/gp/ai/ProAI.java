@@ -7,7 +7,7 @@ import gp.model.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class BestAI extends BaseAI {
+public class ProAI extends BaseAI {
 
     private Map<String, PlayerState> playerMap;
     private Node location;
@@ -21,7 +21,7 @@ public class BestAI extends BaseAI {
     private final Map<Integer, Integer> areaToValue = new HashMap<>();
     private final Set<Node> pitLane;
 
-    public BestAI(TrackData data) {
+    public ProAI(TrackData data) {
         super(data);
         pitLane = nodes.stream().filter(Node::isPit).collect(Collectors.toSet());
         //lapLengthInSteps = nodes.stream().filter(n -> !n.isPit()).map(Node::getStepsToFinishLine).mapToInt(Integer::intValue).max().orElse(0);

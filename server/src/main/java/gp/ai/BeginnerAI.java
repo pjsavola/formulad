@@ -4,7 +4,7 @@ import java.util.*;
 
 import gp.model.*;
 
-public class GreatAI extends BaseAI {
+public class BeginnerAI extends BaseAI {
 
     private Map<String, PlayerState> playerMap;
     private Node location;
@@ -13,7 +13,7 @@ public class GreatAI extends BaseAI {
     private Random random = new Random();
     public boolean debug;
 
-    public GreatAI(TrackData data) {
+    public BeginnerAI(TrackData data) {
         super(data);
     }
 

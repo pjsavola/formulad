@@ -7,14 +7,15 @@ import gp.model.SelectedIndex;
 
 public interface AI {
 
-    enum Type { MANUAL, GREAT, MAGNIFICENT }
+    enum Type { MANUAL, BEGINNER, AMATEUR, PRO }
 
     static Type fromString(String str) {
         if (str == null) return null;
         switch (str) {
-            case "gp.ai.ManualAI":      return Type.MANUAL;
-            case "gp.ai.GreatAI":       return Type.GREAT;
-            case "gp.ai.MagnificentAI": return Type.MAGNIFICENT;
+            case "gp.ai.ManualAI":   return Type.MANUAL;
+            case "gp.ai.BeginnerAI": return Type.BEGINNER;
+            case "gp.ai.AmateurAI":  return Type.AMATEUR;
+            case "gp.ai.ProAI":      return Type.PRO;
         }
         return null;
     }
@@ -22,9 +23,10 @@ public interface AI {
     static String toString(Type type) {
         if (type == null) return "gp.ai.ManualAI";
         switch (type) {
-            case MANUAL:      return "gp.ai.ManualAI";
-            case GREAT:       return "gp.ai.GreatAI";
-            case MAGNIFICENT: return "gp.ai.MagnificentAI";
+            case MANUAL:   return "gp.ai.ManualAI";
+            case BEGINNER: return "gp.ai.BeginnerAI";
+            case AMATEUR:  return "gp.ai.AmateurAI";
+            case PRO:      return "gp.ai.ProAI";
         }
         return null;
     }

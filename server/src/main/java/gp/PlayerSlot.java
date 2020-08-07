@@ -1,5 +1,7 @@
 package gp;
 
+import gp.ai.AI;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
@@ -51,10 +53,11 @@ public class PlayerSlot extends JButton {
         setIcon(new CarIcon());
         addActionListener(e -> {
             if (profile == null) {
+                /*
                 if (localProfiles.isEmpty()) {
                     setProfile(ProfileMessage.createRandomAIProfile(getUsedAINames(slots)));
                     return;
-                }
+                }*/
                 profile = ProfileMessage.pending;
                 final JDialog dialog = new JDialog(frame);
 
@@ -64,12 +67,23 @@ public class PlayerSlot extends JButton {
                 final JList<String> list = new JList<>(model);
                 final JButton selectButton = new JButton("Select");
                 final JButton addAiButton = new JButton("Add AI");
+                final JRadioButton difficultyButton1 = new JRadioButton("Beginner");
+                final JRadioButton difficultyButton2 = new JRadioButton("Amateur");
+                final JRadioButton difficultyButton3 = new JRadioButton("Pro");
+                final ButtonGroup group = new ButtonGroup();
+                group.add(difficultyButton1);
+                group.add(difficultyButton2);
+                group.add(difficultyButton3);
+
+
                 selectButton.addActionListener(e12 -> {
                     final int index = list.getSelectedIndex();
                     if (index == -1) {
                         return;
                     }
                     final ProfileMessage selectedProfile = localProfiles.remove(index);
+                    final AI.Type type = difficultyButton1.isSelected() ? AI.Type.BEGINNER : (difficultyButton2.isSelected() ? AI.Type.AMATEUR : AI.Type.PRO);
+                    selectedProfile.setAIType(type);
                     selectedProfile.setLocal(true);
                     setProfile(selectedProfile);
                     dialog.setVisible(false);
@@ -79,7 +93,10 @@ public class PlayerSlot extends JButton {
                     if (index == -1) {
                         return;
                     }
-                    setProfile(ProfileMessage.createRandomAIProfile(getUsedAINames(slots)));
+                    final ProfileMessage aiProfile = ProfileMessage.createRandomAIProfile(getUsedAINames(slots));
+                    final AI.Type type = difficultyButton1.isSelected() ? AI.Type.BEGINNER : (difficultyButton2.isSelected() ? AI.Type.AMATEUR : AI.Type.PRO);
+                    aiProfile.setAIType(type);
+                    setProfile(aiProfile);
                     dialog.setVisible(false);
                 });
 
@@ -102,6 +119,9 @@ public class PlayerSlot extends JButton {
                 buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.Y_AXIS));
                 buttonPane.add(selectButton);
                 buttonPane.add(addAiButton);
+                buttonPane.add(difficultyButton1);
+                buttonPane.add(difficultyButton2);
+                buttonPane.add(difficultyButton3);
                 buttonPane.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 
                 final JPanel contents = new JPanel(new GridLayout(0, 2));
@@ -114,6 +134,7 @@ public class PlayerSlot extends JButton {
                         profile = null;
                     }
                 });
+                difficultyButton3.setSelected(true);
                 dialog.setTitle("Select player");
                 dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
                 dialog.setContentPane(contents);

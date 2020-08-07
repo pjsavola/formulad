@@ -5,10 +5,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
 
-public class MagnificentAI extends BaseAI {
+public class AmateurAI extends BaseAI {
 
     private Map<String, PlayerState> playerMap;
     private Node location;
@@ -18,7 +16,7 @@ public class MagnificentAI extends BaseAI {
     private Random random = new Random();
     public boolean debug = true;
 
-    public MagnificentAI(TrackData data) {
+    public AmateurAI(TrackData data) {
         super(data);
     }
 
@@ -94,8 +92,8 @@ public class MagnificentAI extends BaseAI {
             if (oldScore == null || score > oldScore) gearToMaxScore.put(nextGear, score);
         });
         final int riskGear = gearToMaxScore.entrySet().stream().max((e1, e2) -> e1.getValue() - e2.getValue()).map(e -> e.getKey()).orElse(-1);
-        final int avgGear = gearMaskToScores.entrySet().stream().max(Comparator.comparingInt(e -> e.getValue().stream().mapToInt(Integer::intValue).sum() / e.getValue().size())).map(e -> e.getKey()).map(MagnificentAI::getNextGear).orElse(-1);
-        final int safeGear = gearMaskToMinScore.entrySet().stream().max((e1, e2) -> e1.getValue() - e2.getValue()).map(e -> e.getKey()).map(MagnificentAI::getNextGear).orElse(-1);
+        final int avgGear = gearMaskToScores.entrySet().stream().max(Comparator.comparingInt(e -> e.getValue().stream().mapToInt(Integer::intValue).sum() / e.getValue().size())).map(e -> e.getKey()).map(AmateurAI::getNextGear).orElse(-1);
+        final int safeGear = gearMaskToMinScore.entrySet().stream().max((e1, e2) -> e1.getValue() - e2.getValue()).map(e -> e.getKey()).map(AmateurAI::getNextGear).orElse(-1);
         //System.out.println("Risk gear: " + riskGear);
         //System.out.println("Safe gear: " + safeGear);
         //System.out.println("Best gear: " + avgGear);

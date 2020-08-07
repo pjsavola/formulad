@@ -435,7 +435,7 @@ public class Season implements Comparable<Season>, TrackSelector {
                 writer.print(",");
                 writer.print(message.getColor2());
                 writer.print(",");
-                writer.println(message.isAi() ? "gp.ai.GreatAI" : "gp.ai.ManualAI");
+                writer.println(message.isAi() ? "gp.ai.BeginnerAI" : "gp.ai.ManualAI");
             }
             writer.println();
             for (FinalStandings fs : results) {

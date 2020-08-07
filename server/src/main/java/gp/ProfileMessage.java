@@ -1,9 +1,6 @@
 package gp;
 
-import gp.ai.AI;
-import gp.ai.GreatAI;
-import gp.ai.MagnificentAI;
-import gp.ai.TrackData;
+import gp.ai.*;
 
 import java.awt.*;
 import java.io.Serializable;
@@ -24,6 +21,7 @@ public class ProfileMessage implements Serializable {
     public static ProfileMessage pending = new ProfileMessage("...", false);
 
     private static Random random = new Random();
+    private static String[] drivers = new String[] { "Hamilton", "Bottas", "Verstappen", "Albon", "Vettel", "Leclerc", "Perez", "Stroll", "Norris", "Sainz", "Ricciardo", "Ocon", "Gasly", "Kvyat", "Räikkönen", "Giovinazzi", "Magnussen", "Grosjean", "Russell", "XX" };
     private static String[] randomNames = new String[] { "Mika", "Keke", "Kimi", "Heikki", "Leo", "Valtteri", "Nico", "Michael", "Lewis", "Sebastian", "Max", "Fernando" };
     private static final Color[] defaultColors = {
             Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, Color.PINK,
@@ -37,20 +35,7 @@ public class ProfileMessage implements Serializable {
         final ProfileMessage profile = new ProfileMessage(validNames.get(random.nextInt(validNames.size())), true);
         profile.color1 = random.nextInt(0xFFFFFF + 1);
         profile.color2 = random.nextInt(0xFFFFFF + 1);
-        profile.aiType = AI.Type.MAGNIFICENT;
-        /*
-        switch (profile.getName()) {
-            case "Kimi":
-            case "Michael":
-            case "Lewis":
-            case "Sebastian":
-            case "Fernando":
-                profile.aiType = AI.Type.MAGNIFICENT;
-                break;
-            default:
-                profile.aiType = AI.Type.GREAT;
-                break;
-        }*/
+        profile.aiType = AI.Type.AMATEUR;
         return profile;
     }
 
@@ -127,11 +112,16 @@ public class ProfileMessage implements Serializable {
         return ai;
     }
 
+    public void setAIType(AI.Type type) {
+        aiType = type;
+    }
+
     public AI createAI(TrackData data) {
         if (aiType == null) return null;
         switch (aiType) {
-            case GREAT: return new GreatAI(data);
-            case MAGNIFICENT: return new MagnificentAI(data);
+            case BEGINNER: return new BeginnerAI(data);
+            case AMATEUR: return new AmateurAI(data);
+            case PRO: return new ProAI(data);
         }
         return null;
     }
