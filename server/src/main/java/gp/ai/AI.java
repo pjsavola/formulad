@@ -13,6 +13,7 @@ public interface AI {
         if (str == null) return null;
         switch (str) {
             case "gp.ai.ManualAI":   return Type.MANUAL;
+            case "gp.ai.GreatAI":
             case "gp.ai.BeginnerAI": return Type.BEGINNER;
             case "gp.ai.AmateurAI":  return Type.AMATEUR;
             case "gp.ai.ProAI":      return Type.PRO;
