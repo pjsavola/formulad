@@ -99,7 +99,12 @@ public class ManualAI extends BaseAI {
                         automaticMove = true;
                         selectedGear.setValue(gear.getGear());
                     }
-                } else if (c >= '1' && c <= '6') {
+                } else if (c == 'g') {
+                    final Gear gear = ai.selectGear(gameState);
+                    if (gear != null) {
+                        selectedGear.setValue(gear.getGear());
+                    }
+                    } else if (c >= '1' && c <= '6') {
                     if (AIUtil.validateGear(hitpoints, gear, c - '0', inPits)) {
                         selectedGear.setValue(c - '0');
                     }
@@ -147,6 +152,7 @@ public class ManualAI extends BaseAI {
             }
             final int newGear = selectedGear.getValue();
             if (newGear != 0) {
+                gear = newGear;
                 frame.removeKeyListener(keyListener);
                 game.actionMenu.removeAll();
                 game.drivingAids.removeAll();
@@ -215,10 +221,10 @@ public class ManualAI extends BaseAI {
                     braking.setValue(b + 1);
                     game.highlightNodes(brakingMap.get(b + 1));
                 } else if (c == 'D') {
-                    final Map<Integer, Integer> debugMap = new HashMap<>(brakingMap.get(b));
+                    final Map<Integer, Integer> debugMap = new HashMap<>(   );
                     if (ai instanceof ProAI) {
-                        debugMap.forEach((nodeId, damage) -> {
-                            final int score = ((ProAI) ai).evaluate(nodes.get(nodeId), damage);
+                        brakingMap.get(b).forEach((nodeId, damage) -> {
+                            final int score = ((ProAI) ai).evaluate(nodes.get(nodeId), damage, gear);
                             debugMap.put(nodeId, score);
                         });
                     }

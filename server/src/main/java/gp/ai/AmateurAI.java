@@ -75,6 +75,7 @@ public class AmateurAI extends BaseAI {
         final Set<Node> blockedNodes = playerMap
                 .values()
                 .stream()
+                .filter(p -> p.getHitpoints() > 0 && p.getLapsToGo() >= 0)
                 .map(p -> nodes.get(p.getNodeId()))
                 .collect(Collectors.toSet());
         final Set<Node> pitNodes = nodes.stream().filter(Node::isPit).collect(Collectors.toSet());

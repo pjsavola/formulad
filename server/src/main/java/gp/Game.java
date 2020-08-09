@@ -204,16 +204,20 @@ public abstract class Game extends JPanel implements PlayerRenderer {
                     if (damage > 0) {
                         g2d.setFont(bigDamageFont);
                         g2d.setColor(Color.BLACK);
-                        final int x = p.x - (damage >= 10 ? 5 : 2);
-                        g2d.drawString(Integer.toString(damage), x, p.y + 4);
+                        final String str = Integer.toString(damage);
+                        final int w = g2d.getFontMetrics().stringWidth(str);
+                        final int x = p.x - w / 2;
+                        g2d.drawString(str, x, p.y + 4);
                     }
                 } else {
                     MapEditor.drawOval(g2d, p.x, p.y, 12, 12, true, false, Color.YELLOW, 1);
                     if (damage > 0) {
                         g2d.setFont(damageFont);
                         g2d.setColor(Color.RED);
-                        final int x = p.x - (damage >= 10 ? 5 : 2);
-                        g2d.drawString(Integer.toString(damage), x, p.y + 3);
+                        final String str = Integer.toString(damage);
+                        final int w = g2d.getFontMetrics().stringWidth(str);
+                        final int x = p.x - w / 2;
+                        g2d.drawString(str, x, p.y + 3);
                     }
                 }
             }

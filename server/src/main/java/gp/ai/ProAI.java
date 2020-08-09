@@ -74,14 +74,14 @@ public class ProAI extends BaseAI {
         });*/
     }
 
-    int evaluate(Node endNode, int damage) {
+    int evaluate(Node endNode, int damage, int gear) {
         final int stops = endNode.isCurve() ? (endNode.getAreaIndex() == location.getAreaIndex() ? player.getStops() + 1 : 1) : 0;
         int lapsToGo = player.getLapsToGo();
         if (!endNode.isPit()) {
             if (location.isPit() || location.getAreaIndex() > endNode.getAreaIndex()) --lapsToGo;
         }
         final boolean enterPits = endNode.hasGarage() || (endNode.isPit() && !location.isPit());
-        final int hp = enterPits ? 18 : player.getHitpoints() - damage;
+        final int hp = enterPits ? 18 : player.getHitpoints() - damage - Math.max(0, player.getGear() - gear - 1);
         final int distance = AIUtil.getMinDistanceToNextCurve(endNode, endNode.isPit() ? Collections.emptySet() : pitLane);
         final int movePermit = AIUtil.getMaxDistanceWithoutDamage(endNode, stops, endNode.isPit() ? Collections.emptySet() : pitLane);
         return evaluate(endNode, hp, gear, lapsToGo, stops, distance, movePermit);
@@ -260,20 +260,23 @@ public class ProAI extends BaseAI {
         final int pos = gameState.getPlayers().indexOf(player) + 1;
         final List<PlayerState> competingPlayers = gameState.getPlayers().stream().filter(p -> p.getLapsToGo() >= 0 && p.getHitpoints() > 0).collect(Collectors.toList());
         final int posAmongCompeting = competingPlayers.indexOf(player) + 1;
+        debug("Pos: " + pos + " Pos among running: " + posAmongCompeting);
 
         final Set<Node> blockedNodes = playerMap
                 .values()
                 .stream()
+                .filter(p -> p.getHitpoints() > 0 && p.getLapsToGo() >= 0)
                 .map(p -> nodes.get(p.getNodeId()))
                 .collect(Collectors.toSet());
         final int minGear = Math.max(1, player.getGear() - Math.min(4, player.getHitpoints() - 1));
         final int maxGear = Math.min(location.isPit() ? 4 : 6, player.getGear() + 1);
         final Map<Integer, List<Integer>> gearToScore = new HashMap<>();
         for (int gear = minGear; gear <= maxGear; ++gear) {
+            final int finalGear = gear;
             final int[] distribution = Gear.getDistribution(gear);
             for (int roll : distribution) {
                 final Map<Node, DamageAndPath> res = NodeUtil.findTargetNodes(location, gear, roll, player.getHitpoints(), player.getStops(), player.getLapsToGo(), blockedNodes);
-                final int maxScore = res.entrySet().stream().map(e -> evaluate(e.getKey(), e.getValue().getDamage())).mapToInt(Integer::intValue).max().orElse(Scores.MIN);
+                final int maxScore = res.entrySet().stream().map(e -> evaluate(e.getKey(), e.getValue().getDamage(), finalGear)).mapToInt(Integer::intValue).max().orElse(Scores.MIN);
                 gearToScore.computeIfAbsent(gear, g -> new ArrayList<>()).add(maxScore);
             }
         }
@@ -310,7 +313,7 @@ public class ProAI extends BaseAI {
             final ValidMove vm = moves.get(i);
             final Node endNode = nodes.get(vm.getNodeId());
             final int damage = vm.getBraking() + vm.getOvershoot();
-            final int score = evaluate(endNode, damage);
+            final int score = evaluate(endNode, damage, gear);
             if (score > maxScore) {
                 maxScore = score;
                 bestIndices.clear();
