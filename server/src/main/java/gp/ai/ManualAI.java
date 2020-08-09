@@ -111,7 +111,7 @@ public class ManualAI extends BaseAI {
                 } else if (c == 'd') {
                     game.debug = !game.debug;
                     game.repaint();
-                } else {
+                }/* else {
                     switch (c) {
                         case 'A':
                             System.out.println("Stops required in next curve: " + AIUtil.getStopsRequiredInNextCurve(location));
@@ -139,7 +139,7 @@ public class ManualAI extends BaseAI {
                             ai.selectGear(gameState);
                             break;
                     }
-                }
+                }*/
             }
         };
         frame.addKeyListener(keyListener);
@@ -224,7 +224,10 @@ public class ManualAI extends BaseAI {
                     final Map<Integer, Integer> debugMap = new HashMap<>(   );
                     if (ai instanceof ProAI) {
                         brakingMap.get(b).forEach((nodeId, damage) -> {
-                            final int score = ((ProAI) ai).evaluate(nodes.get(nodeId), damage, gear);
+                            final ProAI proAI = (ProAI) ai;
+                            proAI.debug2 = true;
+                            final int score = proAI.evaluate(nodes.get(nodeId), damage, gear);
+                            proAI.debug2 = false;
                             debugMap.put(nodeId, score);
                         });
                     }

@@ -16,6 +16,7 @@ public class ProAI extends BaseAI {
     private int gear;
     private final Random random = new Random();
     public boolean debug = true;
+    public boolean debug2;
 
     private int cumulativeValue = 0;
     //private final Map<Integer, Integer> areaToStops = new HashMap<>();
@@ -75,7 +76,7 @@ public class ProAI extends BaseAI {
     }
 
     int evaluate(Node endNode, int damage, int gear) {
-        final int stops = endNode.isCurve() ? (endNode.getAreaIndex() == location.getAreaIndex() ? player.getStops() + 1 : 1) : 0;
+        final int stops = (endNode.isCurve() && endNode.getAreaIndex() != location.getAreaIndex()) ? 1 : player.getStops() + 1;
         int lapsToGo = player.getLapsToGo();
         if (!endNode.isPit()) {
             if (location.isPit() || location.getAreaIndex() > endNode.getAreaIndex()) --lapsToGo;
@@ -84,12 +85,12 @@ public class ProAI extends BaseAI {
         final int hp = enterPits ? 18 : player.getHitpoints() - damage - Math.max(0, player.getGear() - gear - 1);
         final int distance = AIUtil.getMinDistanceToNextCurve(endNode, endNode.isPit() ? Collections.emptySet() : pitLane);
         final int movePermit = AIUtil.getMaxDistanceWithoutDamage(endNode, stops, endNode.isPit() ? Collections.emptySet() : pitLane);
-        return evaluate(endNode, hp, gear, lapsToGo, stops, distance, movePermit);
+        return evaluate(location, endNode, hp, gear, lapsToGo, stops, distance, movePermit);
     }
 
-    private int evaluate(Node node, int hp, int gear, int lapsToGo, int stops, int distance, int movePermit) {
+    private int evaluate(Node startNode, Node endNode, int hp, int gear, int lapsToGo, int stops, int distance, int movePermit) {
         // TODO: Non-linear evaulation of hitpoints
-        final boolean finalStraight = !node.isCurve() && lapsToGo == 0 && areaToValue.get(node.getAreaIndex()) == cumulativeValue && hp > 1;
+        final boolean finalStraight = !endNode.isCurve() && lapsToGo == 0 && areaToValue.get(endNode.getAreaIndex()) == cumulativeValue && hp > 1;
         //if (finalStraight) debug("Final straight!!! HP does not matter");
         int score = 3 * (finalStraight ? Math.min(18, hp) : hp);
         String description = "Score from HP: " + score + "\n";
@@ -101,56 +102,70 @@ public class ProAI extends BaseAI {
         // Take number of steps to finish line into account
         //final int steps = node.getStepsToFinishLine();
         //score -= lapsToGo * lapLengthInSteps + steps;
-        score -= distance;
-        description += "Penalty from distance: " + distance + "\n";
+        final int requiredStopCount = endNode.isCurve() ? endNode.getStopCount() : startNode.getStopCount();
+        int stopsToDo = Math.max(0, requiredStopCount - stops);
 
         // Each curve accumulates value depending on the following straight length
-        int stopsToDo = Math.max(0, node.getStopCount() - stops);
-        if (node.getStopCount() > 0 && stopsToDo > 0) {
-            final int previousValue = areaToValue.get(node.getAreaIndex() - 1);
-            final int value = areaToValue.get(node.getAreaIndex());
-            final int stopValue = (value - previousValue) / node.getStopCount();
+        if (requiredStopCount > 1 && stopsToDo > 0) {
+            final int previousValue = areaToValue.get(endNode.getAreaIndex() - 1);
+            final int value = areaToValue.get(endNode.getAreaIndex());
+            final int stopValue = (value - previousValue) / (requiredStopCount - 1);
             score -= stopsToDo * stopValue;
             description += "Penalty from missing stops in the curve: " + (stopsToDo * stopValue) + "\n";
+
+            // Penatly from too low gear...
+            int maxSteps = Gear.getAvg(Math.min(6, gear + 1));
+            for (int i = 2; i <= stopsToDo; ++i) {
+                maxSteps += Gear.getAvg(Math.min(6, gear + i));
+            }
+            if (movePermit > maxSteps) {
+                score -= movePermit - maxSteps;
+                description += "Penalty from low gear: " + (movePermit - maxSteps) + "\n";
+            }
+        } else {
+            score -= distance;
+            description += "Penalty from distance: " + distance + "\n";
         }
-        final int value = 2 * (areaToValue.get(node.getAreaIndex()) - lapsToGo * cumulativeValue);
+        final int value = 2 * (areaToValue.get(endNode.getAreaIndex()) - lapsToGo * cumulativeValue);
         score += value;
         description += "Score from cumulative area value: " + value + "\n";
 
-        if (node.isPit()) {
-            score -= getPenaltyForLowGear(node, gear, distance, movePermit);
+        if (endNode.isPit()) {
+            score -= getPenaltyForLowGear(endNode, gear, distance, movePermit);
             //description += "Penalty from low gear (pits): " + getPenaltyForLowGear(node, gear, distance, movePermit) + "\n";
-            //System.err.print(description);
+            if (debug2) debug(description);
             return score;
         }
 
         if (stopsToDo <= 0) {
-            final int penalty = getPenaltyForLowGear(node, gear, distance, movePermit);
+            final int penalty = getPenaltyForLowGear(endNode, gear, distance, movePermit);
             score -= penalty;
             description += "Penalty from low gear: " + penalty + "\n";
-            stopsToDo = AIUtil.getStopsRequiredInNextCurve(node);
+            stopsToDo = AIUtil.getStopsRequiredInNextCurve(endNode);
         }
 
-        final int minGear = Math.max(1, gear - Math.min(4, hp - 1));
-        int minSteps = Gear.getMin(minGear);
-        for (int i = 2; i <= stopsToDo; ++i) {
-            minSteps += Gear.getMin(Math.max(1, minGear - i));
-        }
-        if (minSteps > movePermit) {
-            // Guaranteed DNF --> very bad
-            return Scores.MIN;
+        if (stopsToDo > 1) {
+            final int minGear = Math.max(1, gear - Math.min(4, hp - 1));
+            int minSteps = Gear.getMin(minGear);
+            for (int i = 2; i <= stopsToDo; ++i) {
+                minSteps += Gear.getMin(Math.max(1, minGear - i));
+            }
+            if (minSteps > movePermit) {
+                // Guaranteed DNF --> very bad
+                return Scores.MIN;
+            }
         }
 
-        int minStepsWithoutDamage = Gear.getMax(Math.max(1, gear - 1));
+        int minStepsWithoutDamage = Gear.getAvg(Math.max(1, gear - 1));
         for (int i = 2; i <= stopsToDo; ++i) {
-            minStepsWithoutDamage += Gear.getMax(Math.max(1, gear - i));
+            minStepsWithoutDamage += Gear.getAvg(Math.max(1, gear - i));
         }
         if (minStepsWithoutDamage > movePermit) {
             // Too large gear --> take into account in evaluation
-            score -= 2 * (minStepsWithoutDamage - movePermit);
-            description += "Penalty from high gear: " + (4 * (minStepsWithoutDamage - movePermit)) + "\n";
+            score -= 3 * (minStepsWithoutDamage - movePermit);
+            description += "Penalty from high gear: " + (3 * (minStepsWithoutDamage - movePermit)) + "\n";
         }
-        //if (node.getId() > 500) debug(description);
+        if (debug2) debug(description);
         return score;
     }
 

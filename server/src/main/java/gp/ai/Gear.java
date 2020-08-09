@@ -31,4 +31,9 @@ public enum Gear {
         final int[] distribution = getDistribution(gear);
         return distribution[0];
     }
+
+    public static int getAvg(int gear) {
+        final int[] distribution = getDistribution(gear);
+        return distribution[distribution.length / 2];
+    }
 }
