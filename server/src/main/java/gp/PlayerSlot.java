@@ -54,11 +54,6 @@ public class PlayerSlot extends JButton {
         setIcon(new CarIcon());
         addActionListener(e -> {
             if (profile == null) {
-                /*
-                if (localProfiles.isEmpty()) {
-                    setProfile(ProfileMessage.createRandomAIProfile(getUsedAINames(slots)));
-                    return;
-                }*/
                 profile = ProfileMessage.pending;
                 final JDialog dialog = new JDialog(frame);
 
@@ -91,10 +86,6 @@ public class PlayerSlot extends JButton {
                     dialog.setVisible(false);
                 });
                 addAiButton.addActionListener(e13 -> {
-                    final int index = list.getSelectedIndex();
-                    if (index == -1) {
-                        return;
-                    }
                     final ProfileMessage aiProfile = ProfileMessage.createRandomAIProfile(getUsedAINames(slots));
                     final AI.Type type = difficultyButton1.isSelected() ? AI.Type.BEGINNER : (difficultyButton2.isSelected() ? AI.Type.AMATEUR : AI.Type.PRO);
                     selectedType = type;

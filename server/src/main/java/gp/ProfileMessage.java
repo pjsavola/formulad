@@ -40,26 +40,28 @@ public class ProfileMessage implements Serializable {
     }
 
     public static ProfileMessage readProfile(String[] line) {
-        return new ProfileMessage(
+        final ProfileMessage profile = new ProfileMessage(
                 UUID.fromString(line[0]),
                 line[1],
                 Integer.parseInt(line[2]),
                 Integer.parseInt(line[3]),
-                AI.fromString(line[4])
+                Boolean.parseBoolean(line[4]),
+                AI.Type.valueOf(line[5])
         );
+        return profile;
     }
 
     public String toLine() {
-        return id + "," + name + "," + color1 + "," + color2 + "," + AI.toString(aiType);
+        return id + "," + name + "," + color1 + "," + color2 + "," + ai + "," + aiType;
     }
 
-    private ProfileMessage(UUID id, String name, int color1, int color2, AI.Type aiType) {
+    private ProfileMessage(UUID id, String name, int color1, int color2, boolean ai, AI.Type aiType) {
         this.id = id;
         this.name = name;
         this.color1 = color1;
         this.color2 = color2;
         local = true;
-        this.ai = aiType != AI.Type.MANUAL;
+        this.ai = ai;
         this.aiType = aiType;
     }
 
