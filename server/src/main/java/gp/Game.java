@@ -201,7 +201,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
                 final Point p = node.getLocation();
                 if (nodeId == mouseOverHighlightNodeIndex) {
                     MapEditor.drawOval(g2d, p.x, p.y, 15, 15, true, true, Color.YELLOW, 1);
-                    if (damage > 0) {
+                    if (damage != 0) {
                         g2d.setFont(bigDamageFont);
                         g2d.setColor(Color.BLACK);
                         final String str = Integer.toString(damage);
@@ -211,7 +211,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
                     }
                 } else {
                     MapEditor.drawOval(g2d, p.x, p.y, 12, 12, true, false, Color.YELLOW, 1);
-                    if (damage > 0) {
+                    if (damage != 0) {
                         g2d.setFont(damageFont);
                         g2d.setColor(Color.RED);
                         final String str = Integer.toString(damage);

@@ -92,7 +92,7 @@ public class ProAI extends BaseAI {
         // TODO: Non-linear evaulation of hitpoints
         final boolean finalStraight = !endNode.isCurve() && lapsToGo == 0 && areaToValue.get(endNode.getAreaIndex()) == cumulativeValue && hp > 1;
         //if (finalStraight) debug("Final straight!!! HP does not matter");
-        int score = 3 * (finalStraight ? Math.min(18, hp) : hp);
+        int score = 4 * (finalStraight ? Math.min(18, hp) : hp);
         String description = "Score from HP: " + score + "\n";
 
         if (lapsToGo < 0) {
@@ -144,16 +144,15 @@ public class ProAI extends BaseAI {
             stopsToDo = AIUtil.getStopsRequiredInNextCurve(endNode);
         }
 
-        if (stopsToDo > 1) {
-            final int minGear = Math.max(1, gear - Math.min(4, hp - 1));
-            int minSteps = Gear.getMin(minGear);
-            for (int i = 2; i <= stopsToDo; ++i) {
-                minSteps += Gear.getMin(Math.max(1, minGear - i));
-            }
-            if (minSteps > movePermit) {
-                // Guaranteed DNF --> very bad
-                return Scores.MIN;
-            }
+
+        final int minGear = Math.max(1, gear - Math.min(4, hp));
+        int minSteps = Gear.getMin(minGear);
+        for (int i = 2; i <= stopsToDo; ++i) {
+            minSteps += Gear.getMin(Math.max(1, minGear - i));
+        }
+        if (minSteps > movePermit) {
+            // Guaranteed DNF --> very bad
+            return Scores.MIN;
         }
 
         int minStepsWithoutDamage = Gear.getAvg(Math.max(1, gear - 1));
@@ -162,8 +161,19 @@ public class ProAI extends BaseAI {
         }
         if (minStepsWithoutDamage > movePermit) {
             // Too large gear --> take into account in evaluation
-            score -= 3 * (minStepsWithoutDamage - movePermit);
-            description += "Penalty from high gear: " + (3 * (minStepsWithoutDamage - movePermit)) + "\n";
+            score -= 2 * (minStepsWithoutDamage - movePermit);
+            description += "Penalty from too high gear: " + (2 * (minStepsWithoutDamage - movePermit)) + "\n";
+        }
+        if (gear < 4) {
+            int avgStepsWithoutDamage = Gear.getAvg(gear);
+            for (int i = 2; i <= stopsToDo; ++i) {
+                avgStepsWithoutDamage += Gear.getAvg(gear);
+            }
+            if (avgStepsWithoutDamage > movePermit) {
+                // Too large gear --> take into account in evaluation
+                score -= avgStepsWithoutDamage - movePermit;
+                description += "Penalty from having to downshift: " + (avgStepsWithoutDamage - movePermit) + "\n";
+            }
         }
         if (debug2) debug(description);
         return score;
@@ -283,7 +293,7 @@ public class ProAI extends BaseAI {
                 .filter(p -> p.getHitpoints() > 0 && p.getLapsToGo() >= 0)
                 .map(p -> nodes.get(p.getNodeId()))
                 .collect(Collectors.toSet());
-        final int minGear = Math.max(1, player.getGear() - Math.min(4, player.getHitpoints() - 1));
+        final int minGear = Math.max(1, player.getGear() - Math.min(4, player.getHitpoints()));
         final int maxGear = Math.min(location.isPit() ? 4 : 6, player.getGear() + 1);
         final Map<Integer, List<Integer>> gearToScore = new HashMap<>();
         for (int gear = minGear; gear <= maxGear; ++gear) {

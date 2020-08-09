@@ -106,7 +106,7 @@ public class AmateurAI extends BaseAI {
         // - min of maxs (risky option)
         // - max of averages
 
-        final int minGear = Math.max(1, player.getGear() - Math.min(4, player.getHitpoints() - 1));
+        final int minGear = Math.max(1, player.getGear() - Math.min(4, player.getHitpoints()));
         final int maxGear = Math.min(location.isPit() ? 4 : 6, player.getGear() + 1);
         final int stopsDone = player.getStops();
         final int stopsToDo = location.getStopCount() - stopsDone;
@@ -223,7 +223,7 @@ public class AmateurAI extends BaseAI {
             gearMask = gear;
             this.hitpoints = hitpoints;
             inPits = location.isPit();
-            minGear = Math.max(1, gear - Math.min(4, hitpoints - 1));
+            minGear = Math.max(1, gear - Math.min(4, hitpoints));
             stopsToDo = location.getStopCount() - stopCount;
             final int minDistanceToPits = AIUtil.getMinDistanceToPits(location, blockedNodes);
             if (!inPits) blockedNodes.addAll(pitNodes);
@@ -268,7 +268,7 @@ public class AmateurAI extends BaseAI {
             hitpoints = (inPits && moveSteps >= old.garageMin && moveSteps <= old.garageMax) ? 18 : old.hitpoints - damage;
             garageMin = old.garageMin - moveSteps;
             garageMax = old.garageMax - moveSteps;
-            minGear = Math.max(1, gear - Math.min(4, hitpoints - 1));
+            minGear = Math.max(1, gear - Math.min(4, hitpoints));
             maxGear = Math.min(inPits ? 4 : 6, gear + 1);
             stopsToDo = enteredNextCurve ? old.stopsInNextCurve - 1 : old.stopsToDo - 1;
             stopsInNextCurve = enteredNextCurve ? -1 : old.stopsInNextCurve;
