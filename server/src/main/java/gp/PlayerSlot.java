@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 
 public class PlayerSlot extends JButton {
+    private static AI.Type selectedType;
     private class CarIcon implements Icon {
         @Override
         public void paintIcon(Component c, Graphics g, int x, int y) {
@@ -83,6 +84,7 @@ public class PlayerSlot extends JButton {
                     }
                     final ProfileMessage selectedProfile = localProfiles.remove(index);
                     final AI.Type type = difficultyButton1.isSelected() ? AI.Type.BEGINNER : (difficultyButton2.isSelected() ? AI.Type.AMATEUR : AI.Type.PRO);
+                    selectedType = type;
                     selectedProfile.setAIType(type);
                     selectedProfile.setLocal(true);
                     setProfile(selectedProfile);
@@ -95,6 +97,7 @@ public class PlayerSlot extends JButton {
                     }
                     final ProfileMessage aiProfile = ProfileMessage.createRandomAIProfile(getUsedAINames(slots));
                     final AI.Type type = difficultyButton1.isSelected() ? AI.Type.BEGINNER : (difficultyButton2.isSelected() ? AI.Type.AMATEUR : AI.Type.PRO);
+                    selectedType = type;
                     aiProfile.setAIType(type);
                     setProfile(aiProfile);
                     dialog.setVisible(false);
@@ -134,7 +137,13 @@ public class PlayerSlot extends JButton {
                         profile = null;
                     }
                 });
-                difficultyButton3.setSelected(true);
+                if (selectedType == AI.Type.BEGINNER) {
+                    difficultyButton1.setSelected(true);
+                } else if (selectedType == AI.Type.AMATEUR) {
+                    difficultyButton2.setSelected(true);
+                } else {
+                    difficultyButton3.setSelected(true);
+                }
                 dialog.setTitle("Select player");
                 dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
                 dialog.setContentPane(contents);

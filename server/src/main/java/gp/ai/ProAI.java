@@ -15,7 +15,7 @@ public class ProAI extends BaseAI {
     private PlayerState player;
     private int gear;
     private final Random random = new Random();
-    public boolean debug = true;
+    public boolean debug;
     public boolean debug2;
 
     private int cumulativeValue = 0;
