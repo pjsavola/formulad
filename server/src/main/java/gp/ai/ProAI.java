@@ -131,8 +131,9 @@ public class ProAI extends BaseAI {
         description += "Score from cumulative area value: " + value + "\n";
 
         if (endNode.isPit()) {
-            score -= getPenaltyForLowGear(endNode, gear, distance, movePermit);
-            //description += "Penalty from low gear (pits): " + getPenaltyForLowGear(node, gear, distance, movePermit) + "\n";
+            final int penalty = getPenaltyForLowGear(endNode, gear, distance, movePermit) * player.getHitpoints() / 18;
+            score -= penalty;
+            description += "Penalty from low gear (pits): " + penalty + "\n";
             if (debug2) debug(description);
             return score;
         }
@@ -181,7 +182,7 @@ public class ProAI extends BaseAI {
 
     private int getPenaltyForLowGear(Node node, int gear, int distanceToNextCurve, int movePermit) {
         final boolean inPits = node.isPit();
-        if (gear >= (inPits ? 3 : 5)) {
+        if (gear >= 5) {
             return 0;
         }
         final int minRoll = Gear.getMin(Math.min(inPits ? 4 : 6, gear + 1));
