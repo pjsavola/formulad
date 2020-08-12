@@ -267,8 +267,7 @@ public class ProAI extends BaseAI {
         }
     }
 
-    @Override
-    public gp.model.Gear selectGear(GameState gameState) {
+    void updatePlayerInfo(GameState gameState) {
         playerMap = AIUtil.buildPlayerMap(gameState);
         player = playerMap.get(playerId);
         if (player == null) {
@@ -278,6 +277,11 @@ public class ProAI extends BaseAI {
         if (location == null) {
             throw new RuntimeException("Unknown location for player: " + playerId);
         }
+    }
+
+    @Override
+    public gp.model.Gear selectGear(GameState gameState) {
+        updatePlayerInfo(gameState);
         if (player.getGear() == 0) {
             gear = 1;
             return new gp.model.Gear().gear(1);

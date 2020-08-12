@@ -63,6 +63,9 @@ public class ManualAI extends BaseAI {
         if (hitpoints == 0) {
             throw new RuntimeException("No data sent for player: " + playerId);
         }
+        if (ai instanceof ProAI) {
+            ((ProAI) ai).updatePlayerInfo(gameState);
+        }
         final int finalStopCount = stopCount;
         final MutableInt selectedGear = new MutableInt(0);
         final boolean inPits = location != null && location.getType() == NodeType.PIT;
