@@ -4,6 +4,7 @@ import gp.ai.AI;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.HashSet;
@@ -56,22 +57,37 @@ public class PlayerSlot extends JButton {
             if (profile == null) {
                 profile = ProfileMessage.pending;
                 final JDialog dialog = new JDialog(frame);
-
-                final DefaultListModel<String> model = new DefaultListModel<>();
-                localProfiles.forEach(profile -> model.addElement(profile.getName()));
-
-                final JList<String> list = new JList<>(model);
-                final JButton selectButton = new JButton("Select");
                 final JButton addAiButton = new JButton("Add AI");
                 final JRadioButton difficultyButton1 = new JRadioButton("Beginner");
                 final JRadioButton difficultyButton2 = new JRadioButton("Amateur");
                 final JRadioButton difficultyButton3 = new JRadioButton("Pro");
+                addAiButton.addActionListener(e13 -> {
+                    final ProfileMessage aiProfile = ProfileMessage.createRandomAIProfile(getUsedAINames(slots));
+                    final AI.Type type = difficultyButton1.isSelected() ? AI.Type.BEGINNER : (difficultyButton2.isSelected() ? AI.Type.AMATEUR : AI.Type.PRO);
+                    selectedType = type;
+                    aiProfile.setAIType(type);
+                    setProfile(aiProfile);
+                    dialog.setVisible(false);
+                });
+                if (selectedType == AI.Type.BEGINNER) {
+                    difficultyButton1.setSelected(true);
+                } else if (selectedType == AI.Type.AMATEUR) {
+                    difficultyButton2.setSelected(true);
+                } else {
+                    difficultyButton3.setSelected(true);
+                }
+                if ((e.getModifiers() & ActionEvent.SHIFT_MASK) == ActionEvent.SHIFT_MASK) {
+                    addAiButton.doClick();
+                    return;
+                }
                 final ButtonGroup group = new ButtonGroup();
                 group.add(difficultyButton1);
                 group.add(difficultyButton2);
                 group.add(difficultyButton3);
-
-
+                final DefaultListModel<String> model = new DefaultListModel<>();
+                localProfiles.forEach(profile -> model.addElement(profile.getName()));
+                final JList<String> list = new JList<>(model);
+                final JButton selectButton = new JButton("Select");
                 selectButton.addActionListener(e12 -> {
                     final int index = list.getSelectedIndex();
                     if (index == -1) {
@@ -83,14 +99,6 @@ public class PlayerSlot extends JButton {
                     selectedProfile.setAIType(type);
                     selectedProfile.setLocal(true);
                     setProfile(selectedProfile);
-                    dialog.setVisible(false);
-                });
-                addAiButton.addActionListener(e13 -> {
-                    final ProfileMessage aiProfile = ProfileMessage.createRandomAIProfile(getUsedAINames(slots));
-                    final AI.Type type = difficultyButton1.isSelected() ? AI.Type.BEGINNER : (difficultyButton2.isSelected() ? AI.Type.AMATEUR : AI.Type.PRO);
-                    selectedType = type;
-                    aiProfile.setAIType(type);
-                    setProfile(aiProfile);
                     dialog.setVisible(false);
                 });
 
@@ -128,13 +136,6 @@ public class PlayerSlot extends JButton {
                         profile = null;
                     }
                 });
-                if (selectedType == AI.Type.BEGINNER) {
-                    difficultyButton1.setSelected(true);
-                } else if (selectedType == AI.Type.AMATEUR) {
-                    difficultyButton2.setSelected(true);
-                } else {
-                    difficultyButton3.setSelected(true);
-                }
                 dialog.setTitle("Select player");
                 dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
                 dialog.setContentPane(contents);
