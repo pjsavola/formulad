@@ -61,6 +61,7 @@ public class Main extends Game implements Runnable {
     public static final Logger log = Logger.getLogger(Main.class.getName());
     public static int defaultColor1 = 0xFF9966;
     public static int defaultColor2 = 0xCCCC33;
+    public static boolean ide = false;
 
     static PreviousSettings settings = new PreviousSettings();
 
@@ -750,6 +751,9 @@ public class Main extends Game implements Runnable {
     }
 
     public static void main(String[] args) {
+        if (args.length > 0 && args[0].equals("ide")) {
+            ide = true;
+        }
         final JFrame f = new JFrame();
         f.setResizable(false);
         final Profile.Manager profileManager = new Profile.Manager();

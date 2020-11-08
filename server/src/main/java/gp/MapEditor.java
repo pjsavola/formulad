@@ -222,6 +222,10 @@ public class MapEditor extends JPanel {
         strokePitLane.setShortcut(new MenuShortcut(KeyEvent.VK_P));
         strokeMenu.add(strokePitLane);
         strokes.put(NodeType.PIT, strokePitLane);
+        final MenuItem strokeBlocked = new MenuItem("Blocked");
+        strokeBlocked.addActionListener(e -> setStroke(NodeType.BLOCKED));
+        strokeMenu.add(strokeBlocked);
+        strokes.put(NodeType.BLOCKED, strokeBlocked);
 
         setStroke(NodeType.STRAIGHT);
         select(null);
@@ -787,7 +791,7 @@ public class MapEditor extends JPanel {
             case CURVE_1:
                 color = LIGHT_RED;
                 break;
-            case START:
+            case BLOCKED:
                 color = Color.WHITE;
                 break;
             case FINISH:

@@ -29,6 +29,9 @@ public class TrackData implements Serializable {
         this.trackId = trackId;
         this.external = external;
         this.nodes = nodes.stream().sorted(Comparator.comparingInt(Node::getId)).collect(Collectors.toList());
+        nodes.stream().filter(node -> node.getType() == NodeType.BLOCKED).forEach(blockedNode -> {
+            nodes.forEach(node -> node.removeChild(blockedNode));
+        });
         this.startingGrid = startingGrid;
         this.collisionMap = collisionMap;
         this.backgroundImage = backgroundImage == null ? null : new ImageData(backgroundImage);

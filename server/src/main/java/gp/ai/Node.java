@@ -92,9 +92,6 @@ public final class Node implements Serializable, Comparable<Node> {
         }
     }
 
-    /**
-     * Used only by the map editor.
-     */
     public boolean removeChild(Node node) {
         return nextNodes.remove(node);
     }
