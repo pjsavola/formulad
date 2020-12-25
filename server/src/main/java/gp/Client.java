@@ -186,9 +186,9 @@ public class Client extends Game implements Runnable {
                 Main.log.log(Level.SEVERE, "Client assigneed to control multiple players");
             }
             controlledPlayer = player;
+            ai.notify(notification);
         }
         playerMap.put(notification.getPlayerId(), player);
-        ai.notify(notification);
     }
 
     private void setCurrent(Player player) {
