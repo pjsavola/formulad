@@ -63,7 +63,23 @@ public class Lobby extends Thread {
                         final ProfileMessage message = client.getProfile(data);
                         if (message != null) {
                             synchronized (clientMap) {
-                                clientMap.put(message.getId(), client);
+                                final RemoteAI old = clientMap.put(message.getId(), client);
+                                if (old != null) {
+                                    for (PlayerSlot usedSlot : slots) {
+                                        if (usedSlot.getProfile().getId().equals(message.getId()))
+                                        {
+                                            usedSlot.setProfile(message);
+                                            System.out.println("Client reconnected: " + message.getName());
+                                            usedSlot.repaint();
+                                            slot.setProfile((ProfileMessage) null);
+                                            slot.setEnabled(true);
+                                            slot.repaint();
+                                            clients.remove(old);
+                                            clients.add(client);
+                                            continue waiting;
+                                        }
+                                    }
+                                }
                                 clients.add(client);
                             }
                             slot.setProfile(message);
