@@ -188,6 +188,7 @@ public class Client extends Game implements Runnable {
             controlledPlayer = player;
         }
         playerMap.put(notification.getPlayerId(), player);
+        ai.notify(notification);
     }
 
     private void setCurrent(Player player) {

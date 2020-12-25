@@ -31,6 +31,9 @@ public class TrackData implements Serializable {
         this.nodes = nodes.stream().sorted(Comparator.comparingInt(Node::getId)).collect(Collectors.toList());
         nodes.stream().filter(node -> node.getType() == NodeType.BLOCKED).forEach(blockedNode -> {
             nodes.forEach(node -> node.removeChild(blockedNode));
+            if (blockedNode.childCount(null) == 0) {
+                throw new RuntimeException("Track seems to be completely blocked");
+            }
         });
         this.startingGrid = startingGrid;
         this.collisionMap = collisionMap;
