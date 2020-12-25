@@ -3,6 +3,8 @@ package gp.ai;
 import gp.TrackLanes;
 
 import java.awt.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.*;
 import java.util.List;
@@ -13,7 +15,7 @@ import java.util.stream.Stream;
 public final class Node implements Serializable, Comparable<Node> {
     private final int id;
     private final NodeType type;
-    private final Set<Node> nextNodes = new HashSet<>();
+    private transient Set<Node> nextNodes = new HashSet<>();
     private boolean garage;
     private double distance = -1.0;
     private transient int stepsToFinishLine = -1;
@@ -193,5 +195,10 @@ public final class Node implements Serializable, Comparable<Node> {
     @Override
     public String toString() {
         return id + " " + type.toString();
+    }
+
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        nextNodes = new HashSet<>();
     }
 }

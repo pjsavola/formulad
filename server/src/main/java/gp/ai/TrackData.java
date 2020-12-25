@@ -20,6 +20,8 @@ public class TrackData implements Serializable {
     private final String trackId;
     private final boolean external;
     private final List<Node> nodes;
+    private final List<Integer> sources = new ArrayList<>();
+    private final List<Integer> targets = new ArrayList<>();
     private final ImageData backgroundImage;
     private final MapEditor.Corner infoBoxCorner;
     private transient List<Node> startingGrid; // client does not need this
@@ -35,10 +37,23 @@ public class TrackData implements Serializable {
                 throw new RuntimeException("Track seems to be completely blocked");
             }
         });
+        nodes.forEach(node -> node.forEachChild(child -> {
+            sources.add(node.getId());
+            targets.add(child.getId());
+        }));
         this.startingGrid = startingGrid;
         this.collisionMap = collisionMap;
         this.backgroundImage = backgroundImage == null ? null : new ImageData(backgroundImage);
         this.infoBoxCorner = infoBoxCorner;
+    }
+
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        for (int i = 0; i < sources.size(); ++i) {
+            int src = sources.get(i);
+            int dst = targets.get(i);
+            nodes.get(src).addChild(nodes.get(dst));
+        }
     }
 
     public static TrackData createTrackData(String trackId, boolean external) {
