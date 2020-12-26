@@ -7,7 +7,7 @@ public enum TypeEnum implements Serializable {
     STRAIGHT("STRAIGHT"),
     CURVE_2("CURVE_2"),
     CURVE_1("CURVE_1"),
-    START("START"),
+    BLOCKED("BLOCKED"),
     FINISH("FINISH"),
     CURVE_3("CURVE_3"),
     PIT("PIT");
