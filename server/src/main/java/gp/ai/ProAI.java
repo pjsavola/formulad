@@ -29,22 +29,20 @@ public class ProAI extends BaseAI {
         //lapLengthInSteps = nodes.stream().filter(n -> !n.isPit()).map(Node::getStepsToFinishLine).mapToInt(Integer::intValue).max().orElse(0);
         // Compute cumulative stop counts for each area for better node evaluation
         //int cumulativeStops = 0;
+
+        // Area indices may not be properly ordered. Cumulative value has to be calculated properly in unordered cases too.
+        final Map<Integer, Node> areaToNode = new HashMap<>();
         for (Node node : nodes) {
             if (node.isPit()) continue;
             final int areaIndex = node.getAreaIndex();
-            /*
-            if (areaToStops.get(areaIndex) == null) {
-                if (node.isCurve()) {
-                    cumulativeStops += node.getStopCount();
-                }
-                areaToStops.put(areaIndex, cumulativeStops);
-            }*/
-            if (areaToValue.get(areaIndex) == null) {
-                if (node.isCurve()) {
-                    cumulativeValue += AIUtil.getMinDistanceToNextCurve(node, pitLane);//getPenaltyForLowGear(node, 1);
-                }
-                areaToValue.put(areaIndex, cumulativeValue);
+            areaToNode.putIfAbsent(areaIndex, node);
+        }
+        for (int area = 0; area < areaToNode.size(); ++area) {
+            final Node node = areaToNode.get(area);
+            if (node.isCurve()) {
+                cumulativeValue += AIUtil.getMinDistanceToNextCurve(node, pitLane);
             }
+            areaToValue.put(node.getAreaIndex(), cumulativeValue);
         }
         if (!pitLane.isEmpty()) {
             final int pitLaneAreaIndex = pitLane.iterator().next().getAreaIndex();
