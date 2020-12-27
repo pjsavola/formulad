@@ -98,6 +98,10 @@ public class TrackData implements Serializable {
                 }
             }
             node.setDistance(-1.0);
+            if (node.getType() == NodeType.BLOCKED) {
+                // Temporarily set this distance for blocked nodes to avoid visiting them later.
+                node.setDistance(0.0);
+            }
         }
         if (center == null || edges.size() != 2) {
             throw new RuntimeException("Unable to find Finish line of width 3");
@@ -273,6 +277,12 @@ public class TrackData implements Serializable {
                 pitNode = prevNodeMap.get(pitNode).stream().filter(Node::isPit).findAny().orElse(null);
             }
         }
+        nodes.stream().filter(node -> node.getType() == NodeType.BLOCKED).forEach(blockedNode -> {
+            final OptionalDouble distanceOfNext = blockedNode.childStream().mapToDouble(n -> prevNodeMap.get(n).get(0).getDistance()).min();
+            if (distanceOfNext.isPresent()) {
+                blockedNode.setDistance(distanceOfNext.getAsDouble() - 0.01);
+            }
+        });
     }
 
     public static List<Node> build(List<Node> nodes, Map<Node, Double> attributes) {

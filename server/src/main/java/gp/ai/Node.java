@@ -152,7 +152,7 @@ public final class Node implements Serializable, Comparable<Node> {
     }
 
     public boolean isCurve() {
-        return type == NodeType.CURVE_1 || type == NodeType.CURVE_2 || type == NodeType.CURVE_3;
+        return type == NodeType.CURVE_1 || type == NodeType.CURVE_2 || type == NodeType.CURVE_3 || (type == NodeType.BLOCKED && !nextNodes.isEmpty() && nextNodes.iterator().next().isCurve());
     }
 
     public int getStopCount() {
