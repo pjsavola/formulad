@@ -73,7 +73,10 @@ public class TrackLanes {
                     final Node curveTransition1 = nodes.get(dist1 > dist2 ? i : i + 1);
                     final Node curveTransition2 = lane.nodes.get(dist1 > dist2 ? j + 1 : j);
                     if (curveTransition1.getDistance() != curveTransition2.getDistance()) {
-                        throw new RuntimeException("Distances not properly configured at curve: " + curveTransition1.getId() + ", " + curveTransition2.getId());
+                        // Allow the case where the first node on the straight is in the middle
+                        if (nodes.get(i).getDistance() != lane.nodes.get(j).getDistance()) {
+                            throw new RuntimeException("Distances not properly configured at curve: " + curveTransition1.getId() + ", " + curveTransition2.getId());
+                        }
                     }
                 }
                 if (nextIsCurve1 != inCurve && nextIsCurve2 != inCurve) {
