@@ -127,14 +127,17 @@ public class TrackData implements Serializable {
                 throw new RuntimeException("Found dead-end node: " + node.getId());
             }
             node.setAreaIndex(areaIndex);
-            final Set<Node> grandChildren = new HashSet<>();
-            node.forEachChild(child -> {
-                if (child.getType() == NodeType.PIT) return;
-                child.forEachChild(grandChild -> {
-                    if (grandChild.getType() == NodeType.PIT) return;
-                    grandChildren.add(grandChild);
-                });
-            });
+
+            final Map<Integer, Set<Node>> depthToAncestors = new HashMap<>();
+            int depth = 1;
+            Set<Node> currentAncestors = node.childStream().filter(child -> !child.isPit()).collect(Collectors.toSet());
+            while (depth < 5) {
+                depthToAncestors.put(depth, currentAncestors);
+                final Set<Node> nextAncestors = new HashSet<>();
+                currentAncestors.forEach(ancestor -> nextAncestors.addAll(ancestor.childStream().filter(child -> !child.isPit()).filter(child -> prevNodeMap.get(child).size() != 1).collect(Collectors.toSet())));
+                currentAncestors = nextAncestors;
+                depth++;
+            }
             node.forEachChild(next -> {
                 if (next.getDistance() >= 0.0) {
                     return;
@@ -148,16 +151,19 @@ public class TrackData implements Serializable {
                     next.setDistance(node.getDistance() - 0.4);
                     return;
                 }
-                final double distanceDelta;
+                double distanceDelta = 0.5;
                 if (prevNodeMap.get(next).size() == 1) {
                     // We might end up here in 2 cases:
                     // - Just before curve where movement is limited
                     // - In case lane lengths are different
                     distanceDelta = next.childStream().anyMatch(Node::isCurve) ? 1.0 : 0.4;
-                } else if (grandChildren.contains(next)) {
-                    distanceDelta = 1.0;
                 } else {
-                    distanceDelta = 0.5;
+                    for (int i = 4; i > 0; --i) {
+                        if (depthToAncestors.get(i).contains(next)) {
+                            distanceDelta = 0.5 * i;
+                            break;
+                        }
+                    }
                 }
                 next.setDistance(node.getDistance() + distanceDelta);
                 work.addLast(next);
@@ -205,6 +211,12 @@ public class TrackData implements Serializable {
                         }
                     }
                     if (allCurves) {
+                        final boolean middle = straight.childCount(NodeType.PIT) == 3;
+                        if (middle) {
+                            straight.setAreaIndex(areaIndex);
+                            center = straight;
+                            break;
+                        }
                         straight.setDistance(newMaxDistance);
                         straight.setAreaIndex(areaIndex);
                         for (Node otherStraight : work) {
