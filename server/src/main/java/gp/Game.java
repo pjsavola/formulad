@@ -48,6 +48,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
 
     TrackData data;
     private MapEditor.Corner infoBoxCorner;
+    private MapEditor.Corner gearCorner;
     private volatile boolean keepAlive = true;
 
     public boolean debug;
@@ -146,6 +147,38 @@ public abstract class Game extends JPanel implements PlayerRenderer {
         panelDim = new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight());
         setPreferredSize(panelDim);
         frame.pack();
+        // Figure out best corner for gear rolls
+        final List<MapEditor.Corner> possibleCorners = new ArrayList<>();
+        possibleCorners.add(MapEditor.Corner.NW);
+        possibleCorners.add(MapEditor.Corner.NE);
+        possibleCorners.add(MapEditor.Corner.SW);
+        possibleCorners.add(MapEditor.Corner.SE);
+        possibleCorners.remove(infoBoxCorner);
+        for (Node node : nodes) {
+            final int x = node.getLocation().x;
+            final int y = node.getLocation().y;
+            Iterator<MapEditor.Corner> it = possibleCorners.iterator();
+            while (it.hasNext()) {
+                final Point point = getPoint(it.next());
+                if (point == null) continue;
+                final int dx = x - point.x;
+                final int dy = y - point.y;
+                if (dx * dx + dy * dy < 35 * 35) {
+                    it.remove();
+                }
+            }
+        }
+        gearCorner = possibleCorners.isEmpty() ? MapEditor.Corner.NW : possibleCorners.get(0);
+    }
+
+    private Point getPoint(MapEditor.Corner corner) {
+        switch (corner) {
+            case NW: return new Point(40, 40);
+            case NE: return new Point(panelDim.width - 40, 40);
+            case SW: return new Point(40, panelDim.height - 40);
+            case SE: return new Point(panelDim.width - 40, panelDim.height -  40);
+        }
+        return null;
     }
 
     void clickToExit() {
@@ -181,8 +214,8 @@ public abstract class Game extends JPanel implements PlayerRenderer {
         }
         final Graphics2D g2d = (Graphics2D) g;
         // Circle for dice rolls
-        final int x = infoBoxCorner == MapEditor.Corner.NW ? panelDim.width - 40 : 40;
-        MapEditor.drawOval(g2d, x, 40, 50, 50, true, true, Color.BLACK, 1);
+        final Point point = getPoint(gearCorner);
+        MapEditor.drawOval(g2d, point.x, point.y, 50, 50, true, true, Color.BLACK, 1);
         drawTargets(g2d);
         drawInfoBox(g2d);
         drawRetiredPlayers(g2d);
@@ -255,8 +288,8 @@ public abstract class Game extends JPanel implements PlayerRenderer {
         if (current != null) {
             final Integer roll = this.roll;
             if (roll != null) {
-                final int circleX = infoBoxCorner == MapEditor.Corner.NW ? panelDim.width - 40 : 40;
-                current.drawRoll(g2d, roll, circleX);
+                final Point point = getPoint(gearCorner);
+                current.drawRoll(g2d, roll, point);
             } else {
                 // TODO: Highlight only manual AI?
                 immutablePlayerMap.values().stream().filter(p -> p == current && !p.isStopped()).forEach(p -> p.highlight(g2d));

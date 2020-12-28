@@ -72,13 +72,13 @@ public class Player {
         return stopped;
     }
 
-    public void drawRoll(Graphics2D g2d, @Nullable Integer roll, int circleX) {
+    public void drawRoll(Graphics2D g2d, @Nullable Integer roll, Point point) {
         if (roll != null && gear != 0) {
             final Color color = getGearColor(gear);
             g2d.setColor(color);
             g2d.setFont(rollFont);
-            final int x = circleX - (roll >= 10 ? 10 : 4);
-            g2d.drawString(Integer.toString(roll), x, 48);
+            final int x = point.x - (roll >= 10 ? 10 : 4);
+            g2d.drawString(Integer.toString(roll), x, point.y + 8);
         }
     }
 
