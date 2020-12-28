@@ -125,7 +125,7 @@ public class TrackLanes {
                     .min(Comparator.comparingInt(l -> distanceToInt(l.getDistance())))
                     .orElse(null);
             if (matchingLane == null) {
-                throw new RuntimeException("Internal error when calculating lanes");
+                throw new RuntimeException("Internal error when calculating lanes: " + node.getId());
             }
             matchingLane.addNode(node);
         });
