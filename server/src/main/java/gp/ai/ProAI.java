@@ -93,7 +93,7 @@ public class ProAI extends BaseAI {
         final boolean finalStraight = !endNode.isCurve() && lapsToGo == 0 && areaToValue.get(endNode.getAreaIndex()) == cumulativeValue && hp > 1;
         //if (finalStraight) debug("Final straight!!! HP does not matter");
         // TODO: Reduce value of HP based on remaining distance
-        int score = hpToScore[finalStraight ? Math.min(18, hp) : hp];
+        int score = hpToScore[finalStraight ? Math.max(18, hp) : hp];
         String description = "Score from HP: " + score + "\n";
 
         if (lapsToGo < 0) {
