@@ -85,12 +85,15 @@ public class ProAI extends BaseAI {
         final int movePermit = AIUtil.getMaxDistanceWithoutDamage(endNode, stops, endNode.isPit() ? Collections.emptySet() : pitLane);
         return evaluate(location, endNode, hp, gear, lapsToGo, stops, distance, movePermit);
     }
+    //                                 0           1  2   3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18
+    private static int[] hpToScore = { Scores.MIN, 5, 10, 15, 20, 25, 30, 35, 40, 44, 48, 51, 54, 57, 60, 63, 66, 69, 72};
+    // Linear                          0           4  8   12  16  20  24  28  32  36  40  44  48  52  56  60  64  68  72
 
     private int evaluate(Node startNode, Node endNode, int hp, int gear, int lapsToGo, int stops, int distance, int movePermit) {
-        // TODO: Non-linear evaulation of hitpoints
         final boolean finalStraight = !endNode.isCurve() && lapsToGo == 0 && areaToValue.get(endNode.getAreaIndex()) == cumulativeValue && hp > 1;
         //if (finalStraight) debug("Final straight!!! HP does not matter");
-        int score = 4 * (finalStraight ? Math.min(18, hp) : hp);
+        // TODO: Reduce value of HP based on remaining distance
+        int score = hpToScore[finalStraight ? Math.min(18, hp) : hp];
         String description = "Score from HP: " + score + "\n";
 
         if (lapsToGo < 0) {
@@ -132,6 +135,9 @@ public class ProAI extends BaseAI {
             final int penalty = getPenaltyForLowGear(endNode, gear, distance, movePermit) * player.getHitpoints() / 18;
             score -= penalty;
             description += "Penalty from low gear (pits): " + penalty + "\n";
+            //final int penaltyForHP = Math.max(0, player.getHitpoints() - 9);
+            //description += "Penalty from HP (pits): " + penaltyForHP + "\n";
+            //score -= penaltyForHP;
             if (debug2) debug(description);
             return score;
         }
@@ -173,6 +179,10 @@ public class ProAI extends BaseAI {
                 score -= avgStepsWithoutDamage - movePermit;
                 description += "Penalty from having to downshift: " + (avgStepsWithoutDamage - movePermit) + "\n";
             }
+        }
+
+        if (endNode.getType() == NodeType.STRAIGHT && endNode.childCount(null) == 1 && endNode.childStream().allMatch(Node::isCurve)) {
+            --score;
         }
         if (debug2) debug(description);
         return score;
