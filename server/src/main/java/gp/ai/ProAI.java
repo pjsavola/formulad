@@ -149,6 +149,9 @@ public class ProAI extends BaseAI {
             stopsToDo = AIUtil.getStopsRequiredInNextCurve(endNode);
         }
 
+        if (finalStraight) {
+            return score;
+        }
 
         final int minGear = Math.max(1, gear - Math.min(4, hp));
         int minSteps = Gear.getMin(minGear);
