@@ -55,8 +55,7 @@ public class ManualAI extends BaseAI {
                 location = data.getNodes().get(playerState.getNodeId());
                 stopCount = playerState.getStops();
                 //System.err.println("EVAL: " + evaluate(playerState));
-                break;
-            } else {
+            } else if (playerState.getHitpoints() > 0 && playerState.getLapsToGo() >= 0) {
                 blockedNodes.add(data.getNodes().get(playerState.getNodeId()));
             }
         }
