@@ -1,5 +1,6 @@
 package gp;
 
+import gp.ai.Node;
 import gp.ai.TrackData;
 import gp.model.FinalStandings;
 import gp.model.PlayerStats;
@@ -229,7 +230,8 @@ public class Season implements Comparable<Season>, TrackSelector {
                                 super.paintComponent(g);
                                 g.setColor(Color.GRAY.brighter());
                                 g.fillRect(0, 0, getWidth(), getHeight());
-                                Game.drawStandings((Graphics2D) g, 10, 10, stats, renderer);
+                                final double maxDistance = tracksAndLaps.get(index).getKey().getNodes().stream().mapToDouble(Node::getDistance).max().orElse(0);
+                                Game.drawStandings((Graphics2D) g, 10, 10, stats, renderer, maxDistance);
                                 icon.paintIcon(this, g, 30, height + 20);
                             }
                         };

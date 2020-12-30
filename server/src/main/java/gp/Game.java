@@ -306,7 +306,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
         player.draw(g2d, x + 15, y + (i + 1) * 15 + 10, 0);
     }
 
-    static void drawStandings(Graphics2D g2d, int x, int y, PlayerStats[] finalStandings, PlayerRenderer renderer) {
+    static void drawStandings(Graphics2D g2d, int x, int y, PlayerStats[] finalStandings, PlayerRenderer renderer, double maxDistance) {
         final int height = 5 + 15 * (finalStandings.length + 1);
         g2d.setColor(Color.BLACK);
         g2d.setFont(titleFont);
@@ -341,7 +341,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
             g2d.drawString(Integer.toString(stats.pitStops), x + 310, y + (i + 1) * 15 + 15);
             if (stats.lapsToGo >= 0) {
                 g2d.drawString(Integer.toString(stats.lapsToGo), x + 350, y + (i + 1) * 15 + 15);
-                g2d.drawString(Main.getDistanceString(stats.distance), x + 390, y + (i + 1) * 15 + 15);
+                g2d.drawString(Main.getDistanceString(stats.distance * 100 / (maxDistance + 0.5)) + "%", x + 390, y + (i + 1) * 15 + 15);
             }
         }
     }
@@ -351,7 +351,8 @@ public abstract class Game extends JPanel implements PlayerRenderer {
             final int height = 5 + 15 * (finalStandings.length + 1);
             final int x = panelDim.width / 2 - 220;
             final int y = panelDim.height / 2 - height / 2;
-            drawStandings(g2d, x, y, finalStandings, this);
+            final double maxDistance = nodes.stream().mapToDouble(Node::getDistance).max().orElse(0);
+            drawStandings(g2d, x, y, finalStandings, this, maxDistance);
         }
     }
 
