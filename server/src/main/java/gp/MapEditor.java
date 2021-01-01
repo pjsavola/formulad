@@ -58,6 +58,7 @@ public class MapEditor extends JPanel {
     private final UndoStack stack = new UndoStack(nodes, attributes);
     private Double previousCurveDistance;
     private boolean showDistances;
+    private boolean showIdentifiers;
     private Dimension panelDim;
     private double scale = 1.0;
 
@@ -258,6 +259,9 @@ public class MapEditor extends JPanel {
         zoomOut.setShortcut(new MenuShortcut(KeyEvent.VK_MINUS));
 
         menuBar.add(toolMenu);
+        final MenuItem ids = new MenuItem("Show node identifiers");
+        ids.addActionListener(e -> showIdentifiers());
+        toolMenu.add(ids);
         final MenuItem unify = new MenuItem("Canonize node identifiers");
         unify.addActionListener(e -> unifyNodeIdentifiers());
         toolMenu.add(unify);
@@ -354,16 +358,22 @@ public class MapEditor extends JPanel {
             g.drawImage(backgroundImage, 0, 0, null);
         }
         final Graphics2D g2d = (Graphics2D) g;
-        if (showDistances) {
+        if (showDistances || showIdentifiers) {
             for (Node node : nodes) {
-                final double dist = node.getDistance();
-                if (dist < 0.0) continue;
+                final String str;
+                if (showIdentifiers) {
+                    str = Integer.toString(node.getId());
+                } else {
+                    final double dist = node.getDistance();
+                    if (dist < 0.0) continue;
+                    str = Main.getDistanceString(dist);
+                }
                 final Point p = node.getLocation();
                 final int posX = p.x - 5;
                 final int posY = p.y + 3;
                 g2d.setFont(new Font("Arial", Font.PLAIN, 8));
                 g2d.setColor(Color.BLUE);
-                g2d.drawString(Main.getDistanceString(dist), posX, posY);
+                g2d.drawString(str, posX, posY);
             }
             return;
         }
@@ -507,6 +517,7 @@ public class MapEditor extends JPanel {
                 select(null);
                 stack.clear();
                 showDistances = false;
+                showIdentifiers = false;
                 previousCurveDistance = null;
                 infoBoxCorner = p.getRight();
                 nextNodeId += nodes.size();
@@ -747,6 +758,12 @@ public class MapEditor extends JPanel {
         }
     }
 
+    private void showIdentifiers() {
+	    showDistances = false;
+	    showIdentifiers = !showIdentifiers;
+	    repaint();
+    }
+
     private void showDistances() {
 	    if (!showDistances) {
 	        try {
@@ -755,6 +772,7 @@ public class MapEditor extends JPanel {
                 JOptionPane.showConfirmDialog(this, "Error when calculating distances: " + e.getMessage(), "Distance calculation error", JOptionPane.DEFAULT_OPTION);
             }
         }
+        showIdentifiers = false;
 	    showDistances = !showDistances;
 	    repaint();
     }
