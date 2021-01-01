@@ -348,6 +348,7 @@ public class Main extends Game implements Runnable {
         final int part1 = distanceInt / 100;
         int part2 = distanceInt % 100;
         if (part2 % 10 == 0) part2 = part2 / 10;
+        else if (part2 < 10) return part1 + ".0" + part2;
         return part1 + "." + part2;
     }
 
