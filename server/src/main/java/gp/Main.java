@@ -756,7 +756,7 @@ public class Main extends Game implements Runnable {
             ide = true;
         }
         final JFrame f = new JFrame();
-        f.setResizable(false);
+        //f.setResizable(false);
         final Profile.Manager profileManager = new Profile.Manager();
         final List<Profile> profiles = new ArrayList<>();
         try {
