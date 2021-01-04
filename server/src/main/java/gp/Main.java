@@ -62,6 +62,7 @@ public class Main extends Game implements Runnable {
     public static int defaultColor1 = 0xFF9966;
     public static int defaultColor2 = 0xCCCC33;
     public static boolean ide = false;
+    public static boolean sounds = true;
 
     static PreviousSettings settings = new PreviousSettings();
 

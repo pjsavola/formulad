@@ -121,6 +121,16 @@ public abstract class Game extends JPanel implements PlayerRenderer {
             }
         });
         zoomOut.setShortcut(new MenuShortcut(KeyEvent.VK_MINUS));
+        final Menu sounds = new Menu("Sound");
+        menuBar.add(sounds);
+        final String off = "Sound OFF";
+        final String on = "Sound ON";
+        final MenuItem soundToggle = new MenuItem(Main.sounds ? on : off);
+        soundToggle.addActionListener(e -> {
+            Main.sounds = !Main.sounds;
+            soundToggle.setLabel(Main.sounds ? on : off);
+        });
+        sounds.add(soundToggle);
         frame.setMenuBar(menuBar);
         new Thread(() -> {
             Robot hal = null;
@@ -405,24 +415,26 @@ public abstract class Game extends JPanel implements PlayerRenderer {
                 }
             }
         }, 0, 50); // 20 FPS
-        switch (source) {
-            case COLLISION:
-                SoundSystem.playSound(SoundSystem.Type.COLLISION);
-                break;
-            case CURVE:
-                break;
-            case CRASH:
-                SoundSystem.playSound(SoundSystem.Type.DNF);
-                break;
-            case ENGINE:
-                SoundSystem.playSound(SoundSystem.Type.ENGINE);
-                break;
-            case GEARS:
-                SoundSystem.playSound(SoundSystem.Type.GEARS);
-                break;
-            case PITS:
-                SoundSystem.playSound(SoundSystem.Type.PITS);
-                break;
+        if (Main.sounds) {
+            switch (source) {
+                case COLLISION:
+                    SoundSystem.playSound(SoundSystem.Type.COLLISION);
+                    break;
+                case CURVE:
+                    break;
+                case CRASH:
+                    SoundSystem.playSound(SoundSystem.Type.DNF);
+                    break;
+                case ENGINE:
+                    SoundSystem.playSound(SoundSystem.Type.ENGINE);
+                    break;
+                case GEARS:
+                    SoundSystem.playSound(SoundSystem.Type.GEARS);
+                    break;
+                case PITS:
+                    SoundSystem.playSound(SoundSystem.Type.PITS);
+                    break;
+            }
         }
     }
 
