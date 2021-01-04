@@ -3,6 +3,7 @@ package gp;
 import gp.ai.Node;
 import gp.ai.TrackData;
 import gp.model.GameState;
+import gp.model.HitpointNotification;
 import gp.model.PlayerStats;
 
 import javax.annotation.Nullable;
@@ -391,7 +392,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
         });
     }
 
-    void scheduleHitpointAnimation(int loss, Player player) {
+    void scheduleHitpointAnimation(int loss, Player player, HitpointNotification.Source source) {
         final Point p = player.node.getLocation();
         final HitpointAnimation a = new HitpointAnimation(loss, p.x, p.y);
         animations.add(a);
@@ -404,6 +405,25 @@ public abstract class Game extends JPanel implements PlayerRenderer {
                 }
             }
         }, 0, 50); // 20 FPS
+        switch (source) {
+            case COLLISION:
+                SoundSystem.playSound(SoundSystem.Type.COLLISION);
+                break;
+            case CURVE:
+                break;
+            case CRASH:
+                SoundSystem.playSound(SoundSystem.Type.DNF);
+                break;
+            case ENGINE:
+                SoundSystem.playSound(SoundSystem.Type.ENGINE);
+                break;
+            case GEARS:
+                SoundSystem.playSound(SoundSystem.Type.GEARS);
+                break;
+            case PITS:
+                SoundSystem.playSound(SoundSystem.Type.PITS);
+                break;
+        }
     }
 
     protected abstract Player getCurrent();

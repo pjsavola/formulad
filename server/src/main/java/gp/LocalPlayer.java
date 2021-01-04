@@ -99,7 +99,7 @@ public final class LocalPlayer extends Player {
             Main.log.info(getNameAndId() + " finished the race!");
         } else {
             if (hitpoints > 0) {
-                adjustHitpoints(hitpoints);
+                adjustHitpoints(hitpoints, HitpointNotification.Source.CRASH);
             }
             Main.log.info(getNameAndId() + " dropped from the race!");
         }
@@ -128,7 +128,7 @@ public final class LocalPlayer extends Player {
         // downwards more than 1
         final int damage = gear - newGear - 1;
         if (damage > 0 && damage < 4 && hitpoints > damage) {
-            adjustHitpoints(damage);
+            adjustHitpoints(damage, HitpointNotification.Source.GEARS);
             setGear(newGear);
             panel.repaint();
             try {
@@ -212,7 +212,7 @@ public final class LocalPlayer extends Player {
             curveStops++;
         }
         if (dp.getDamage() != 0) {
-            adjustHitpoints(dp.getDamage());
+            adjustHitpoints(dp.getDamage(), HitpointNotification.Source.CURVE);
         }
         if (hitpoints <= 0) {
             Main.log.log(Level.SEVERE, getNameAndId() + " performed an illegal move, taking too much damage");
@@ -232,13 +232,13 @@ public final class LocalPlayer extends Player {
         }
     }
 
-    private void adjustHitpoints(int loss) {
+    private void adjustHitpoints(int loss, HitpointNotification.Source source) {
         if (loss > 0) {
             // Show animation
             Main.log.info("Player " + getNameAndId() + " loses " + loss + " hitpoints");
             hitpoints -= loss;
-            ((Main) panel).notifyAll(new HitpointNotification(playerId, hitpoints));
-            ((Game) panel).scheduleHitpointAnimation(loss, this);
+            ((Main) panel).notifyAll(new HitpointNotification(playerId, hitpoints, source));
+            ((Game) panel).scheduleHitpointAnimation(loss, this, source);
         }
     }
 
@@ -248,8 +248,8 @@ public final class LocalPlayer extends Player {
             // Show animation
             Main.log.info("Player " + getNameAndId() + " pits and recovers full hitpoints");
             hitpoints += gain;
-            ((Main) panel).notifyAll(new HitpointNotification(playerId, hitpoints));
-            ((Game) panel).scheduleHitpointAnimation(-gain, this);
+            ((Main) panel).notifyAll(new HitpointNotification(playerId, hitpoints, HitpointNotification.Source.PITS));
+            ((Game) panel).scheduleHitpointAnimation(-gain, this, HitpointNotification.Source.PITS);
         }
     }
 
@@ -292,7 +292,7 @@ public final class LocalPlayer extends Player {
         for (LocalPlayer player : players) {
             if (player.gear == 5 || player.gear == 6) {
                 if (rng.nextInt(20) < 4) {
-                    player.adjustHitpoints(1);
+                    player.adjustHitpoints(1, HitpointNotification.Source.ENGINE);
                     if (player.hitpoints <= 0) {
                         player.stop();
                     }
@@ -309,13 +309,13 @@ public final class LocalPlayer extends Player {
             if (player != this && adjacentNodes.get(node).contains(player.node)) {
                 Main.log.info(getNameAndId() + " is close to " + player.getNameAndId() + " and may collide");
                 if (!isStopped() && rng.nextInt(20) < 4) {
-                    adjustHitpoints(1);
+                    adjustHitpoints(1, HitpointNotification.Source.COLLISION);
                     if (hitpoints <= 0) {
                         stop();
                     }
                 }
                 if (rng.nextInt(20) < 4) {
-                    player.adjustHitpoints(1);
+                    player.adjustHitpoints(1, HitpointNotification.Source.COLLISION);
                     if (player.hitpoints <= 0) {
                         player.stop();
                     }
