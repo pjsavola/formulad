@@ -61,6 +61,8 @@ public class ProfilePanel extends JPanel {
         final JLabel profileName = new JLabel(activeProfile.getName());
         profileName.setFont(new Font("Arial", Font.PLAIN, 16));
         final CarPreview carPreview = new CarPreview();
+        final JLabel profileStats = new JLabel("Stats");
+        profileStats.setFont(new Font("Arial", Font.PLAIN, 16));
 
         add(profileTitle);
         add(profileName);
@@ -84,6 +86,7 @@ public class ProfilePanel extends JPanel {
 
         add(sliderColor1);
         add(sliderColor2);
+        add(profileStats);
 
         profileTitle.addMouseListener(new MouseAdapter() {
             @Override
@@ -214,6 +217,21 @@ public class ProfilePanel extends JPanel {
             @Override
             public void mouseExited(MouseEvent e) {
                 profileName.setForeground(Color.BLACK);
+            }
+        });
+        profileStats.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                final JFrame frame = (JFrame) getTopLevelAncestor();
+                final ProfileStats stats = new ProfileStats(frame, activeProfile);
+            }
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                profileStats.setForeground(Color.RED);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                profileStats.setForeground(Color.BLACK);
             }
         });
     }
