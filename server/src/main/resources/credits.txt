@@ -1,3 +1,11 @@
+GP Online is inspired by the board game Formula D designed by Eric Randall and Laurent Lavaur.
+
+Programming done by:
+
+Petri Savola
+
+***
+
 Big thank you to the following track authors for giving permission to include their work in the game:
 
 Karl Hiesterman
@@ -16,6 +24,7 @@ Miguel Angel
 Mikko Häkkinen
  - Fuji
 
+***
 
 Sound effects are from soundbible.com and created by:
 
