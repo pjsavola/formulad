@@ -2,12 +2,7 @@ package gp;
 
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.util.*;
 import java.util.List;
 import java.util.function.Predicate;
@@ -15,16 +10,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ProfileStats extends JDialog {
-    final List<Profile.Result> results;
+    private final List<Profile.Result> results;
     private Predicate<Profile.Result> trackFilter;
     private Predicate<Profile.Result> typeFilter;
-    private Predicate<Profile.Result> playerCountFilter = r -> r.standings != null && r.standings.size() == 10;
-    private final JLabel startedRaces = new JLabel();
+    private Predicate<Profile.Result> playerCountFilter = r -> r.standings != null;
     private final JLabel completedRaces = new JLabel();
     private final JLabel dnfRaces = new JLabel();
-    private final JLabel abortedRaces = new JLabel();
     private final JLabel completedLaps = new JLabel();
-    private final JLabel timeUsed = new JLabel();
     private final JLabel wins = new JLabel();
     private final JLabel podiums = new JLabel();
     private final JLabel championshipPoints = new JLabel();
@@ -71,40 +63,55 @@ public class ProfileStats extends JDialog {
             }
             updateStats();
         });
-        final Integer[] playerCounts = { 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
-        final JComboBox<Integer> playerFilter = new JComboBox<>(playerCounts);
+        final String[] playerCounts = { "1-10", "2-10", "3-10", "4-10", "5-10", "6-10", "7-10", "8-10", "9-10", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
+        final JComboBox<String> playerFilter = new JComboBox<>(playerCounts);
         playerFilter.addActionListener(e -> {
             final int index = playerFilter.getSelectedIndex();
-            final int playerCount = playerCounts[index];
-            playerCountFilter = r -> r.standings != null && r.standings.size() == playerCount;
+            final String[] interval = playerCounts[index].split("-");
+            final int min = Integer.parseInt(interval[0]);
+            final int max = interval.length > 1 ? Integer.parseInt(interval[1]) : min;
+            playerCountFilter = r -> r.standings != null && r.standings.size() >= min && r.standings.size() <= max;
             updateStats();
         });
 
         final JPanel contents = new JPanel(new GridLayout(0, 3));
         contents.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        contents.add(new JLabel("Total Races:"));
+        contents.add(new JLabel(Integer.toString(results.size())));
+        contents.add(new JLabel());
+        contents.add(new JLabel("Aborted Races:"));
+        contents.add(new JLabel(Long.toString(results.stream().filter(r -> !r.isComplete()).count())));
+        contents.add(new JLabel());
+
+        final String timeString;
+        final long timeSeconds = results.stream().mapToLong(r -> r.timeUsedMs).sum() / 1000;
+        final long timeMinutes = timeSeconds / 60;
+        final long timeHours = timeSeconds / 3600;
+        final long timeDays = timeSeconds / (3600 * 24);
+        if (timeMinutes < 1) timeString = timeSeconds + " s";
+        else if (timeHours < 1) timeString = timeMinutes + " min";
+        else if (timeDays < 1) timeString = timeHours + " h " + (timeMinutes % 60) + " min";
+        else timeString = timeDays + " d " + (timeHours % 24) + " h";
+        contents.add(new JLabel("Time used:"));
+        contents.add(new JLabel(timeString));
+        contents.add(new JLabel());
+        contents.add(new JLabel());
+        contents.add(new JLabel());
+        contents.add(new JLabel());
         contents.add(new JLabel("Track filter"));
         contents.add(new JLabel("Race type filter"));
         contents.add(new JLabel("Player count filter"));
         contents.add(trackFilter);
         contents.add(typeFilter);
         contents.add(playerFilter);
-        contents.add(new JLabel("Started Races:"));
-        contents.add(startedRaces);
-        contents.add(new JLabel());
         contents.add(new JLabel("Completed Races:"));
         contents.add(completedRaces);
         contents.add(new JLabel());
         contents.add(new JLabel("DNF Races:"));
         contents.add(dnfRaces);
         contents.add(new JLabel());
-        contents.add(new JLabel("Aborted Races:"));
-        contents.add(abortedRaces);
-        contents.add(new JLabel());
         contents.add(new JLabel("Completed Laps:"));
         contents.add(completedLaps);
-        contents.add(new JLabel());
-        contents.add(new JLabel("Time Used:"));
-        contents.add(timeUsed);
         contents.add(new JLabel());
         contents.add(new JLabel("Wins:"));
         contents.add(wins);
@@ -124,26 +131,14 @@ public class ProfileStats extends JDialog {
 
     private void updateStats() {
         final int[] posToPts = { 0, 10, 6, 4, 3, 2, 1, 0, 0, 0, 0 };
-        Stream<Profile.Result> stream = results.stream();
+        Stream<Profile.Result> stream = results.stream().filter(Profile.Result::isComplete);
         if (trackFilter != null) stream = stream.filter(trackFilter);
         if (typeFilter != null) stream = stream.filter(typeFilter);
         stream = stream.filter(playerCountFilter);
         final List<Profile.Result> filteredResults = stream.collect(Collectors.toList());
-        startedRaces.setText(Integer.toString(filteredResults.size()));
         completedRaces.setText(Long.toString(filteredResults.stream().filter(Profile.Result::isComplete).count()));
         dnfRaces.setText(Long.toString(filteredResults.stream().filter(r -> r.remainingHitpoints <= 0).count()));
-        abortedRaces.setText(Long.toString(filteredResults.stream().filter(r -> !r.isComplete()).count()));
         completedLaps.setText(Integer.toString(filteredResults.stream().mapToInt(r -> r.completedLaps).sum()));
-        final String timeString;
-        final long timeSeconds = filteredResults.stream().mapToLong(r -> r.timeUsedMs).sum() / 1000;
-        final long timeMinutes = timeSeconds / 60;
-        final long timeHours = timeSeconds / 3600;
-        final long timeDays = timeSeconds / (3600 * 24);
-        if (timeMinutes < 1) timeString = timeSeconds + " s";
-        else if (timeHours < 1) timeString = timeMinutes + " min";
-        else if (timeDays < 1) timeString = timeHours + " h " + (timeMinutes % 60) + " min";
-        else timeString = timeDays + " d " + (timeHours % 24) + " h";
-        timeUsed.setText(timeString);
         wins.setText(Long.toString(filteredResults.stream().filter(Profile.Result::isComplete).filter(r -> r.position == 1).count()));
         podiums.setText(Long.toString(filteredResults.stream().filter(Profile.Result::isComplete).filter(r -> r.position <= 3).count()));
         if (filteredResults.stream().noneMatch(Profile.Result::isChampionshipRace)) {
