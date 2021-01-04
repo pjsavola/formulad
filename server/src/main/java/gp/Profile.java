@@ -37,19 +37,19 @@ public class Profile implements Serializable {
 
     static class Result implements Serializable {
         private static final long serialVersionUID = -299482035708790406L;
-        private final String trackId;
+        final String trackId;
         private final int totalLaps;
         private final int totalHitpoints;
         private final int gridPosition;
         private boolean complete;
-        private int position;
+        int position;
         private int turns;
-        private int remainingHitpoints;
-        private int completedLaps;
+        int remainingHitpoints;
+        int completedLaps;
         private double coveredDistance;
-        private long timeUsedMs;
-        private List<UUID> standings;
-        private boolean isChampionshipRace;
+        long timeUsedMs;
+        List<UUID> standings;
+        boolean isChampionshipRace;
 
         private Result(String trackId, int totalLaps, int totalHitpoints, int gridPosition, boolean isSingleRace) {
             this.trackId = trackId;
