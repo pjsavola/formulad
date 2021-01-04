@@ -54,7 +54,18 @@ class TrackPreviewButton extends JButton implements TrackSelector {
         final List<String> internal = new ArrayList<>();
         final List<String> external = new ArrayList<>();
         getAllTracks(internal, external);
-        final JPanel trackPanel = new JPanel(new GridLayout(0, 2));
+        final int trackCount = internal.size() + external.size();
+        // 0...8  -> 2 columns
+        // 9...15 -> 3 columns
+        // 16...  -> 4 columns
+        int cols = 4;
+        while (cols > 2) {
+            if (trackCount >= cols * cols) {
+                break;
+            }
+            --cols;
+        }
+        final JPanel trackPanel = new JPanel(new GridLayout(0, cols));
         final JDialog trackDialog = new JDialog(frame);
         internal.stream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).forEach(data -> {
             final JButton selectTrackButton = new JButton();
