@@ -9,12 +9,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 
 public abstract class ImageCache {
-    private static Map<String, BufferedImage> imageCache = new HashMap<>();
+    private static Map<String, BufferedImage> imageCache = new ConcurrentHashMap<>();
 
     public static BufferedImage getImage(String name) {
         BufferedImage image = imageCache.get(name);

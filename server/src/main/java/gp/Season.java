@@ -66,7 +66,7 @@ public class Season implements Comparable<Season>, TrackSelector {
             TrackPreviewButton.openTrackSelectionDialog(frame, this);
         });
         buttonPanel.add(addTrackButton);
-        internal.stream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).forEach(data -> setTrack(data, null));
+        internal.parallelStream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).collect(Collectors.toList()).forEach(data -> setTrack(data, null));
         final List<ProfileMessage> localProfiles = profiles.stream().map(ProfileMessage::new).collect(Collectors.toList());
         final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
         final PlayerSlot[] slots = new PlayerSlot[10];

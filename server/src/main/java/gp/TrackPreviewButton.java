@@ -16,6 +16,7 @@ import java.security.CodeSource;
 import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -66,7 +67,7 @@ class TrackPreviewButton extends JButton implements TrackSelector {
         }
         final JPanel trackPanel = new JPanel(new GridLayout(0, cols));
         final JDialog trackDialog = new JDialog(frame);
-        internal.stream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).forEach(data -> {
+        internal.parallelStream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).map(data -> {
             final JButton selectTrackButton = new JButton();
             final ImageIcon icon = createIcon(data.getBackgroundImage());
             selectTrackButton.addActionListener(l -> {
@@ -74,9 +75,9 @@ class TrackPreviewButton extends JButton implements TrackSelector {
                 trackDialog.setVisible(false);
             });
             selectTrackButton.setIcon(icon);
-            trackPanel.add(selectTrackButton);
-        });
-        external.stream().map(f -> TrackData.createTrackData(f, true)).filter(Objects::nonNull).forEach(data -> {
+            return selectTrackButton;
+        }).collect(Collectors.toList()).forEach(trackPanel::add);
+        external.parallelStream().map(f -> TrackData.createTrackData(f, true)).filter(Objects::nonNull).map(data -> {
             final JButton selectTrackButton = new JButton();
             final ImageIcon icon = createIcon(data.getBackgroundImage());
             selectTrackButton.addActionListener(l -> {
@@ -84,8 +85,8 @@ class TrackPreviewButton extends JButton implements TrackSelector {
                 trackDialog.setVisible(false);
             });
             selectTrackButton.setIcon(icon);
-            trackPanel.add(selectTrackButton);
-        });
+            return selectTrackButton;
+        }).collect(Collectors.toList()).forEach(trackPanel::add);
         final JScrollPane scrollPane = new JScrollPane(trackPanel);
         trackDialog.setTitle("Select track");
         trackDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
