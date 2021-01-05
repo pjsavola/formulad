@@ -16,6 +16,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 import javax.swing.*;
@@ -277,7 +278,7 @@ public class MapEditor extends JPanel {
         deduceDistances.setEnabled(false);
         final MenuItem autoFillEdges = new MenuItem("Auto-fill edges in straigths");
         toolMenu.add(autoFillEdges);
-        autoFillEdges.setEnabled(false);
+        autoFillEdges.addActionListener(e -> autoFillEdges());
 
         menuBar.add(validationMenu);
         final MenuItem showDistances = new MenuItem("Show Distances");
@@ -651,6 +652,48 @@ public class MapEditor extends JPanel {
             attributes.putIfAbsent(node, 0.0);
         });
         repaint();
+    }
+
+    private void autoFillEdges() {
+	    final Map<Node, Node> candidates = new HashMap<>();
+	    nodes.stream()
+              .filter(n -> n.getType() == NodeType.STRAIGHT)
+              .forEach(n -> {
+                  if (n.childCount(null) != 1) return;
+                  n.childStream().findAny().ifPresent(child -> {
+                      if (child.getType() != n.getType()) return;
+                      candidates.put(n, child);
+                  });
+              });
+	    final CreateEdgesItem item = new CreateEdgesItem();
+	    candidates.keySet().forEach(n -> {
+            n.childStream().findAny().ifPresent(child -> {
+                final int dx = child.getLocation().x - n.getLocation().x;
+                final int dy = child.getLocation().y - n.getLocation().y;
+                final int distSq = dx * dx + dy * dy;
+                final List<Node> neighbors = candidates.keySet().stream().filter(neighbor -> {
+                    if (neighbor == n) return false;
+                    if (candidates.get(neighbor) == n) return false;
+                    if (candidates.get(n) == neighbor) return false;
+
+                    final int dx2 = neighbor.getLocation().x - n.getLocation().x;
+                    final int dy2 = neighbor.getLocation().y - n.getLocation().y;
+                    final int distSq2 = dx2 * dx2 + dy2 * dy2;
+                    return distSq2 < distSq;
+                }).collect(Collectors.toList());
+                if (neighbors.size() == 4) {
+                    neighbors.forEach(neighbor -> {
+                        final Node follower = candidates.get(neighbor);
+                        if (neighbors.contains(follower) && !neighbor.hasChild(n) && !n.hasChild(neighbor) && !follower.hasChild(n) && !n.hasChild(follower)) {
+                            item.addEdge(new CreateEdgeItem(neighbor, n));
+                            item.addEdge(new CreateEdgeItem(n, follower));
+                        }
+                    });
+                }
+            });
+	    });
+	    stack.execute(item);
+	    repaint();
     }
 
     private void setGridAngle() {
