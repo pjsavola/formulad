@@ -24,15 +24,18 @@ public final class LocalPlayer extends Player {
     private int leeway;
     private int gridPosition;
     private int pitStops;
+    private final int maxHitpoints;
 
-    public LocalPlayer(String playerId, Node node, double initialAngle, int laps, JPanel panel, int leeway, int color1, int color2) {
+    public LocalPlayer(String playerId, Node node, double initialAngle, int laps, JPanel panel, int leeway, int maxHitpoints, int color1, int color2) {
         super(playerId, node, initialAngle, panel, color1, color2);
         lapsToGo = laps;
         this.panel = panel;
         this.leeway = leeway;
         if (node.isCurve()) {
-            ++curveStops;
+            curveStops = node.getStopCount();
         }
+        this.maxHitpoints = maxHitpoints;
+        setHitpoints(maxHitpoints);
     }
 
     public void setId(UUID id) {
@@ -243,7 +246,7 @@ public final class LocalPlayer extends Player {
     }
 
     private void recoverHitpoints() {
-        final int gain = 18 - hitpoints;
+        final int gain = maxHitpoints - hitpoints;
         if (gain > 0) {
             // Show animation
             Main.log.info("Player " + getNameAndId() + " pits and recovers full hitpoints");

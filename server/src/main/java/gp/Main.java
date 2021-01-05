@@ -38,6 +38,7 @@ class PreviousSettings {
     int animationDelay = 60;
     int timePerTurn = 3;
     int leeway = 3600;
+    int maxHitpoints = 18;
 }
 
 public class Main extends Game implements Runnable {
@@ -137,7 +138,7 @@ public class Main extends Game implements Runnable {
         enableTimeout = true;
         final List<CreatedPlayerNotification> notifications = new ArrayList<>();
         for (Map.Entry<AI, ProfileMessage> e : aiToProfile.entrySet()) {
-            notifications.add(createAiPlayer(e, grid, startingOrder, params.leeway, params.laps));
+            notifications.add(createAiPlayer(e, grid, startingOrder, params.leeway, params.laps, params.maxHitpoints));
         }
         aiMap.forEach((player, ai) -> {
             notifications.forEach(notification -> {
@@ -148,13 +149,13 @@ public class Main extends Game implements Runnable {
         allPlayers.forEach(player -> immutablePlayerMap.put(player.getId(), player));
     }
 
-    private CreatedPlayerNotification createAiPlayer(Map.Entry<AI, ProfileMessage> ai, List<Node> grid, List<Integer> startingOrder, int leeway, int laps) {
+    private CreatedPlayerNotification createAiPlayer(Map.Entry<AI, ProfileMessage> ai, List<Node> grid, List<Integer> startingOrder, int leeway, int laps, int maxHitpoints) {
         // Recreate track for each player, so nothing bad happens if AI mutates it.
         final int playerCount = allPlayers.size();
         final String playerId = "p" + (playerCount + 1);
         final int gridPosition = startingOrder.get(playerCount);
         final Node startNode = grid.get(gridPosition);
-        final LocalPlayer player = new LocalPlayer(playerId, startNode, startNode.getGridAngle(), laps, this, leeway, ai.getValue().getColor1(), ai.getValue().getColor2());
+        final LocalPlayer player = new LocalPlayer(playerId, startNode, startNode.getGridAngle(), laps, this, leeway, maxHitpoints, ai.getValue().getColor1(), ai.getValue().getColor2());
         current = player;
         log.info("Initializing player " + playerId);
         final String name = ai.getValue().getName();
@@ -166,7 +167,7 @@ public class Main extends Game implements Runnable {
         allPlayers.add(player);
         player.setGridPosition(gridPosition + 1);
         aiMap.put(player, ai.getKey());
-        return new CreatedPlayerNotification(current.getId(), name, startNode.getId(), 18, 1, ai.getValue().getColor1(), ai.getValue().getColor2(), startNode.getGridAngle());
+        return new CreatedPlayerNotification(current.getId(), name, startNode.getId(), maxHitpoints, laps, ai.getValue().getColor1(), ai.getValue().getColor2(), startNode.getGridAngle());
     }
 
     public void notifyAll(Object notification) {
@@ -414,6 +415,7 @@ public class Main extends Game implements Runnable {
         private Long seed = null;
         private boolean randomizeStartingOrder = false;
         private int laps = 1;
+        private int maxHitpoints = 18;
     }
 
     private static void showGameSettings(JFrame frame, JPanel panel, Lobby lobby, List<Profile> profiles, Params params, WindowChanger listener) {
@@ -442,6 +444,7 @@ public class Main extends Game implements Runnable {
         final JButton startButton = new JButton("Start");
         final JCheckBox randomStartingOrder = new JCheckBox("Randomize starting order", settings.randomStartOrder);
         final SettingsField laps = new SettingsField(lobbyPanel, "Laps", Integer.toString(settings.laps), 1, 200);
+        final SettingsField hitpoints = new SettingsField(lobbyPanel, "Hitpoints", Integer.toString(settings.maxHitpoints), 1, 30);
         final SettingsField animationDelay = new SettingsField(lobbyPanel, "Animation delay (ms)", Integer.toString(settings.animationDelay), 0, 1000);
         final SettingsField time = new SettingsField(lobbyPanel, "Time per turn (s)", Integer.toString(settings.timePerTurn), 0, 3600);
         final SettingsField leeway = new SettingsField(lobbyPanel, "Time leeway (s)", Integer.toString(settings.leeway), 0, 36000);
@@ -472,6 +475,7 @@ public class Main extends Game implements Runnable {
                 params.gearTimeoutInMillis = time.getValue() * 1000;
                 params.moveTimeoutInMillis = time.getValue() * 1000;
                 params.leeway = leeway.getValue() * 1000;
+                params.maxHitpoints = hitpoints.getValue();
             } catch (NumberFormatException ex) {
                 return;
             }
@@ -485,6 +489,7 @@ public class Main extends Game implements Runnable {
             settings.animationDelay = params.animationDelayInMillis;
             settings.timePerTurn = time.getValue();
             settings.leeway = leeway.getValue();
+            settings.maxHitpoints = params.maxHitpoints;
             final Main server = new Main(params, lobby, frame, panel, slots, changeTrackButton.getTrackData(), null);
             listener.contentChanged(server, lobby, server, lobby == null ? "race" : "server", true);
             setContent(frame, server);
@@ -497,11 +502,13 @@ public class Main extends Game implements Runnable {
         settings.setLayout(new BoxLayout(settings, BoxLayout.Y_AXIS));
         randomStartingOrder.setAlignmentX(Component.LEFT_ALIGNMENT);
         laps.setAlignmentX(Component.LEFT_ALIGNMENT);
+        hitpoints.setAlignmentX(Component.LEFT_ALIGNMENT);
         animationDelay.setAlignmentX(Component.LEFT_ALIGNMENT);
         time.setAlignmentX(Component.LEFT_ALIGNMENT);
         leeway.setAlignmentX(Component.LEFT_ALIGNMENT);
         settings.add(randomStartingOrder);
         settings.add(laps);
+        settings.add(hitpoints);
         settings.add(animationDelay);
         settings.add(time);
         settings.add(leeway);

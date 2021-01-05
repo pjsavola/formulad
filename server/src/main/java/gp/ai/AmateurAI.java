@@ -118,7 +118,7 @@ public class AmateurAI extends BaseAI {
         maxRoll = Math.min(maxRoll, movePermit + player.getHitpoints() - 1);
         int idealRoll = movePermit;
         if (location.isPit()) {
-            if (player.getHitpoints() < 18) {
+            if (player.getHitpoints() < maxHitpoints) {
                 final Pair<Integer, Integer> garageDistances = findGarage(location);
                 final int min = garageDistances.getLeft();
                 final int max = garageDistances.getRight();
@@ -244,7 +244,7 @@ public class AmateurAI extends BaseAI {
                 garageMax = -1;
             }
             final int maxGear = Math.min(inPits ? 4 : 6, gear + 1);
-            if (lapsToGo > 0 && minDistanceToPits < movePermit && minDistanceToPits < Gear.getMin(maxGear) && hitpoints < r.nextInt(18) && minGear <= 4) {
+            if (lapsToGo > 0 && minDistanceToPits < movePermit && minDistanceToPits < Gear.getMin(maxGear) && hitpoints < r.nextInt(maxHitpoints) && minGear <= 4) {
                 System.out.println("Decided to pit");
                 this.maxGear = 4;
                 searchDepth = 1;
@@ -265,7 +265,7 @@ public class AmateurAI extends BaseAI {
             final int damage = Math.max(0, moveSteps - ((old.stopsToDo > 0 && minDistanceToNextCurve >= 1) ? old.movePermit : old.movePermitToNextCornerWithoutOthers)) + Math.max(0, old.gear - gear - 1);
             minDistanceToNextCurveWithoutOthers = old.minDistanceToNextCurveWithoutOthers - moveSteps;
             enteredNextCurve = minDistanceToNextCurve < 1;
-            hitpoints = (inPits && moveSteps >= old.garageMin && moveSteps <= old.garageMax) ? 18 : old.hitpoints - damage;
+            hitpoints = (inPits && moveSteps >= old.garageMin && moveSteps <= old.garageMax) ? maxHitpoints : old.hitpoints - damage;
             garageMin = old.garageMin - moveSteps;
             garageMax = old.garageMax - moveSteps;
             minGear = Math.max(1, gear - Math.min(4, hitpoints));

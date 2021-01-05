@@ -80,20 +80,20 @@ public class ProAI extends BaseAI {
             if (location.isPit() || location.getAreaIndex() > endNode.getAreaIndex()) --lapsToGo;
         }
         final boolean enterPits = endNode.hasGarage() || (endNode.isPit() && !location.isPit());
-        final int hp = enterPits ? 18 : player.getHitpoints() - damage - Math.max(0, player.getGear() - gear - 1);
+        final int hp = enterPits ? maxHitpoints : player.getHitpoints() - damage - Math.max(0, player.getGear() - gear - 1);
         final int distance = AIUtil.getMinDistanceToNextCurve(endNode, endNode.isPit() ? Collections.emptySet() : pitLane);
         final int movePermit = AIUtil.getMaxDistanceWithoutDamage(endNode, stops, endNode.isPit() ? Collections.emptySet() : pitLane);
         return evaluate(location, endNode, hp, gear, lapsToGo, stops, distance, movePermit);
     }
-    //                                 0           1  2   3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18
-    private static int[] hpToScore = { Scores.MIN, 5, 10, 15, 20, 25, 30, 35, 40, 44, 48, 51, 54, 57, 60, 63, 66, 69, 72};
+    //                                 0           1  2   3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25  26  27  28   29   30
+    private static int[] hpToScore = { Scores.MIN, 5, 10, 15, 20, 25, 30, 35, 40, 44, 48, 51, 54, 57, 60, 63, 66, 69, 72, 75, 78, 81, 84, 87, 90, 93, 96, 99, 102, 105, 108 };
     // Linear                          0           4  8   12  16  20  24  28  32  36  40  44  48  52  56  60  64  68  72
 
     private int evaluate(Node startNode, Node endNode, int hp, int gear, int lapsToGo, int stops, int distance, int movePermit) {
         final boolean finalStraight = !endNode.isCurve() && lapsToGo == 0 && areaToValue.get(endNode.getAreaIndex()) == cumulativeValue && hp > 1;
         //if (finalStraight) debug("Final straight!!! HP does not matter");
         // TODO: Reduce value of HP based on remaining distance
-        int score = hpToScore[finalStraight ? Math.max(18, hp) : hp];
+        int score = hpToScore[finalStraight ? Math.max(maxHitpoints, hp) : hp];
         String description = "Score from HP: " + score + "\n";
 
         if (lapsToGo < 0) {
@@ -132,7 +132,7 @@ public class ProAI extends BaseAI {
         description += "Score from cumulative area value: " + value + "\n";
 
         if (endNode.isPit()) {
-            final int penalty = getPenaltyForLowGear(endNode, gear, distance, movePermit) * player.getHitpoints() / 18;
+            final int penalty = getPenaltyForLowGear(endNode, gear, distance, movePermit) * player.getHitpoints() / maxHitpoints;
             score -= penalty;
             description += "Penalty from low gear (pits): " + penalty + "\n";
             //final int penaltyForHP = Math.max(0, player.getHitpoints() - 9);
