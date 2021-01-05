@@ -25,6 +25,7 @@ public class Season implements Comparable<Season>, TrackSelector {
     private int animationDelayMs;
     private int timePerTurnMs;
     private int leewayMs;
+    private int maxHitpoints;
     private List<Pair<TrackData, Integer>> tracksAndLaps = new ArrayList<>();
     private List<ProfileMessage> participants = new ArrayList<>();
     private List<FinalStandings> results = new ArrayList<>();
@@ -90,6 +91,8 @@ public class Season implements Comparable<Season>, TrackSelector {
         rightPanel.add(playersLabel);
         rightPanel.add(playerPanel);
         rightPanel.add(randomTrackOrder);
+        final SettingsField hitpoints = new SettingsField(panel, "Hitpoints", Integer.toString(Main.settings.maxHitpoints), 1, 30);
+        rightPanel.add(hitpoints);
         final SettingsField animationDelay = new SettingsField(panel, "Animation delay (ms)", Integer.toString(Main.settings.animationDelay), 0, 1000);
         final SettingsField time = new SettingsField(panel, "Time per turn (s)", Integer.toString(Main.settings.timePerTurn), 0, 3600);
         final SettingsField leeway = new SettingsField(panel, "Time leeway (s)", Integer.toString(Main.settings.leeway), 0, 36000);
@@ -122,6 +125,7 @@ public class Season implements Comparable<Season>, TrackSelector {
                 animationDelayMs = animationDelay.getValue();
                 timePerTurnMs = time.getValue() * 1000;
                 leewayMs = leeway.getValue() * 1000;
+                maxHitpoints = hitpoints.getValue();
             } catch (NumberFormatException ex) {
                 return;
             }
@@ -323,7 +327,7 @@ public class Season implements Comparable<Season>, TrackSelector {
                 final int pos = i + 1;
                 slots[i] = new PlayerSlot(sortedParticipants.get(sortedParticipants.size() - pos), pos);
             }
-            final Main server = new Main(new Main.Params(laps, animationDelayMs, timePerTurnMs, leewayMs), null, frame, masterPanel, slots, data, Season.this);
+            final Main server = new Main(new Main.Params(laps, animationDelayMs, timePerTurnMs, leewayMs, maxHitpoints), null, frame, masterPanel, slots, data, Season.this);
             listener.contentChanged(server, null, server, "championship race", true);
             Main.setContent(frame, server);
             new Thread(server).start();
@@ -358,6 +362,11 @@ public class Season implements Comparable<Season>, TrackSelector {
                             animationDelayMs = Integer.parseInt(parts[2]);
                             timePerTurnMs = Integer.parseInt(parts[3]);
                             leewayMs = Integer.parseInt(parts[4]);
+                            if (parts.length > 5) {
+                                maxHitpoints = Integer.parseInt(parts[5]);
+                            } else {
+                                maxHitpoints = 18;
+                            }
                             break;
                         case 1:
                             final TrackData data = TrackData.createTrackData(parts[0], Boolean.parseBoolean(parts[1]));
@@ -419,7 +428,8 @@ public class Season implements Comparable<Season>, TrackSelector {
             writer.print(timePerTurnMs);
             writer.print(",");
             writer.println(leewayMs);
-            writer.println();
+            writer.print(",");
+            writer.println(maxHitpoints);
             for (Pair<TrackData, Integer> p : tracksAndLaps) {
                 writer.print(p.getLeft().getTrackId());
                 writer.print(",");

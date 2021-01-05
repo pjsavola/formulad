@@ -401,12 +401,13 @@ public class Main extends Game implements Runnable {
     static class Params {
         private Params() {
         }
-        Params(int laps, int animationDelayMs, int timePerTurnMs, int leewayMs) {
+        Params(int laps, int animationDelayMs, int timePerTurnMs, int leewayMs, int maxHitpoints) {
             this.laps = laps;
             this.animationDelayInMillis = animationDelayMs;
             this.gearTimeoutInMillis = timePerTurnMs;
             this.moveTimeoutInMillis = timePerTurnMs;
             this.leeway = leewayMs;
+            this.maxHitpoints = maxHitpoints;
         }
         private int animationDelayInMillis = 100;
         private int gearTimeoutInMillis = 3000;
