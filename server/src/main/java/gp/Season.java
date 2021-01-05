@@ -108,10 +108,12 @@ public class Season implements Comparable<Season>, TrackSelector {
                 if (profile != null) {
                     if (profile == ProfileMessage.pending) {
                         JOptionPane.showConfirmDialog(frame, "Incomplete participant", "Error", JOptionPane.DEFAULT_OPTION);
+                        participants.clear();
                         return;
                     }
                     else if (!profile.isAi() && !ids.add(profile.getId())) {
                         JOptionPane.showConfirmDialog(frame, "Duplicate profile: " + profile.getName(), "Error", JOptionPane.DEFAULT_OPTION);
+                        participants.clear();
                         return;
                     }
                     participants.add(profile);
@@ -119,6 +121,7 @@ public class Season implements Comparable<Season>, TrackSelector {
             }
             if (participants.size() < 6) {
                 JOptionPane.showConfirmDialog(frame, "Need at least 6 participants", "Error", JOptionPane.DEFAULT_OPTION);
+                participants.clear();
                 return;
             }
             try {
@@ -127,6 +130,7 @@ public class Season implements Comparable<Season>, TrackSelector {
                 leewayMs = leeway.getValue() * 1000;
                 maxHitpoints = hitpoints.getValue();
             } catch (NumberFormatException ex) {
+                participants.clear();
                 return;
             }
             if (randomTrackOrder.isSelected()) {
@@ -427,9 +431,10 @@ public class Season implements Comparable<Season>, TrackSelector {
             writer.print(",");
             writer.print(timePerTurnMs);
             writer.print(",");
-            writer.println(leewayMs);
+            writer.print(leewayMs);
             writer.print(",");
             writer.println(maxHitpoints);
+            writer.println();
             for (Pair<TrackData, Integer> p : tracksAndLaps) {
                 writer.print(p.getLeft().getTrackId());
                 writer.print(",");
