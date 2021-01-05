@@ -295,6 +295,11 @@ public class TrackData implements Serializable {
                 blockedNode.setDistance(distanceOfNext.getAsDouble() - 0.01);
             }
         });
+        nodes.stream().filter(Node::isCurve).filter(n -> n.childCount(NodeType.PIT) == 2).forEach(n -> {
+            if (n.childStream().mapToDouble(Node::getDistance).distinct().count() < 2) {
+                throw new RuntimeException("Identical distances for child nodes, unable to deduce lanes: " + n.getId());
+            }
+        });
     }
 
     public static List<Node> build(List<Node> nodes, Map<Node, Double> attributes) {
