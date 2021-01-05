@@ -87,34 +87,37 @@ public class TrackData implements Serializable {
     }
 
     public static void updateDistances(List<Node> nodes, Map<Node, Double> attributes) {
-        final List<Node> edges = new ArrayList<>();
-        Node center = null;
         for (Node node : nodes) {
-            if (node.getType() == NodeType.FINISH) {
-                if (node.childCount(NodeType.PIT) == 3) {
-                    center = node;
-                } else {
-                    edges.add(node);
-                }
-            }
             node.setDistance(-1.0);
             if (node.getType() == NodeType.BLOCKED) {
                 // Temporarily set this distance for blocked nodes to avoid visiting them later.
                 node.setDistance(0.0);
             }
         }
-        if (center == null || edges.size() != 2) {
+        final List<Node> edges = nodes.stream().filter(n -> n.getType() == NodeType.FINISH).collect(Collectors.toList());
+        if (edges.size() != 3) {
             throw new RuntimeException("Unable to find Finish line of width 3");
         }
-        if (center.hasChildren(edges)) {
-            center.setDistance(0.0);
-        } else if (edges.get(0).hasChild(center) && edges.get(1).hasChild(center)) {
+        final Set<Node> children = new HashSet<>();
+        edges.forEach(n -> n.childStream().filter(child -> child.getType() == NodeType.FINISH).forEach(children::add));
+        Node center;
+        if (children.size() == 1) {
+            center = children.iterator().next();
+            edges.remove(center);
             center.setDistance(0.5);
             edges.get(0).setDistance(0.0);
             edges.get(1).setDistance(0.0);
+        } else if (children.size() == 2) {
+            center = edges.stream().filter(n -> !children.contains(n)).findAny().orElse(null);
+            if (center == null) {
+                throw new RuntimeException("Malformed Finish line");
+            }
+            edges.remove(center);
+            center.setDistance(0.0);
         } else {
             throw new RuntimeException("Finish line seems to be disjoint");
         }
+
         int areaIndex = 0;
         final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
         final Deque<Node> work = new ArrayDeque<>();
