@@ -122,8 +122,22 @@ public class TrackData implements Serializable {
         final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
         final Deque<Node> work = new ArrayDeque<>();
         work.addLast(center);
+
         final MutableObject<Node> pit = new MutableObject<>(null);
         final Deque<Node> curves = new ArrayDeque<>();
+
+        // Handle nasty special case where finish line is just before a curve
+        if (center.getDistance() == 0.5 && center.childCount(null) == 1) {
+            final Node finalCenter = center;
+            edges.forEach(edge -> edge.childStream().filter(n -> n != finalCenter).filter(n -> !finalCenter.hasChild(n)).forEach(n -> {
+                if (n.isCurve()) {
+                    curves.addLast(n);
+                } else {
+                    n.setDistance(1.0);
+                    work.addLast(n);
+                }
+            }));
+        }
         while (!work.isEmpty()) {
             final Node node = work.removeFirst();
             if (node.childCount(NodeType.PIT) == 0) {
@@ -155,7 +169,7 @@ public class TrackData implements Serializable {
                     return;
                 }
                 double distanceDelta = 0.5;
-                if (prevNodeMap.get(next).size() == 1) {
+                if (prevNodeMap.get(next).stream().filter(n -> !n.isPit()).count() == 1) {
                     // We might end up here in 2 cases:
                     // - Just before curve where movement is limited
                     // - In case lane lengths are different
@@ -308,7 +322,7 @@ public class TrackData implements Serializable {
     public static List<Node> build(List<Node> nodes, Map<Node, Double> attributes) {
         updateDistances(nodes, attributes);
         nodes.stream().filter(n -> n.getDistance() < 0.0).findAny().ifPresent(n -> {
-            throw new RuntimeException("Track contains unreachable node: " + n.getId());
+            throw new RuntimeException("Track contains unreachable node: " + n.getId() + " (" + n.getLocation().x + "," + n.getLocation().y + ")");
         });
         final List<Node> grid = nodes
                 .stream()
