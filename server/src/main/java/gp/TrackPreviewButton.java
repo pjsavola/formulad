@@ -55,10 +55,9 @@ class TrackPreviewButton extends JButton implements TrackSelector {
         final List<String> external = new ArrayList<>();
         getAllTracks(internal, external);
         final int trackCount = internal.size() + external.size();
-        // 0...8  -> 2 columns
-        // 9...15 -> 3 columns
-        // 16...  -> 4 columns
-        int cols = 4;
+        // 0...8 -> 2 columns
+        // 9...  -> 3 columns
+        int cols = 3;
         while (cols > 2) {
             if (trackCount >= cols * cols) {
                 break;
