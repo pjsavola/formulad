@@ -20,7 +20,7 @@ public class MainMenuBar extends MenuBar {
         helpMenu.add(rulesItem);
         helpMenu.add(creditsItem);
         aboutItem.addActionListener(e -> {
-            JOptionPane.showConfirmDialog(panel, "GP Online version 0.43 Beta", "About", JOptionPane.DEFAULT_OPTION);
+            JOptionPane.showConfirmDialog(panel, "GP Online version 0.431 Beta", "About", JOptionPane.DEFAULT_OPTION);
         });
         rulesItem.addActionListener(e -> {
             try (InputStream is = Main.class.getResourceAsStream("/rules.txt"); InputStreamReader in = new InputStreamReader(is)) {
