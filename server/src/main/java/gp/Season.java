@@ -185,11 +185,26 @@ public class Season implements Comparable<Season>, TrackSelector {
         return total2 - total1;
     }
 
-    private static final int[] pointDistribution = { 10, 6, 4, 3, 2, 1, 0, 0, 0, 0 };
+    static final int[] pointDistribution = { 10, 6, 4, 3, 2, 1, 0, 0, 0, 0 };
 
     private JPanel createStandingsPanel() {
-        final JPanel panel = new JPanel(new GridLayout(0, 3));
-        panel.setBorder(new EmptyBorder(20, 0, 20, 80));
+        final JPanel panel = new JPanel(new GridBagLayout());
+        final GridBagConstraints c1 = new GridBagConstraints();
+        c1.fill = GridBagConstraints.HORIZONTAL;
+        c1.gridx = 0;
+        c1.gridy = 0;
+        c1.weightx = 0.05;
+        final GridBagConstraints c2 = new GridBagConstraints();
+        c2.fill = GridBagConstraints.HORIZONTAL;
+        c2.gridx = 1;
+        c2.gridy = 0;
+        c2.weightx = 0.40;
+        final GridBagConstraints c3 = new GridBagConstraints();
+        c3.fill = GridBagConstraints.HORIZONTAL;
+        c3.gridx = 2;
+        c3.gridy = 0;
+        c3.weightx = 0.55;
+        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
         final Map<UUID, List<Integer>> positions = new HashMap<>();
         for (FinalStandings result : results) {
             for (PlayerStats stats :result.getStats()) {
@@ -202,12 +217,13 @@ public class Season implements Comparable<Season>, TrackSelector {
             sortedParticipants = participants.stream().sorted((p1, p2) -> compare(p1.getId(), p2.getId(), positions)).collect(Collectors.toList());
         }
         // Header
-        panel.add(new JLabel());
-        panel.add(new JLabel());
+        panel.add(new JLabel(), c1);
+        panel.add(new JLabel(), c2);
         final JPanel trackPanel = new JPanel(new GridLayout(0, tracksAndLaps.size() + 1));
         trackPanel.add(new JLabel());
         for (int i = 0; i < tracksAndLaps.size(); ++i) {
             final JLabel trackInfo = new JLabel(Integer.toString(i + 1));
+            trackInfo.setBorder(new EmptyBorder(0, 3, 0, 3));
             trackInfo.setHorizontalAlignment(SwingConstants.CENTER);
             trackInfo.setFont(new Font("Arial", Font.BOLD, 20));
             trackPanel.add(trackInfo);
@@ -283,7 +299,7 @@ public class Season implements Comparable<Season>, TrackSelector {
                 }
             });
         }
-        panel.add(trackPanel);
+        panel.add(trackPanel, c3);
         for (int rank = 0; rank < sortedParticipants.size(); ++rank) {
             final ProfileMessage player = sortedParticipants.get(rank);
             final JLabel pos = new JLabel((rank + 1) + ".");
@@ -300,9 +316,12 @@ public class Season implements Comparable<Season>, TrackSelector {
             label.setBorder(new EmptyBorder(0, 0, 0, 10));
             pos.setBorder(new EmptyBorder(0, 0, 0, 10));
             pts.setBorder(new EmptyBorder(0, 0, 0, 10));
-            panel.add(pos);
-            panel.add(label);
-            panel.add(ptsTable);
+            c1.gridy = rank + 1;
+            c2.gridy = rank + 1;
+            c3.gridy = rank + 1;
+            panel.add(pos, c1);
+            panel.add(label, c2);
+            panel.add(ptsTable, c3);
             ptsTable.add(pts);
             for (int i = 0; i < tracksAndLaps.size(); ++i) {
                 final JLabel ptsLabel;

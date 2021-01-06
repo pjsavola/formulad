@@ -130,7 +130,6 @@ public class ProfileStats extends JDialog {
     }
 
     private void updateStats() {
-        final int[] posToPts = { 0, 10, 6, 4, 3, 2, 1, 0, 0, 0, 0 };
         Stream<Profile.Result> stream = results.stream().filter(Profile.Result::isComplete);
         if (trackFilter != null) stream = stream.filter(trackFilter);
         if (typeFilter != null) stream = stream.filter(typeFilter);
@@ -144,7 +143,7 @@ public class ProfileStats extends JDialog {
         if (filteredResults.stream().noneMatch(Profile.Result::isChampionshipRace)) {
             championshipPoints.setText("");
         } else {
-            championshipPoints.setText(Integer.toString(filteredResults.stream().filter(Profile.Result::isComplete).filter(Profile.Result::isChampionshipRace).mapToInt(r -> posToPts[r.position]).sum()));
+            championshipPoints.setText(Integer.toString(filteredResults.stream().filter(Profile.Result::isComplete).filter(Profile.Result::isChampionshipRace).mapToInt(r -> Season.pointDistribution[r.position - 1]).sum()));
         }
     }
 }
