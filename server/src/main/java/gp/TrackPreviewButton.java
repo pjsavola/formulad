@@ -7,6 +7,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -15,6 +16,7 @@ import java.nio.file.*;
 import java.security.CodeSource;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -68,7 +70,7 @@ class TrackPreviewButton extends JButton implements TrackSelector {
         final JPanel trackPanel = new JPanel(new GridLayout(0, cols));
         final JDialog trackDialog = new JDialog(frame);
         internal.parallelStream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).map(data -> {
-            final ImageIcon icon = createIcon(data.getBackgroundImage());
+            final ImageIcon icon = createIcon(data);
             if (icon == null) return null;
 
             final JButton selectTrackButton = new JButton();
@@ -80,7 +82,7 @@ class TrackPreviewButton extends JButton implements TrackSelector {
             return selectTrackButton;
         }).filter(Objects::nonNull).collect(Collectors.toList()).forEach(trackPanel::add);
         external.parallelStream().map(f -> TrackData.createTrackData(f, true)).filter(Objects::nonNull).map(data -> {
-            final ImageIcon icon = createIcon(data.getBackgroundImage());
+            final ImageIcon icon = createIcon(data);
             if (icon == null) return null;
 
             final JButton selectTrackButton = new JButton();
@@ -173,15 +175,27 @@ class TrackPreviewButton extends JButton implements TrackSelector {
         return data;
     }
 
-    static ImageIcon createIcon(BufferedImage image) {
-        if (image == null) return null;
+    private static Map<String, ImageIcon> cache = new ConcurrentHashMap<>();
 
+    static ImageIcon createIcon(TrackData data) {
+        final String cacheKey = data.getCacheKey();
+        if (cacheKey == null) return null;
+
+        final ImageIcon cachedIcon = cache.get(cacheKey);
+        if (cachedIcon != null) {
+            return cachedIcon;
+        }
+        final BufferedImage image = data.getBackgroundImage();
+        if (image == null) {
+            return null;
+        }
         final ImageIcon icon = new ImageIcon();
         final int x = image.getWidth();
         final int y = image.getHeight();
         final double scaleX = x / 400.0;
         final double scaleY = y / 300.0;
         icon.setImage(image.getScaledInstance((int) (x / scaleX), (int) (y / scaleY), Image.SCALE_FAST));
+        cache.put(cacheKey, icon);
         return icon;
     }
 }

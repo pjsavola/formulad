@@ -232,7 +232,7 @@ public class Season implements Comparable<Season>, TrackSelector {
             trackInfo.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    final BufferedImage image = tracksAndLaps.get(index).getKey().getBackgroundImage();
+                    final ImageIcon icon = TrackPreviewButton.createIcon(tracksAndLaps.get(index).getKey());
                     if (results.size() > index) {
                         final PlayerStats[] stats = results.get(index).getStats();
                         Map<String, UUID> idMapper = new HashMap<>();
@@ -249,7 +249,6 @@ public class Season implements Comparable<Season>, TrackSelector {
                         };
                         final JDialog dialog = new JDialog(frame);
                         final int height = 5 + 15 * (stats.length + 1);
-                        final ImageIcon icon = TrackPreviewButton.createIcon(image);
                         final JPanel panel = new JPanel() {
                             @Override
                             public void paintComponent(Graphics g) {
@@ -271,9 +270,8 @@ public class Season implements Comparable<Season>, TrackSelector {
                         dialog.setModal(true);
                         dialog.setLocationRelativeTo(frame);
                         dialog.setVisible(true);
-                    } else if (image != null) {
+                    } else if (icon != null) {
                         final JDialog dialog = new JDialog(frame);
-                        final ImageIcon icon = TrackPreviewButton.createIcon(image);
                         final JPanel panel = new JPanel() {
                             @Override
                             public void paintComponent(Graphics g) {

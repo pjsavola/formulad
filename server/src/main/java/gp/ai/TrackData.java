@@ -398,6 +398,10 @@ public class TrackData implements Serializable {
         return imageData == null ? null : imageData.getImage();
     }
 
+    public String getCacheKey() {
+        return imageData == null ? null : ((imageData.external ? "/" : "") + imageData.imagePath);
+    }
+
     public MapEditor.Corner getInfoBoxCorner() {
         return infoBoxCorner;
     }
