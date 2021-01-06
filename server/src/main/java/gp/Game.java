@@ -225,8 +225,10 @@ public abstract class Game extends JPanel implements PlayerRenderer {
         }
         final Graphics2D g2d = (Graphics2D) g;
         // Circle for dice rolls
-        final Point point = getPoint(gearCorner);
-        MapEditor.drawOval(g2d, point.x, point.y, 50, 50, true, true, Color.BLACK, 1);
+        if (gearCorner != null) {
+            final Point point = getPoint(gearCorner);
+            MapEditor.drawOval(g2d, point.x, point.y, 50, 50, true, true, Color.BLACK, 1);
+        }
         drawTargets(g2d);
         drawInfoBox(g2d);
         drawRetiredPlayers(g2d);
