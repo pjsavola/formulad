@@ -52,6 +52,7 @@ public class MapEditor extends JPanel {
 
     private final HashMap<NodeType, MenuItem> strokes = new HashMap<>();
     private final MenuItem setGarage;
+    private final MenuItem setFinish;
     private final MenuItem setCurveDistance;
     private final MenuItem setGridAngle;
 
@@ -180,6 +181,10 @@ public class MapEditor extends JPanel {
         setGarage.addActionListener(e -> setAttribute());
         setGarage.setShortcut(new MenuShortcut(KeyEvent.VK_E));
         editMenu.add(setGarage);
+        setFinish = new MenuItem("Set Finish");
+        setFinish.addActionListener(e -> setFinish());
+        setFinish.setShortcut(new MenuShortcut(KeyEvent.VK_F));
+        editMenu.add(setFinish);
         setCurveDistance = new MenuItem("Set Curve Distance");
         setCurveDistance.addActionListener(e -> setAttribute());
         setCurveDistance.setShortcut(new MenuShortcut(KeyEvent.VK_E));
@@ -216,7 +221,6 @@ public class MapEditor extends JPanel {
         strokes.put(NodeType.CURVE_3, strokeCurve3);
         final MenuItem strokeFinishLine = new MenuItem("Finish Line");
         strokeFinishLine.addActionListener(e -> setStroke(NodeType.FINISH));
-        strokeFinishLine.setShortcut(new MenuShortcut(KeyEvent.VK_F));
         strokeMenu.add(strokeFinishLine);
         strokes.put(NodeType.FINISH, strokeFinishLine);
         final MenuItem strokePitLane = new MenuItem("Pit Lane");
@@ -334,9 +338,10 @@ public class MapEditor extends JPanel {
     private void select(Node node) {
 	    selectedNode = node;
 	    if (selectedNode != null) System.out.println(selectedNode.getId());
-	    setGarage.setEnabled(selectedNode != null && selectedNode.getType() == NodeType.PIT);
+	    setGarage.setEnabled(selectedNode != null && selectedNode.isPit());
+	    setFinish.setEnabled(selectedNode != null && !selectedNode.isPit());
         setCurveDistance.setEnabled(selectedNode != null && selectedNode.isCurve());
-	    setGridAngle.setEnabled(selectedNode != null && selectedNode.getType() != NodeType.PIT);
+	    setGridAngle.setEnabled(selectedNode != null && !selectedNode.isPit());
     }
 
 	private void setStroke(NodeType stroke) {
@@ -464,7 +469,11 @@ public class MapEditor extends JPanel {
                     writer.print(" ");
                     writer.print(p.y);
                     writer.print(" ");
-                    writer.println(node.getType().ordinal());
+                    writer.print(node.getType().ordinal());
+                    if (node.hasFinish()) {
+                        writer.print(" F");
+                    }
+                    writer.println();
                 }
                 writer.println();
                 for (Node node : nodes) {
@@ -583,6 +592,9 @@ public class MapEditor extends JPanel {
                     final int y = Integer.parseInt(parts[2]);
                     final NodeType type = NodeType.values()[Integer.parseInt(parts[3])];
                     final Node node = new Node(id, type);
+                    if (parts.length > 4 && "F".equals(parts[4])) {
+                        node.setFinish(true);
+                    }
                     idMap.put(id, node);
                     coordMap.put(node, new Point(x, y));
                 } else if (emptyLines == 2) {
@@ -717,6 +729,13 @@ public class MapEditor extends JPanel {
         }
     }
 
+    private void setFinish() {
+        if (selectedNode != null && !selectedNode.isPit()) {
+            selectedNode.setFinish(!selectedNode.hasFinish());
+            repaint();
+        }
+    }
+
     private void moveAll() {
         final JTextField x = new JTextField();
         final JTextField y = new JTextField();
@@ -781,6 +800,7 @@ public class MapEditor extends JPanel {
                 final Double attr = attributes.get(node);
                 final Node newNode = new Node(newNodes.size(), node.getType());
                 newNode.setGarage(node.hasGarage());
+                newNode.setFinish(node.hasFinish());
                 newNode.setLocation(node.getLocation());
                 newNode.setGridAngle(node.getGridAngle());
                 if (attr != null) newAttributes.put(newNode, attr);
@@ -878,7 +898,8 @@ public class MapEditor extends JPanel {
         if (attr != null || node.hasGarage()) {
             // Draw attribute indicator
             drawOval(g2d, p.x, p.y, 4, 4, true, true, Color.YELLOW, 0);
-        } else if (node.hasFinish()) {
+        }
+        if (node.hasFinish()) {
             drawOval(g2d, p.x, p.y, DIAMETER + 1, DIAMETER + 1, true, false, Color.BLUE, 2);
         }
     }
