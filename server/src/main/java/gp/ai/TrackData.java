@@ -22,12 +22,12 @@ public class TrackData implements Serializable {
     private final List<Node> nodes;
     private final List<Integer> sources = new ArrayList<>();
     private final List<Integer> targets = new ArrayList<>();
-    private final ImageData backgroundImage;
+    private final ImageData imageData;
     private final MapEditor.Corner infoBoxCorner;
     private transient List<Node> startingGrid; // client does not need this
     private transient Map<Node, Set<Node>> collisionMap; // client does not need this
 
-    private TrackData(String trackId, boolean external, List<Node> nodes, List<Node> startingGrid, Map<Node, Set<Node>> collisionMap, BufferedImage backgroundImage, MapEditor.Corner infoBoxCorner) {
+    private TrackData(String trackId, boolean external, List<Node> nodes, List<Node> startingGrid, Map<Node, Set<Node>> collisionMap, String imageFile, MapEditor.Corner infoBoxCorner) {
         this.trackId = trackId;
         this.external = external;
         this.nodes = nodes.stream().sorted(Comparator.comparingInt(Node::getId)).collect(Collectors.toList());
@@ -43,7 +43,7 @@ public class TrackData implements Serializable {
         }));
         this.startingGrid = startingGrid;
         this.collisionMap = collisionMap;
-        this.backgroundImage = backgroundImage == null ? null : new ImageData(backgroundImage);
+        imageData = imageFile == null ? null : new ImageData(imageFile, external);
         this.infoBoxCorner = infoBoxCorner;
     }
 
@@ -71,16 +71,16 @@ public class TrackData implements Serializable {
             if (grid.size() < 10) {
                 return null;
             }
-            final String imageFile = result.getLeft();
+            /*
             if (external && !new File(imageFile).exists()) {
                 return null;
             }
             final BufferedImage image = external ? ImageCache.getImageFromPath(imageFile) : ImageCache.getImage("/" + imageFile);
             if (image == null) {
                 return null;
-            }
+            }*/
             final Map<Node, Set<Node>> collisionMap = TrackLanes.buildCollisionMap(nodes);
-            return new TrackData(trackId, external, nodes, grid, collisionMap, image, result.getRight());
+            return new TrackData(trackId, external, nodes, grid, collisionMap, result.getLeft(), result.getRight());
         } catch (Exception e) {
             return null;
         }
@@ -395,7 +395,7 @@ public class TrackData implements Serializable {
     }
 
     public BufferedImage getBackgroundImage() {
-        return backgroundImage == null ? null : backgroundImage.image;
+        return imageData == null ? null : imageData.getImage();
     }
 
     public MapEditor.Corner getInfoBoxCorner() {
@@ -404,14 +404,31 @@ public class TrackData implements Serializable {
 
     private static class ImageData implements Serializable {
         private transient BufferedImage image;
+        private final transient String imagePath;
+        private final transient boolean external;
 
-        private ImageData(BufferedImage image) {
-            this.image = image;
+        private ImageData(String imagePath, boolean external) {
+            this.imagePath = imagePath;
+            this.external = external;
+        }
+
+        private BufferedImage getImage() {
+            if (image == null) {
+                try {
+                    image = external ? ImageCache.getImageFromPath(imagePath) : ImageCache.getImage("/" + imagePath);
+                } catch (Exception e) {
+                    // Missing image
+                }
+            }
+            return image;
         }
 
         private void writeObject(ObjectOutputStream out) throws IOException {
             out.defaultWriteObject();
-            ImageIO.write(image, "png", out); // png is lossless
+            final BufferedImage image = getImage();
+            if (image != null) {
+                ImageIO.write(image, "png", out); // png is lossless
+            }
         }
 
         private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {

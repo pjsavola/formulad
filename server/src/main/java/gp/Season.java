@@ -12,6 +12,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.*;
 import java.util.List;
@@ -231,6 +232,7 @@ public class Season implements Comparable<Season>, TrackSelector {
             trackInfo.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
+                    final BufferedImage image = tracksAndLaps.get(index).getKey().getBackgroundImage();
                     if (results.size() > index) {
                         final PlayerStats[] stats = results.get(index).getStats();
                         Map<String, UUID> idMapper = new HashMap<>();
@@ -247,7 +249,7 @@ public class Season implements Comparable<Season>, TrackSelector {
                         };
                         final JDialog dialog = new JDialog(frame);
                         final int height = 5 + 15 * (stats.length + 1);
-                        final ImageIcon icon = TrackPreviewButton.createIcon(tracksAndLaps.get(index).getKey().getBackgroundImage());
+                        final ImageIcon icon = TrackPreviewButton.createIcon(image);
                         final JPanel panel = new JPanel() {
                             @Override
                             public void paintComponent(Graphics g) {
@@ -256,10 +258,12 @@ public class Season implements Comparable<Season>, TrackSelector {
                                 g.fillRect(0, 0, getWidth(), getHeight());
                                 final double maxDistance = tracksAndLaps.get(index).getKey().getNodes().stream().mapToDouble(Node::getDistance).max().orElse(0);
                                 Game.drawStandings((Graphics2D) g, 10, 10, stats, renderer, maxDistance);
-                                icon.paintIcon(this, g, 30, height + 20);
+                                if (icon != null) {
+                                    icon.paintIcon(this, g, 30, height + 20);
+                                }
                             }
                         };
-                        panel.setPreferredSize(new Dimension(460, height + 330));
+                        panel.setPreferredSize(new Dimension(460, height + (icon == null ? 20 : 330)));
                         dialog.setTitle(tracksAndLaps.get(index).getKey().getName() + " results");
                         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
                         dialog.setContentPane(panel);
@@ -267,9 +271,9 @@ public class Season implements Comparable<Season>, TrackSelector {
                         dialog.setModal(true);
                         dialog.setLocationRelativeTo(frame);
                         dialog.setVisible(true);
-                    } else {
+                    } else if (image != null) {
                         final JDialog dialog = new JDialog(frame);
-                        final ImageIcon icon = TrackPreviewButton.createIcon(tracksAndLaps.get(index).getKey().getBackgroundImage());
+                        final ImageIcon icon = TrackPreviewButton.createIcon(image);
                         final JPanel panel = new JPanel() {
                             @Override
                             public void paintComponent(Graphics g) {
@@ -344,6 +348,10 @@ public class Season implements Comparable<Season>, TrackSelector {
         continueButton = new JButton("Next Race");
         continueButton.addActionListener(a -> {
             final TrackData data = tracksAndLaps.get(results.size()).getLeft();
+            if (data.getBackgroundImage() == null) {
+                JOptionPane.showConfirmDialog(frame, "Missing track image: " + data.getTrackId(), "Error", JOptionPane.DEFAULT_OPTION);
+                return;
+            }
             final int laps = tracksAndLaps.get(results.size()).getRight();
             final PlayerSlot[] slots = new PlayerSlot[sortedParticipants.size()];
             for (int i = 0; i < slots.length; ++i) {

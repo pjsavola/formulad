@@ -2,6 +2,7 @@ package gp;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,6 +47,8 @@ public abstract class ImageCache {
     private static <T> BufferedImage updateCache(BufferedImage image, T key, Map<T, BufferedImage> cache) {
         image = toCompatibleImage(image);
         cache.put(key, image);
+        //DataBuffer buff = image.getRaster().getDataBuffer();
+        //System.err.println("Bytes cached " + key + ": " + buff.getSize() * DataBuffer.getDataTypeSize(buff.getDataType()) / 8);
         return image;
     }
 

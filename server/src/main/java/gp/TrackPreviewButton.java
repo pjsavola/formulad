@@ -68,25 +68,29 @@ class TrackPreviewButton extends JButton implements TrackSelector {
         final JPanel trackPanel = new JPanel(new GridLayout(0, cols));
         final JDialog trackDialog = new JDialog(frame);
         internal.parallelStream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).map(data -> {
-            final JButton selectTrackButton = new JButton();
             final ImageIcon icon = createIcon(data.getBackgroundImage());
+            if (icon == null) return null;
+
+            final JButton selectTrackButton = new JButton();
             selectTrackButton.addActionListener(l -> {
                 trackSelector.setTrack(data, icon);
                 trackDialog.setVisible(false);
             });
             selectTrackButton.setIcon(icon);
             return selectTrackButton;
-        }).collect(Collectors.toList()).forEach(trackPanel::add);
+        }).filter(Objects::nonNull).collect(Collectors.toList()).forEach(trackPanel::add);
         external.parallelStream().map(f -> TrackData.createTrackData(f, true)).filter(Objects::nonNull).map(data -> {
-            final JButton selectTrackButton = new JButton();
             final ImageIcon icon = createIcon(data.getBackgroundImage());
+            if (icon == null) return null;
+
+            final JButton selectTrackButton = new JButton();
             selectTrackButton.addActionListener(l -> {
                 trackSelector.setTrack(data, icon);
                 trackDialog.setVisible(false);
             });
             selectTrackButton.setIcon(icon);
             return selectTrackButton;
-        }).collect(Collectors.toList()).forEach(trackPanel::add);
+        }).filter(Objects::nonNull).collect(Collectors.toList()).forEach(trackPanel::add);
         final JScrollPane scrollPane = new JScrollPane(trackPanel);
         trackDialog.setTitle("Select track");
         trackDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -170,6 +174,8 @@ class TrackPreviewButton extends JButton implements TrackSelector {
     }
 
     static ImageIcon createIcon(BufferedImage image) {
+        if (image == null) return null;
+
         final ImageIcon icon = new ImageIcon();
         final int x = image.getWidth();
         final int y = image.getHeight();
