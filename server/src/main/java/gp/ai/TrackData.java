@@ -98,15 +98,19 @@ public class TrackData implements Serializable {
         if (edges.size() != 3) {
             throw new RuntimeException("Unable to find Finish line of width 3");
         }
+        final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
+        final Deque<Node> work = new ArrayDeque<>();
+        final Deque<Node> curves = new ArrayDeque<>();
         final Set<Node> children = new HashSet<>();
         edges.forEach(n -> n.childStream().filter(Node::hasFinish).forEach(children::add));
-        Node center;
+        Node center = null;
         if (children.size() == 1) {
             center = children.iterator().next();
             edges.remove(center);
             center.setDistance(0.5);
             edges.get(0).setDistance(0.0);
             edges.get(1).setDistance(0.0);
+            work.addLast(center);
         } else if (children.size() == 2) {
             center = edges.stream().filter(n -> !children.contains(n)).findAny().orElse(null);
             if (center == null) {
@@ -114,17 +118,35 @@ public class TrackData implements Serializable {
             }
             edges.remove(center);
             center.setDistance(0.0);
+            work.addLast(center);
         } else {
-            throw new RuntimeException("Finish line seems to be disjoint");
+            if (edges.stream().filter(Node::isCurve).count() == 1) {
+                edges.forEach(n -> children.addAll(prevNodeMap.get(n)));
+                final Optional<Node> candidate = edges.stream().filter(n -> children.stream().allMatch(prev -> prev.hasChild(n))).findAny();
+                if (candidate.isPresent()) {
+                    center = candidate.get();
+                    edges.remove(center);
+                    center.setDistance(0.0);
+                    work.addLast(center);
+                }
+            }
+            if (center == null) {
+                throw new RuntimeException("Finish line seems to be disjoint");
+            } else {
+                if (edges.get(0).isCurve()) {
+                    curves.addLast(edges.get(0));
+                    edges.get(1).setDistance(0.5);
+                    work.addLast(edges.get(1));
+                } else {
+                    curves.addLast(edges.get(1));
+                    edges.get(0).setDistance(0.5);
+                    work.addLast(edges.get(0));
+                }
+            }
         }
 
         int areaIndex = 0;
-        final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
-        final Deque<Node> work = new ArrayDeque<>();
-        work.addLast(center);
-
         final MutableObject<Node> pit = new MutableObject<>(null);
-        final Deque<Node> curves = new ArrayDeque<>();
 
         // Handle nasty special case where finish line is just before a curve
         if (center.getDistance() == 0.5 && center.childCount(null) == 1) {
