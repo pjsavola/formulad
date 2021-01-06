@@ -110,7 +110,7 @@ public class TrackLanes {
                 .sorted(Comparator.comparingInt(n1 -> distanceToInt(n1.getDistance())))
                 .collect(Collectors.toList());
         final List<Node> finishLine = sortedNodes.subList(0, 3);
-        if (finishLine.stream().anyMatch(n -> n.getType() != NodeType.FINISH)) {
+        if (finishLine.stream().anyMatch(n -> !n.hasFinish())) {
             throw new RuntimeException("Finish line nodes don't have the lowest distance");
         }
         // Middle node is either 1st node (distance 0.0) or 3rd node (distance 0.5)

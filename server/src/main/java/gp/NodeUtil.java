@@ -60,7 +60,7 @@ public abstract class NodeUtil {
                     result.put(node, new DamageAndPath(0, findPath(node, distance, distanceMap)));
                     continue;
                 }
-                if (finalLap && startNode.getType() != NodeType.FINISH && node.getType() == NodeType.FINISH) {
+                if (finalLap && !startNode.hasFinish() && node.hasFinish()) {
                     result.put(node, new DamageAndPath(0, findPath(node, distance, distanceMap)));
                     continue;
                 }

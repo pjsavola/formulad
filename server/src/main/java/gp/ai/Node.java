@@ -17,6 +17,7 @@ public final class Node implements Serializable, Comparable<Node> {
     private final NodeType type;
     private transient Set<Node> nextNodes = new HashSet<>();
     private boolean garage;
+    private boolean finish;
     private double distance = -1.0;
     private transient int stepsToFinishLine = -1;
     private transient int areaIndex;
@@ -25,11 +26,20 @@ public final class Node implements Serializable, Comparable<Node> {
 
     public Node(int id, NodeType type) {
         this.id = id;
-        this.type = type;
+        if (type == NodeType.FINISH) {
+            this.type = NodeType.STRAIGHT;
+            finish = true;
+        } else {
+            this.type = type;
+        }
     }
 
     public void setGarage(boolean garage) {
         this.garage = garage;
+    }
+
+    public void setFinish(boolean finish) {
+        this.finish = finish;
     }
 
     public void setDistance(double distance) {
@@ -62,6 +72,10 @@ public final class Node implements Serializable, Comparable<Node> {
 
     public boolean hasGarage() {
         return garage;
+    }
+
+    public boolean hasFinish() {
+        return finish;
     }
 
     public double getDistance() {

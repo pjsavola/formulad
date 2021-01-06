@@ -166,9 +166,9 @@ public final class LocalPlayer extends Player {
         }
         final int oldLapsToGo = lapsToGo;
         int size = route.size();
-        if (node != null && node.getType() != NodeType.FINISH) {
+        if (node != null && !node.hasFinish()) {
             for (Node node : route) {
-                if (node.getType() == NodeType.FINISH) {
+                if (node.hasFinish()) {
                     --lapsToGo;
                     break;
                 }

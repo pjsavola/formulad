@@ -856,7 +856,7 @@ public class MapEditor extends JPanel {
                 color = Color.WHITE;
                 break;
             case FINISH:
-                color = Color.BLUE;
+                color = Color.GREEN;
                 break;
             case CURVE_3:
                 color = new Color(0xAA0000);
@@ -878,6 +878,8 @@ public class MapEditor extends JPanel {
         if (attr != null || node.hasGarage()) {
             // Draw attribute indicator
             drawOval(g2d, p.x, p.y, 4, 4, true, true, Color.YELLOW, 0);
+        } else if (node.hasFinish()) {
+            drawOval(g2d, p.x, p.y, DIAMETER + 1, DIAMETER + 1, true, false, Color.BLUE, 2);
         }
     }
 

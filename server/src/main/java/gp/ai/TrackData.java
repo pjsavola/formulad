@@ -94,12 +94,12 @@ public class TrackData implements Serializable {
                 node.setDistance(0.0);
             }
         }
-        final List<Node> edges = nodes.stream().filter(n -> n.getType() == NodeType.FINISH).collect(Collectors.toList());
+        final List<Node> edges = nodes.stream().filter(Node::hasFinish).collect(Collectors.toList());
         if (edges.size() != 3) {
             throw new RuntimeException("Unable to find Finish line of width 3");
         }
         final Set<Node> children = new HashSet<>();
-        edges.forEach(n -> n.childStream().filter(child -> child.getType() == NodeType.FINISH).forEach(children::add));
+        edges.forEach(n -> n.childStream().filter(Node::hasFinish).forEach(children::add));
         Node center;
         if (children.size() == 1) {
             center = children.iterator().next();
@@ -333,7 +333,7 @@ public class TrackData implements Serializable {
             final boolean isPit = node.getType() == NodeType.PIT;
             final double distance = node.getDistance();
             node.forEachChild(next -> {
-                if (next.getType() == NodeType.FINISH) {
+                if (next.hasFinish()) {
                     return;
                 }
                 final boolean nextIsPit = next.getType() == NodeType.PIT;
