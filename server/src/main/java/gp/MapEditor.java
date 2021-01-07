@@ -56,11 +56,13 @@ public class MapEditor extends JPanel {
     private final MenuItem setCurveDistance;
     private final MenuItem setGridAngle;
 
+    private TrackLanes.Lane[] lanes = new TrackLanes.Lane[3];
     private final List<Node> debugNeighbors = new ArrayList<>();
     private final UndoStack stack = new UndoStack(nodes, attributes);
     private Double previousCurveDistance;
     private boolean showDistances;
     private boolean showIdentifiers;
+    private boolean showLanes;
     private Dimension panelDim;
     private double scale = 1.0;
 
@@ -289,6 +291,10 @@ public class MapEditor extends JPanel {
         showDistances.addActionListener(e -> showDistances());
         validationMenu.add(showDistances);
 
+        final MenuItem showLanes = new MenuItem("Show Lanes");
+        showLanes.addActionListener(e -> showLanes());
+        validationMenu.add(showLanes);
+
         final MenuItem validate = new MenuItem("Validate Track");
         validate.addActionListener(e -> validateTrack());
         validate.setShortcut(new MenuShortcut(KeyEvent.VK_V));
@@ -381,6 +387,29 @@ public class MapEditor extends JPanel {
                 g2d.setColor(Color.BLUE);
                 g2d.drawString(str, posX, posY);
             }
+            return;
+        } else if (showLanes) {
+            final Color tmpC = g2d.getColor();
+            final Stroke tmpS = g2d.getStroke();
+            g2d.setStroke(new BasicStroke(3, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            for (TrackLanes.Lane lane : lanes) {
+                for (int i = 0; i < lane.getNodes().size(); ++i) {
+                    final Node n1 = lane.getNodes().get(i);
+                    final Node n2 = lane.getNodes().get((i + 1) % lane.getNodes().size());
+                    if (!n1.hasChild(n2)) continue;
+
+                    final Point p = n1.getLocation();
+                    final Point np = n2.getLocation();
+                    final int midX = (p.x + np.x) / 2;
+                    final int midY = (p.y + np.y) / 2;
+                    g2d.setColor(Color.GREEN);
+                    g2d.drawLine(p.x, p.y, midX, midY);
+                    g2d.setColor(Color.WHITE);
+                    g2d.drawLine(midX, midY, np.x, np.y);
+                }
+            }
+            g2d.setStroke(tmpS);
+            g2d.setColor(tmpC);
             return;
         }
         for (Node node : nodes) {
@@ -528,6 +557,8 @@ public class MapEditor extends JPanel {
                 stack.clear();
                 showDistances = false;
                 showIdentifiers = false;
+                showLanes = false;
+                lanes = new TrackLanes.Lane[3];
                 previousCurveDistance = null;
                 infoBoxCorner = p.getRight();
                 nextNodeId += nodes.size();
@@ -823,12 +854,13 @@ public class MapEditor extends JPanel {
 
     private void showIdentifiers() {
 	    showDistances = false;
+	    showLanes = false;
 	    showIdentifiers = !showIdentifiers;
 	    repaint();
     }
 
     private void showDistances() {
-	    if (!showDistances) {
+	    if (!showDistances && !showLanes) {
 	        try {
                 TrackData.updateDistances(nodes, attributes);
             } catch (Exception e) {
@@ -836,8 +868,62 @@ public class MapEditor extends JPanel {
             }
         }
         showIdentifiers = false;
+	    showLanes = false;
 	    showDistances = !showDistances;
 	    repaint();
+    }
+
+    private void showLanes() {
+        if (!showLanes && !showDistances) {
+            try {
+                TrackData.updateDistances(nodes, attributes);
+            } catch (Exception e) {
+                JOptionPane.showConfirmDialog(this, "Error when calculating distances: " + e.getMessage(), "Distance calculation error", JOptionPane.DEFAULT_OPTION);
+            }
+        }
+        if (!showLanes) {
+            try {
+                // Calculate lanes
+                List<Node> sortedNodes = nodes
+                        .stream()
+                        .filter(n -> n.getDistance() >= 0.0)
+                        .filter(n -> n.getType() != NodeType.PIT)
+                        .sorted(Comparator.comparingInt(n1 -> TrackLanes.distanceToInt(n1.getDistance())))
+                        .collect(Collectors.toList());
+                final List<Node> finishLine = sortedNodes.subList(0, 3);
+                if (finishLine.stream().anyMatch(n -> !n.hasFinish())) {
+                    throw new RuntimeException("Finish line nodes don't have the lowest distance");
+                }
+                // Middle node is either 1st node (distance 0.0) or 3rd node (distance 0.5)
+                final int middleIndex = finishLine.get(0).getDistance() == finishLine.get(1).getDistance() ? 2 : 0;
+                final Map<Node, Set<Node>> collisionMap = new HashMap<>();
+                lanes[0] = new TrackLanes.Lane(finishLine.get(middleIndex == 2 ? 0 : 1), collisionMap);
+                lanes[1] = new TrackLanes.Lane(finishLine.get(middleIndex), collisionMap);
+                lanes[2] = new TrackLanes.Lane(finishLine.get(middleIndex == 2 ? 1 : 2), collisionMap);
+
+                sortedNodes = sortedNodes.subList(3, sortedNodes.size());
+                sortedNodes.forEach(node -> {
+                    final TrackLanes.Lane matchingLane = Arrays
+                            .stream(lanes)
+                            .filter(lane -> lane.canContinueTo(node))
+                            .min(Comparator.comparingInt(l -> TrackLanes.distanceToInt(l.getDistance())))
+                            .orElse(null);
+                    if (matchingLane == null) {
+                        throw new RuntimeException("Internal error when calculating lanes: " + node.getId());
+                    }
+                    matchingLane.addNode(node);
+                });
+            } catch (Exception e) {
+                JOptionPane.showConfirmDialog(this, "Error when calculating lanes: " + e.getMessage(), "Lane calculation error", JOptionPane.DEFAULT_OPTION);
+            }
+        }
+        showDistances = false;
+        showIdentifiers = false;
+        showLanes = !showLanes;
+        if (lanes[0] == null || lanes[1] == null || lanes[2] == null) {
+            showLanes = false;
+        }
+        repaint();
     }
 
     private void validateTrack() {

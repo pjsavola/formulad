@@ -7,11 +7,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class TrackLanes {
-    private static class Lane {
+    static class Lane {
         private final List<Node> nodes = new ArrayList<>();
         private final Map<Node, Set<Node>> collisionMap;
 
-        private Lane(Node start, Map<Node, Set<Node>> collisionMap) {
+        Lane(Node start, Map<Node, Set<Node>> collisionMap) {
             nodes.add(start);
             this.collisionMap = collisionMap;
         }
@@ -20,15 +20,19 @@ public class TrackLanes {
             return nodes.get(nodes.size() - 1);
         }
 
-        private double getDistance() {
+        double getDistance() {
             return getLastNode().getDistance();
         }
 
-        private boolean canContinueTo(Node node) {
+        List<Node> getNodes() {
+            return nodes;
+        }
+
+        boolean canContinueTo(Node node) {
             return getLastNode().hasChild(node);
         }
 
-        private void addNode(Node node) {
+        void addNode(Node node) {
             collisionMap.computeIfAbsent(getLastNode(), _node -> new HashSet<>()).add(node);
             nodes.add(node);
         }
