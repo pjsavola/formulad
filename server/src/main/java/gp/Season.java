@@ -48,7 +48,7 @@ public class Season implements Comparable<Season>, TrackSelector {
         return name;
     }
 
-    void start(List<Profile> profiles, WindowChanger listener) {
+    void start(List<Profile> profiles, List<String> trackIds, List<ProfileMessage> profileMessages, WindowChanger listener) {
         final JPanel panel = new JPanel();
         panel.setLayout(new GridLayout(0, 2));
         panel.setBorder(new EmptyBorder(20, 20, 20, 20));
@@ -59,15 +59,23 @@ public class Season implements Comparable<Season>, TrackSelector {
         panel.add(tracksPanel);
         panel.add(rightPanel);
         buttonPanel = new JPanel(new GridLayout(0, 2));
-        final List<String> internal = new ArrayList<>();
-        final List<String> external = new ArrayList<>();
-        TrackPreviewButton.getAllTracks(internal, external);
         final JButton addTrackButton = new JButton("Add track...");
         addTrackButton.addActionListener(a -> {
             TrackPreviewButton.openTrackSelectionDialog(frame, this);
         });
         buttonPanel.add(addTrackButton);
-        internal.parallelStream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).collect(Collectors.toList()).forEach(data -> setTrack(data, null));
+        if (trackIds != null) {
+            trackIds.parallelStream().map(f -> {
+                if (f.startsWith("/")) return TrackData.createTrackData(f.substring(1), false);
+                else return TrackData.createTrackData(f, true);
+            }).filter(Objects::nonNull).collect(Collectors.toList()).forEach(data -> setTrack(data, null));
+        }
+        if (tracks.size() < 3) {
+            final List<String> internal = new ArrayList<>();
+            final List<String> external = new ArrayList<>();
+            TrackPreviewButton.getAllTracks(internal, external);
+            internal.parallelStream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).collect(Collectors.toList()).forEach(data -> setTrack(data, null));
+        }
         final List<ProfileMessage> localProfiles = profiles.stream().map(ProfileMessage::new).collect(Collectors.toList());
         final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
         final PlayerSlot[] slots = new PlayerSlot[10];
@@ -80,6 +88,19 @@ public class Season implements Comparable<Season>, TrackSelector {
             };
             playerPanel.add(slot);
             slots[i] = slot;
+        }
+        if (profileMessages != null) {
+            int i = 0;
+            while (i < slots.length && i < profileMessages.size()) {
+                final ProfileMessage msg = profileMessages.get(i);
+                final ProfileMessage localProfile = localProfiles.stream().filter(p -> p.getName().equals(msg.getName())).findFirst().orElse(null);
+                if (localProfile != null) {
+                    localProfiles.remove(localProfile);
+                    msg.setLocal(true);
+                }
+                slots[i].setProfile(msg);
+                ++i;
+            }
         }
         final JLabel tracksLabel = new JLabel("TRACKS");
         tracksLabel.setFont(new Font("Arial", Font.BOLD, 20));

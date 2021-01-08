@@ -1037,9 +1037,10 @@ public class MapEditor extends JPanel {
         return null;
     }
 
-    private static class Filter extends FileFilter {
+    static class Filter extends FileFilter {
         final static String[] imageExtensions = {"jpeg", "jpg", "gif", "tiff", "tif", "png"};
         final static String[] dataExtensions = {"dat"};
+        final static String[] templateExtensions = {"cst"};
 
         private final String[] extensions;
         private final String description;

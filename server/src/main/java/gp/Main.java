@@ -603,6 +603,7 @@ public class Main extends Game implements Runnable {
             final JDialog dialog = new JDialog(f);
             final JList<String> list = new JList<>(model);
             final JButton newButton = new JButton("New");
+            final JButton templateButton = new JButton("Template");
             final JButton selectButton = new JButton("Load");
             final JButton deleteButton = new JButton("Delete");
             newButton.addActionListener(e1 -> {
@@ -613,7 +614,79 @@ public class Main extends Game implements Runnable {
                     } else {
                         final Season season = new Season(f, result);
                         dialog.setVisible(false);
-                        season.start(profiles, listener);
+                        season.start(profiles, null, null, listener);
+                    }
+                }
+            });
+            templateButton.addActionListener(new ActionListener() {
+                private final List<String> trackIds = new ArrayList<>();
+                private final List<ProfileMessage> profileMessages = new ArrayList<>();
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    final JFileChooser fileChooser = new JFileChooser();
+                    fileChooser.setDialogTitle("Load Championship Season Template");
+                    fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
+                    fileChooser.addChoosableFileFilter(new MapEditor.Filter(MapEditor.Filter.templateExtensions, "Championship Season Template"));
+                    fileChooser.setAcceptAllFileFilterUsed(true);
+                    final int choice = fileChooser.showOpenDialog(dialog);
+                    if (choice == JFileChooser.APPROVE_OPTION) {
+                        final File selectedFile = fileChooser.getSelectedFile();
+                        try (FileInputStream fis = new FileInputStream(selectedFile);
+                             InputStreamReader ir = new InputStreamReader(fis);
+                             final BufferedReader br = new BufferedReader(ir)) {
+                            final Set<String> players = new HashSet<>();
+                            final Random random = new Random();
+                            int emptyLines = 0;
+                            String line;
+                            while ((line = br.readLine()) != null) {
+                                final String[] parts = line.trim().split(",");
+                                if (parts.length == 1 && parts[0].isEmpty()) {
+                                    ++emptyLines;
+                                } else if (emptyLines == 0) {
+                                    if (!trackIds.contains(parts[0])) {
+                                        trackIds.add(parts[0]);
+                                    }
+                                } else {
+                                    final String name = parts[0];
+                                    if (players.add(name)) {
+                                        final Profile profile = profiles.stream().filter(p -> p.getName().equals(name)).findFirst().orElse(null);
+                                        final ProfileMessage profileMessage;
+                                        if (profile == null) {
+                                            final String ai = parts.length > 1 ? AI.Type.valueOf(parts[1]).toString() : AI.Type.PRO.toString();
+                                            final int color1 = parts.length > 2 ? Integer.parseInt(parts[2]) : random.nextInt(0xFFFFFF + 1);
+                                            final int color2 = parts.length > 3 ? Integer.parseInt(parts[3]) : random.nextInt(0xFFFFFF + 1);
+                                            String[] msg = new String[] { UUID.randomUUID().toString(), name, Integer.toString(color1), Integer.toString(color2), "true", ai };
+                                            profileMessage = ProfileMessage.readProfile(msg);
+                                        } else {
+                                            profileMessage = new ProfileMessage(profile);
+                                            if (parts.length > 1) {
+                                                profileMessage.setAIType(AI.Type.valueOf(parts[1]));
+                                            }
+                                        }
+                                        profileMessages.add(profileMessage);
+                                    }
+                                }
+                            }
+                        } catch (Exception ex) {
+                            JOptionPane.showConfirmDialog(dialog, "Invalid file format: " + selectedFile.getName(), "File Format Error", JOptionPane.DEFAULT_OPTION);
+                            return;
+                        }
+                    } else {
+                        return;
+                    }
+                    if (trackIds.size() < 3) {
+                        JOptionPane.showConfirmDialog(dialog, "Invalid template: Less than 3 tracks", "Invalid Template", JOptionPane.DEFAULT_OPTION);
+                        return;
+                    }
+                    final String result = (String) JOptionPane.showInputDialog(dialog, "New season name", "New season", JOptionPane.PLAIN_MESSAGE, null, null, null);
+                    if (result != null && !result.isEmpty()) {
+                        if (existingSeasons.containsKey(result)) {
+                            JOptionPane.showConfirmDialog(dialog, "Season with name " + result + " already exists", "Error", JOptionPane.DEFAULT_OPTION);
+                        } else {
+                            final Season season = new Season(f, result);
+                            dialog.setVisible(false);
+                            season.start(profiles, trackIds, profileMessages, listener);
+                        }
                     }
                 }
             });
@@ -668,6 +741,7 @@ public class Main extends Game implements Runnable {
             final JPanel buttonPane = new JPanel();
             buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.Y_AXIS));
             buttonPane.add(newButton);
+            buttonPane.add(templateButton);
             buttonPane.add(selectButton);
             buttonPane.add(deleteButton);
             buttonPane.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
