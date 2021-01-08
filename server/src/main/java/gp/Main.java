@@ -5,6 +5,7 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -644,7 +645,7 @@ public class Main extends Game implements Runnable {
                         final File selectedFile = fileChooser.getSelectedFile();
                         String line = null;
                         try (FileInputStream fis = new FileInputStream(selectedFile);
-                             InputStreamReader ir = new InputStreamReader(fis);
+                             InputStreamReader ir = new InputStreamReader(fis, StandardCharsets.UTF_8);
                              final BufferedReader br = new BufferedReader(ir)) {
                             final Set<String> players = new HashSet<>();
                             final Random random = new Random();
