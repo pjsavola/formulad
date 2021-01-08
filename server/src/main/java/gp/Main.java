@@ -656,7 +656,8 @@ public class Main extends Game implements Runnable {
                                 } else if (emptyLines == 0) {
                                     final String trackId = parts[0];
                                     if (tracksAndLaps.stream().noneMatch(t -> t.getLeft().equals(trackId))) {
-                                        final int laps = parts.length > 1 ? Integer.parseInt(parts[1]) : Main.settings.laps;
+                                        int laps = parts.length > 1 ? Integer.parseInt(parts[1]) : Main.settings.laps;
+                                        if (laps <  1 || laps > 200) laps = Main.settings.laps;
                                         tracksAndLaps.add(Pair.of(trackId, laps));
                                     }
                                 } else {
