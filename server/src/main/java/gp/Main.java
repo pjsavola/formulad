@@ -436,7 +436,7 @@ public class Main extends Game implements Runnable {
         if (previousTrack == null) {
             return;
         }
-        changeTrackButton.setTrack(previousTrack, TrackPreviewButton.createIcon(previousTrack));
+        changeTrackButton.setTrack(previousTrack, TrackPreviewButton.createIcon(previousTrack), settings.laps);
         final JPanel lobbyPanel = new JPanel();
         lobbyPanel.setName(lobby == null ? "Game Settings" : "Multiplayer Game Settings");
         lobbyPanel.setLayout(new BoxLayout(lobbyPanel, BoxLayout.PAGE_AXIS));
@@ -619,7 +619,7 @@ public class Main extends Game implements Runnable {
                 }
             });
             templateButton.addActionListener(new ActionListener() {
-                private final List<String> trackIds = new ArrayList<>();
+                private final List<Pair<String, Integer>> tracksAndLaps = new ArrayList<>();
                 private final List<ProfileMessage> profileMessages = new ArrayList<>();
 
                 private int stringToInt(String str) {
@@ -642,20 +642,22 @@ public class Main extends Game implements Runnable {
                     final int choice = fileChooser.showOpenDialog(dialog);
                     if (choice == JFileChooser.APPROVE_OPTION) {
                         final File selectedFile = fileChooser.getSelectedFile();
+                        String line = null;
                         try (FileInputStream fis = new FileInputStream(selectedFile);
                              InputStreamReader ir = new InputStreamReader(fis);
                              final BufferedReader br = new BufferedReader(ir)) {
                             final Set<String> players = new HashSet<>();
                             final Random random = new Random();
                             int emptyLines = 0;
-                            String line;
                             while ((line = br.readLine()) != null) {
                                 final String[] parts = line.trim().split(",");
                                 if (parts.length == 1 && parts[0].isEmpty()) {
                                     ++emptyLines;
                                 } else if (emptyLines == 0) {
-                                    if (!trackIds.contains(parts[0])) {
-                                        trackIds.add(parts[0]);
+                                    final String trackId = parts[0];
+                                    if (tracksAndLaps.stream().noneMatch(t -> t.getLeft().equals(trackId))) {
+                                        final int laps = parts.length > 1 ? Integer.parseInt(parts[1]) : Main.settings.laps;
+                                        tracksAndLaps.add(Pair.of(trackId, laps));
                                     }
                                 } else {
                                     final String name = parts[0];
@@ -679,13 +681,13 @@ public class Main extends Game implements Runnable {
                                 }
                             }
                         } catch (Exception ex) {
-                            JOptionPane.showConfirmDialog(dialog, "Invalid file format: " + selectedFile.getName(), "File Format Error", JOptionPane.DEFAULT_OPTION);
+                            JOptionPane.showConfirmDialog(dialog, "Invalid file format: " + selectedFile.getName() + "(" + ex.getMessage() + (line == null ? "" : " - " + line + ")"), "File Format Error", JOptionPane.DEFAULT_OPTION);
                             return;
                         }
                     } else {
                         return;
                     }
-                    if (trackIds.size() < 3) {
+                    if (tracksAndLaps.size() < 3) {
                         JOptionPane.showConfirmDialog(dialog, "Invalid template: Less than 3 tracks", "Invalid Template", JOptionPane.DEFAULT_OPTION);
                         return;
                     }
@@ -696,7 +698,7 @@ public class Main extends Game implements Runnable {
                         } else {
                             final Season season = new Season(f, result);
                             dialog.setVisible(false);
-                            season.start(profiles, trackIds, profileMessages, listener);
+                            season.start(profiles, tracksAndLaps, profileMessages, listener);
                         }
                     }
                 }

@@ -48,7 +48,7 @@ public class Season implements Comparable<Season>, TrackSelector {
         return name;
     }
 
-    void start(List<Profile> profiles, List<String> trackIds, List<ProfileMessage> profileMessages, WindowChanger listener) {
+    void start(List<Profile> profiles, List<Pair<String, Integer>> trackIds, List<ProfileMessage> profileMessages, WindowChanger listener) {
         final JPanel panel = new JPanel();
         panel.setLayout(new GridLayout(0, 2));
         panel.setBorder(new EmptyBorder(20, 20, 20, 20));
@@ -66,15 +66,17 @@ public class Season implements Comparable<Season>, TrackSelector {
         buttonPanel.add(addTrackButton);
         if (trackIds != null) {
             trackIds.parallelStream().map(f -> {
-                if (f.startsWith("/")) return TrackData.createTrackData(f.substring(1), false);
-                else return TrackData.createTrackData(f, true);
-            }).filter(Objects::nonNull).collect(Collectors.toList()).forEach(data -> setTrack(data, null));
+                final boolean external = !f.getLeft().startsWith("/");
+                final TrackData data = TrackData.createTrackData(f.getLeft().substring(external ? 0 : 1), external);
+                return data == null ? null : Pair.of(data, f.getRight());
+            }).filter(Objects::nonNull).collect(Collectors.toList()).forEach(f -> setTrack(f.getLeft(), null, f.getValue()));
         }
         if (tracks.size() < 3) {
             final List<String> internal = new ArrayList<>();
             final List<String> external = new ArrayList<>();
             TrackPreviewButton.getAllTracks(internal, external);
-            internal.parallelStream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).collect(Collectors.toList()).forEach(data -> setTrack(data, null));
+            internal.parallelStream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).collect(Collectors.toList()).forEach(data -> setTrack(data, null, Main.settings
+            .laps));
         }
         final List<ProfileMessage> localProfiles = profiles.stream().map(ProfileMessage::new).collect(Collectors.toList());
         final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
@@ -526,17 +528,17 @@ public class Season implements Comparable<Season>, TrackSelector {
     }
 
     @Override
-    public void setTrack(TrackData data, ImageIcon icon) {
-        final SettingsField laps = new SettingsField(buttonPanel, "Laps", Integer.toString(Main.settings.laps), 1, 200);
-        final TrackButton button = new TrackButton(data, laps);
+    public void setTrack(TrackData data, ImageIcon icon, int laps) {
+        final SettingsField lapsField = new SettingsField(buttonPanel, "Laps", Integer.toString(laps), 1, 200);
+        final TrackButton button = new TrackButton(data, lapsField);
         final int count = buttonPanel.getComponentCount();
         buttonPanel.add(button, count - 1);
-        buttonPanel.add(laps, count);
+        buttonPanel.add(lapsField, count);
         frame.pack();
         button.addActionListener(a -> {
             if (tracks.size() < 4) return;
             buttonPanel.remove(button);
-            buttonPanel.remove(laps);
+            buttonPanel.remove(lapsField);
             frame.pack();
             tracks.remove(button);
         });
