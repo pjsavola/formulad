@@ -621,6 +621,17 @@ public class Main extends Game implements Runnable {
             templateButton.addActionListener(new ActionListener() {
                 private final List<String> trackIds = new ArrayList<>();
                 private final List<ProfileMessage> profileMessages = new ArrayList<>();
+
+                private int stringToInt(String str) {
+                    if (str.startsWith("0x")) {
+                        return Integer.parseInt(str.substring(2), 16);
+                    } else if (str.startsWith("#")) {
+                        return Integer.parseInt(str.substring(1), 16);
+                    } else {
+                        return Integer.parseInt(str);
+                    }
+                }
+
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     final JFileChooser fileChooser = new JFileChooser();
@@ -653,8 +664,8 @@ public class Main extends Game implements Runnable {
                                         final ProfileMessage profileMessage;
                                         if (profile == null) {
                                             final String ai = parts.length > 1 ? AI.Type.valueOf(parts[1]).toString() : AI.Type.PRO.toString();
-                                            final int color1 = parts.length > 2 ? Integer.parseInt(parts[2]) : random.nextInt(0xFFFFFF + 1);
-                                            final int color2 = parts.length > 3 ? Integer.parseInt(parts[3]) : random.nextInt(0xFFFFFF + 1);
+                                            final int color1 = parts.length > 2 ? stringToInt(parts[2]) : random.nextInt(0xFFFFFF + 1);
+                                            final int color2 = parts.length > 3 ? stringToInt(parts[3]) : random.nextInt(0xFFFFFF + 1);
                                             String[] msg = new String[] { UUID.randomUUID().toString(), name, Integer.toString(color1), Integer.toString(color2), "true", ai };
                                             profileMessage = ProfileMessage.readProfile(msg);
                                         } else {
