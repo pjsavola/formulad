@@ -65,14 +65,19 @@ public class Season implements Comparable<Season>, TrackSelector {
                 final boolean external = !f.getLeft().startsWith("/");
                 final TrackData data = TrackData.createTrackData(f.getLeft().substring(external ? 0 : 1), external);
                 return data == null ? null : Pair.of(data, f.getRight());
-            }).filter(Objects::nonNull).collect(Collectors.toList()).forEach(f -> setTrack(f.getLeft(), null, f.getValue()));
+            }).filter(Objects::nonNull).collect(Collectors.toList()).forEach(f -> {
+                setTrack(f.getLeft(), null);
+                tracks.get(tracks.size() - 1).laps.setValue(f.getRight());
+            });
         }
         if (tracks.size() < 3) {
             final List<String> internal = new ArrayList<>();
             final List<String> external = new ArrayList<>();
             TrackPreviewButton.getAllTracks(internal, external);
-            internal.parallelStream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).collect(Collectors.toList()).forEach(data -> setTrack(data, null, Main.settings
-            .laps));
+            internal.parallelStream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).collect(Collectors.toList()).forEach(data -> {
+                setTrack(data, null);
+                tracks.get(tracks.size() - 1).laps.setValue(Main.settings.laps);
+            });
         }
         final List<ProfileMessage> localProfiles = profiles.stream().map(ProfileMessage::new).collect(Collectors.toList());
         final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
@@ -519,8 +524,8 @@ public class Season implements Comparable<Season>, TrackSelector {
     }
 
     @Override
-    public void setTrack(TrackData data, ImageIcon icon, int laps) {
-        final SettingsField lapsField = new SettingsField(buttonPanel, "Laps", Integer.toString(laps), 1, 200);
+    public void setTrack(TrackData data, ImageIcon icon) {
+        final SettingsField lapsField = new SettingsField(buttonPanel, "Laps", Integer.toString(Main.settings.laps), 1, 200);
         final TrackButton button = new TrackButton(data, lapsField);
         final int count = buttonPanel.getComponentCount();
         buttonPanel.add(button, count - 1);

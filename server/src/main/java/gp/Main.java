@@ -390,7 +390,7 @@ public class Main extends Game implements Runnable {
         if (previousTrack == null) {
             return;
         }
-        changeTrackButton.setTrack(previousTrack, TrackPreviewButton.createIcon(previousTrack), settings.laps);
+        changeTrackButton.setTrack(previousTrack, TrackPreviewButton.createIcon(previousTrack));
         final JPanel lobbyPanel = new JPanel();
         lobbyPanel.setName(lobby == null ? "Game Settings" : "Multiplayer Game Settings");
         lobbyPanel.setLayout(new BoxLayout(lobbyPanel, BoxLayout.PAGE_AXIS));

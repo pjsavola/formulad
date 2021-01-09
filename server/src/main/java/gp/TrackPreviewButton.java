@@ -80,7 +80,7 @@ class TrackPreviewButton extends JButton implements TrackSelector {
 
         final JButton selectTrackButton = new JButton();
         selectTrackButton.addActionListener(l -> {
-            trackSelector.setTrack(data, icon, Main.settings.laps);
+            trackSelector.setTrack(data, icon);
             trackDialog.setVisible(false);
         });
         selectTrackButton.setIcon(icon);
@@ -142,7 +142,7 @@ class TrackPreviewButton extends JButton implements TrackSelector {
     }
 
     @Override
-    public void setTrack(TrackData newData, ImageIcon icon, int laps) {
+    public void setTrack(TrackData newData, ImageIcon icon) {
         if (newData == null) {
             return;
         }

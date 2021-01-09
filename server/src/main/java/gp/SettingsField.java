@@ -39,4 +39,13 @@ public class SettingsField extends JPanel {
         }
         return result;
     }
+
+    public void setValue(int laps) {
+        if (laps < min || laps > max) {
+            final String message = "Please choose value " + min + "-" + max + " for " + name;
+            JOptionPane.showConfirmDialog(parent, message, "Error", JOptionPane.DEFAULT_OPTION);
+            throw new NumberFormatException(message);
+        }
+        lapsField.setText(Integer.toString(laps));
+    }
 }
