@@ -17,7 +17,7 @@ public final class LocalPlayer extends Player {
     private int lapsToGo;
     private final List<DamageAndPath> paths = new ArrayList<>();
     private final JPanel panel; // for repaint requests needed for animations
-    public static int animationDelayInMillis;
+    static int animationDelayInMillis;
     private long timeUsed;
     private int exceptions;
     private int turns;
@@ -26,7 +26,7 @@ public final class LocalPlayer extends Player {
     private int pitStops;
     private final int maxHitpoints;
 
-    public LocalPlayer(String playerId, Node node, double initialAngle, int laps, JPanel panel, int leeway, int maxHitpoints, int color1, int color2) {
+    LocalPlayer(String playerId, Node node, double initialAngle, int laps, JPanel panel, int leeway, int maxHitpoints, int color1, int color2) {
         super(playerId, node, initialAngle, panel, color1, color2);
         lapsToGo = laps;
         this.panel = panel;
@@ -42,11 +42,7 @@ public final class LocalPlayer extends Player {
         this.id = id;
     }
 
-    public int getGridPosition() {
-        return gridPosition;
-    }
-
-    public void setGridPosition(int gridPosition) {
+    void setGridPosition(int gridPosition) {
         this.gridPosition = gridPosition;
     }
 
@@ -58,7 +54,7 @@ public final class LocalPlayer extends Player {
     //       curve vs.    curve -> shorter distance to next area is assumed to have inside line and gets player order
     //    no-curve vs. no-curve -> longer distance to next area is assumed to have inside line and gets player order
     // 5. order of arrival
-    public int compareTo(LocalPlayer player, List<LocalPlayer> stoppedPlayers) {
+    int compareTo(LocalPlayer player, List<LocalPlayer> stoppedPlayers) {
         if (lapsToGo == player.lapsToGo) {
             if (lapsToGo < 0) {
                 final int index1 = stoppedPlayers.indexOf(this);
@@ -94,7 +90,7 @@ public final class LocalPlayer extends Player {
         return stopped;
     }
 
-    public void stop() {
+    void stop() {
         if (stopped) {
             throw new RuntimeException(getName() + " is stopped twice!");
         }
@@ -110,7 +106,7 @@ public final class LocalPlayer extends Player {
         stopped = true;
     }
 
-    public boolean switchGear(int newGear) {
+    boolean switchGear(int newGear) {
         if (newGear < 1 || newGear > 6) return false;
 
         if (newGear == gear) return true;
@@ -256,7 +252,7 @@ public final class LocalPlayer extends Player {
         }
     }
 
-    public Moves findAllTargets(int roll, String gameId, List<LocalPlayer> players) {
+    Moves findAllTargets(int roll, String gameId, List<LocalPlayer> players) {
         int braking = 0;
         final Set<Node> forbiddenNodes = players
             .stream()
@@ -271,7 +267,7 @@ public final class LocalPlayer extends Player {
                 if (damage < hitpoints) {
                     validMoves.add(new ValidMove()
                         .nodeId(e.getKey().getId())
-                        .type(TypeEnum.valueOf(e.getKey().getType().name()))
+                        .type(e.getKey().getType())
                         .overshoot(e.getValue().getDamage())
                         .braking(braking)
                     );
@@ -290,7 +286,7 @@ public final class LocalPlayer extends Player {
         return NodeUtil.findTargetNodes(node, gear, roll, hitpoints, curveStops, lapsToGo, forbiddenNodes);
     }
 
-    public static void possiblyAddEngineDamage(List<LocalPlayer> players, Random rng) {
+    static void possiblyAddEngineDamage(List<LocalPlayer> players, Random rng) {
         Main.log.info("20 or 30 was rolled, possibly adding engine damage for all players on gear 5 or 6");
         for (LocalPlayer player : players) {
             if (player.gear == 5 || player.gear == 6) {
@@ -304,7 +300,7 @@ public final class LocalPlayer extends Player {
         }
     }
 
-    public void collide(List<LocalPlayer> players, Map<Node, Set<Node>> adjacentNodes, Random rng) {
+    void collide(List<LocalPlayer> players, Map<Node, Set<Node>> adjacentNodes, Random rng) {
         for (LocalPlayer player : players) {
             if (player.isStopped()) {
                 continue;
@@ -327,18 +323,18 @@ public final class LocalPlayer extends Player {
         }
     }
 
-    public void beginTurn() {
+    void beginTurn() {
         turns++;
     }
 
-    public void recordTimeUsed(long time, boolean exception) {
+    void recordTimeUsed(long time, boolean exception) {
         timeUsed += time;
         if (exception) {
             exceptions++;
         }
     }
 
-    public PlayerStats getStatistics(int position) {
+    PlayerStats getStatistics(int position) {
         final PlayerStats stats = new PlayerStats();
         stats.playerId = playerId;
         stats.id = id;
@@ -365,10 +361,10 @@ public final class LocalPlayer extends Player {
         return false;
     }
 
-    public void populate(PlayerState playerState) {
+    void populate(PlayerState playerState) {
         playerState.setPlayerId(playerId);
         playerState.setNodeId(node.getId());
-        playerState.setType(TypeEnum.valueOf(node.getType().name()));
+        playerState.setType(node.getType());
         playerState.setHitpoints(hitpoints);
         playerState.setGear(gear);
         playerState.setStops(curveStops);
@@ -376,7 +372,7 @@ public final class LocalPlayer extends Player {
         playerState.setLapsToGo(lapsToGo);
     }
 
-    public void reduceLeeway(long amount) {
+    void reduceLeeway(long amount) {
         if (amount > Integer.MAX_VALUE) {
             leeway = 0;
         } else {
@@ -384,7 +380,7 @@ public final class LocalPlayer extends Player {
         }
     }
 
-    public int getLeeway() {
+    int getLeeway() {
         return leeway;
     }
 }

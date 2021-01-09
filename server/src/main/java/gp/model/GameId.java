@@ -14,13 +14,6 @@ public class GameId implements Serializable {
     return this;
   }
 
-  public String getGameId() {
-    return gameId;
-  }
-  public void setGameId(String gameId) {
-    this.gameId = gameId;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -40,11 +33,9 @@ public class GameId implements Serializable {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("class GameId {\n");
-    sb.append("    gameId: ").append(toIndentedString(gameId)).append("\n");
-    sb.append("}");
-    return sb.toString();
+    return "class GameId {\n" +
+            "    gameId: " + toIndentedString(gameId) + "\n" +
+            "}";
   }
 
   /**

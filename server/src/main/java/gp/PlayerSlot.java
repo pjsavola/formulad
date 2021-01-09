@@ -97,7 +97,7 @@ public class PlayerSlot extends JButton {
                     final AI.Type type = difficultyButton1.isSelected() ? AI.Type.BEGINNER : (difficultyButton2.isSelected() ? AI.Type.AMATEUR : AI.Type.PRO);
                     selectedType = type;
                     selectedProfile.setAIType(type);
-                    selectedProfile.setLocal(true);
+                    selectedProfile.setLocal();
                     setProfile(selectedProfile);
                     dialog.setVisible(false);
                 });
@@ -163,11 +163,6 @@ public class PlayerSlot extends JButton {
         });
     }
 
-    void setProfile(Profile profile) {
-        this.profile = new ProfileMessage(profile);
-        this.profile.setLocal(true);
-    }
-
     void setProfile(ProfileMessage message) {
         this.profile = message;
     }
@@ -181,7 +176,7 @@ public class PlayerSlot extends JButton {
         return gridPosition + ". " + (profile == null ? "Free" : profile.getName());
     }
 
-    public ProfileMessage getProfile() {
+    ProfileMessage getProfile() {
         return profile;
     }
 }

@@ -37,13 +37,13 @@ public abstract class NodeUtil {
         distanceMap.computeIfAbsent(currentDistance + 1, _node -> new HashSet<>()).add(node);
     }
 
-    public static Map<Node, DamageAndPath> findNodes(Node startNode,
-                                                     int targetDistance,
-                                                     Set<Node> forbiddenNodes,
-                                                     boolean allowCurveEntry,
-                                                     int stopsDone,
-                                                     boolean finalLap,
-                                                     boolean allowPitEntry) {
+    private static Map<Node, DamageAndPath> findNodes(Node startNode,
+                                                      int targetDistance,
+                                                      Set<Node> forbiddenNodes,
+                                                      boolean allowCurveEntry,
+                                                      int stopsDone,
+                                                      boolean finalLap,
+                                                      boolean allowPitEntry) {
         // Set of visited non-curve nodes, for finding the shortest path in straights
         final Set<Node> visited = new HashSet<>();
         // For each node which is at target distance, calculate the damage and path

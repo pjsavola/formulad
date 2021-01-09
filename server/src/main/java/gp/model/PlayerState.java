@@ -1,5 +1,7 @@
 package gp.model;
 
+import gp.ai.NodeType;
+
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -9,7 +11,7 @@ import java.util.Objects;
 public class PlayerState implements Serializable {
   private String playerId = null;
   private Integer gear = null;
-  private TypeEnum type = null;
+  private NodeType type = null;
   private Integer nodeId = null;
   private Integer hitpoints = null;
   private Integer stops = null;
@@ -40,21 +42,16 @@ public class PlayerState implements Serializable {
     this.gear = gear;
   }
 
-  public PlayerState type(TypeEnum type) {
+  public PlayerState type(NodeType type) {
     this.type = type;
     return this;
   }
 
-  public TypeEnum getType() {
+  public NodeType getType() {
     return type;
   }
-  public void setType(TypeEnum type) {
+  public void setType(NodeType type) {
     this.type = type;
-  }
-
-  public PlayerState nodeId(Integer nodeId) {
-    this.nodeId = nodeId;
-    return this;
   }
 
   public Integer getNodeId() {
@@ -91,11 +88,6 @@ public class PlayerState implements Serializable {
     this.stops = stops;
   }
 
-  public PlayerState leeway(Integer leeway) {
-    this.leeway = leeway;
-    return this;
-  }
-
    /**
    * The number of milliseconds the player can miss the time limits for the rest of the game.
   **/
@@ -104,11 +96,6 @@ public class PlayerState implements Serializable {
   }
   public void setLeeway(Integer leeway) {
     this.leeway = leeway;
-  }
-
-  public PlayerState lapsToGo(Integer lapsToGo) {
-    this.lapsToGo = lapsToGo;
-    return this;
   }
 
   public Integer getLapsToGo() {
@@ -145,18 +132,16 @@ public class PlayerState implements Serializable {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("class PlayerState {\n");
-    sb.append("    playerId: ").append(toIndentedString(playerId)).append("\n");
-    sb.append("    gear: ").append(toIndentedString(gear)).append("\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
-    sb.append("    nodeId: ").append(toIndentedString(nodeId)).append("\n");
-    sb.append("    hitpoints: ").append(toIndentedString(hitpoints)).append("\n");
-    sb.append("    stops: ").append(toIndentedString(stops)).append("\n");
-    sb.append("    leeway: ").append(toIndentedString(leeway)).append("\n");
-    sb.append("    lapsToGo: ").append(toIndentedString(lapsToGo)).append("\n");
-    sb.append("}");
-    return sb.toString();
+    return "class PlayerState {\n" +
+            "    playerId: " + toIndentedString(playerId) + "\n" +
+            "    gear: " + toIndentedString(gear) + "\n" +
+            "    type: " + toIndentedString(type) + "\n" +
+            "    nodeId: " + toIndentedString(nodeId) + "\n" +
+            "    hitpoints: " + toIndentedString(hitpoints) + "\n" +
+            "    stops: " + toIndentedString(stops) + "\n" +
+            "    leeway: " + toIndentedString(leeway) + "\n" +
+            "    lapsToGo: " + toIndentedString(lapsToGo) + "\n" +
+            "}";
   }
 
   /**

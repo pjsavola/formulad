@@ -40,11 +40,9 @@ public class SelectedIndex implements Serializable {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("class SelectedIndex {\n");
-    sb.append("    index: ").append(toIndentedString(index)).append("\n");
-    sb.append("}");
-    return sb.toString();
+    return "class SelectedIndex {\n" +
+            "    index: " + toIndentedString(index) + "\n" +
+            "}";
   }
 
   /**

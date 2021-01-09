@@ -13,6 +13,8 @@
 
 package gp.model;
 
+import gp.ai.NodeType;
+
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -20,20 +22,20 @@ import java.util.Objects;
  * A valid move a player can take containing the identifier of the node and what repercussions there will be for choosing that
  */
 public class ValidMove implements Serializable {
-  private TypeEnum type = null;
+  private NodeType type = null;
   private Integer nodeId = null;
   private Integer overshoot = null;
   private Integer braking = null;
 
-  public ValidMove type(TypeEnum type) {
+  public ValidMove type(NodeType type) {
     this.type = type;
     return this;
   }
 
-  public TypeEnum getType() {
+  public NodeType getType() {
     return type;
   }
-  public void setType(TypeEnum type) {
+  public void setType(NodeType type) {
     this.type = type;
   }
 
@@ -95,14 +97,12 @@ public class ValidMove implements Serializable {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("class ValidMove {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
-    sb.append("    nodeId: ").append(toIndentedString(nodeId)).append("\n");
-    sb.append("    overshoot: ").append(toIndentedString(overshoot)).append("\n");
-    sb.append("    braking: ").append(toIndentedString(braking)).append("\n");
-    sb.append("}");
-    return sb.toString();
+    return "class ValidMove {\n" +
+            "    type: " + toIndentedString(type) + "\n" +
+            "    nodeId: " + toIndentedString(nodeId) + "\n" +
+            "    overshoot: " + toIndentedString(overshoot) + "\n" +
+            "    braking: " + toIndentedString(braking) + "\n" +
+            "}";
   }
 
   /**

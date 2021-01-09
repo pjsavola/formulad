@@ -1,7 +1,6 @@
 package gp.model;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -23,14 +22,6 @@ public class Moves implements Serializable {
 
   public Moves moves(List<ValidMove> moves) {
     this.moves = moves;
-    return this;
-  }
-
-  public Moves addMovesItem(ValidMove movesItem) {
-    if (this.moves == null) {
-      this.moves = new ArrayList<ValidMove>();
-    }
-    this.moves.add(movesItem);
     return this;
   }
 
@@ -61,12 +52,10 @@ public class Moves implements Serializable {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("class Moves {\n");
-    sb.append("    game: ").append(toIndentedString(game)).append("\n");
-    sb.append("    moves: ").append(toIndentedString(moves)).append("\n");
-    sb.append("}");
-    return sb.toString();
+    return "class Moves {\n" +
+            "    game: " + toIndentedString(game) + "\n" +
+            "    moves: " + toIndentedString(moves) + "\n" +
+            "}";
   }
 
   /**

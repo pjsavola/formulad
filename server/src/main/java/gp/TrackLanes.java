@@ -156,14 +156,12 @@ public class TrackLanes {
         });
 
         // Add collisions for pit entry
-        sortedNodes.forEach(node -> {
-            node.forEachChild(next -> {
-                if (next.getType() == NodeType.PIT) {
-                    collisionMap.get(node).add(next);
-                    collisionMap.get(next).add(node);
-                }
-            });
-        });
+        sortedNodes.forEach(node -> node.forEachChild(next -> {
+            if (next.getType() == NodeType.PIT) {
+                collisionMap.get(node).add(next);
+                collisionMap.get(next).add(node);
+            }
+        }));
 
         // Sanity checks for distancee definitions
         lanes[0].checkCurveDistances(lanes[2]);

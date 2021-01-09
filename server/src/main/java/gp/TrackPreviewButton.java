@@ -1,13 +1,10 @@
 package gp;
 
 import gp.ai.TrackData;
-import org.apache.commons.lang3.tuple.Pair;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBuffer;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -24,7 +21,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 class TrackPreviewButton extends JButton implements TrackSelector {
-    private final JPanel panel;
     private final Lobby lobby;
     private TrackData data;
 
@@ -33,7 +29,7 @@ class TrackPreviewButton extends JButton implements TrackSelector {
             URI uri = ResourceWalker.class.getResource("/resources").toURI();
             Path myPath;
             if (uri.getScheme().equals("jar")) {
-                FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap());
+                FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
                 myPath = fileSystem.getPath("/resources");
             } else {
                 myPath = Paths.get(uri);
@@ -45,12 +41,9 @@ class TrackPreviewButton extends JButton implements TrackSelector {
         }
     }
 
-    TrackPreviewButton(JFrame frame, JPanel panel, Lobby lobby) {
-        this.panel = panel;
+    TrackPreviewButton(JFrame frame, Lobby lobby) {
         this.lobby = lobby;
-        addActionListener(e -> {
-            openTrackSelectionDialog(frame, this);
-        });
+        addActionListener(e -> openTrackSelectionDialog(frame, this));
     }
 
     static void openTrackSelectionDialog(JFrame frame, TrackSelector trackSelector) {
@@ -69,30 +62,8 @@ class TrackPreviewButton extends JButton implements TrackSelector {
         }
         final JPanel trackPanel = new JPanel(new GridLayout(0, cols));
         final JDialog trackDialog = new JDialog(frame);
-        internal.parallelStream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).map(data -> {
-            final ImageIcon icon = createIcon(data);
-            if (icon == null) return null;
-
-            final JButton selectTrackButton = new JButton();
-            selectTrackButton.addActionListener(l -> {
-                trackSelector.setTrack(data, icon, Main.settings.laps);
-                trackDialog.setVisible(false);
-            });
-            selectTrackButton.setIcon(icon);
-            return selectTrackButton;
-        }).filter(Objects::nonNull).collect(Collectors.toList()).forEach(trackPanel::add);
-        external.parallelStream().map(f -> TrackData.createTrackData(f, true)).filter(Objects::nonNull).map(data -> {
-            final ImageIcon icon = createIcon(data);
-            if (icon == null) return null;
-
-            final JButton selectTrackButton = new JButton();
-            selectTrackButton.addActionListener(l -> {
-                trackSelector.setTrack(data, icon, Main.settings.laps);
-                trackDialog.setVisible(false);
-            });
-            selectTrackButton.setIcon(icon);
-            return selectTrackButton;
-        }).filter(Objects::nonNull).collect(Collectors.toList()).forEach(trackPanel::add);
+        internal.parallelStream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).map(data -> createTrackButton(trackSelector, trackDialog, data)).filter(Objects::nonNull).collect(Collectors.toList()).forEach(trackPanel::add);
+        external.parallelStream().map(f -> TrackData.createTrackData(f, true)).filter(Objects::nonNull).map(data -> createTrackButton(trackSelector, trackDialog, data)).filter(Objects::nonNull).collect(Collectors.toList()).forEach(trackPanel::add);
         final JScrollPane scrollPane = new JScrollPane(trackPanel);
         trackDialog.setTitle("Select track");
         trackDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -103,7 +74,20 @@ class TrackPreviewButton extends JButton implements TrackSelector {
         trackDialog.setVisible(true);
     }
 
-    public static void getAllTracks(List<String> internal, List<String> external) {
+    private static JButton createTrackButton(TrackSelector trackSelector, JDialog trackDialog, TrackData data) {
+        final ImageIcon icon = createIcon(data);
+        if (icon == null) return null;
+
+        final JButton selectTrackButton = new JButton();
+        selectTrackButton.addActionListener(l -> {
+            trackSelector.setTrack(data, icon, Main.settings.laps);
+            trackDialog.setVisible(false);
+        });
+        selectTrackButton.setIcon(icon);
+        return selectTrackButton;
+    }
+
+    static void getAllTracks(List<String> internal, List<String> external) {
         if (Main.ide) {
             try (InputStream in = Main.class.getResourceAsStream("/"); BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
                 String resource;

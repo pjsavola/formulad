@@ -40,11 +40,9 @@ public class Gear implements Serializable {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("class Gear {\n");
-    sb.append("    gear: ").append(toIndentedString(gear)).append("\n");
-    sb.append("}");
-    return sb.toString();
+    return "class Gear {\n" +
+            "    gear: " + toIndentedString(gear) + "\n" +
+            "}";
   }
 
   /**

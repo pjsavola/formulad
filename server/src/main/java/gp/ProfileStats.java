@@ -9,7 +9,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ProfileStats extends JDialog {
+class ProfileStats extends JDialog {
     private final List<Profile.Result> results;
     private Predicate<Profile.Result> trackFilter;
     private Predicate<Profile.Result> typeFilter;

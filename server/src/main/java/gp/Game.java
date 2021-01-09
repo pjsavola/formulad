@@ -41,11 +41,11 @@ public abstract class Game extends JPanel implements PlayerRenderer {
 
     PlayerStats[] finalStandings;
 
-    static Font damageFont = new Font("Arial", Font.PLAIN, 9);
-    static Font bigDamageFont = new Font("Arial", Font.BOLD, 11);
-    static Font titleFont = new Font("Arial", Font.BOLD, 20);
+    private static Font damageFont = new Font("Arial", Font.PLAIN, 9);
+    private static Font bigDamageFont = new Font("Arial", Font.BOLD, 11);
+    private static Font titleFont = new Font("Arial", Font.BOLD, 20);
     static Font headerFont = new Font("Arial", Font.BOLD, 12);
-    static Font statsFont = new Font("Arial", Font.PLAIN, 12);
+    private static Font statsFont = new Font("Arial", Font.PLAIN, 12);
 
     TrackData data;
     private MapEditor.Corner infoBoxCorner;
@@ -82,7 +82,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
             }
         }
         private void draw(Graphics2D g) {
-            MapEditor.drawOval(g, x, y, size + thickness, size + thickness, true, false, color, thickness);
+            MapEditor.drawOval(g, x, y, size + thickness, size + thickness, false, color, thickness);
         }
     }
 
@@ -133,15 +133,13 @@ public abstract class Game extends JPanel implements PlayerRenderer {
         sounds.add(soundToggle);
         frame.setMenuBar(menuBar);
         new Thread(() -> {
-            Robot hal = null;
             try {
-                hal = new Robot();
+                Robot hal = new Robot();
                 while (keepAlive) {
                     hal.delay(1000 * 30);
                     Point pObj = MouseInfo.getPointerInfo().getLocation();
                     hal.mouseMove(pObj.x + 1, pObj.y + 1);
                     hal.mouseMove(pObj.x - 1, pObj.y - 1);
-                    pObj = MouseInfo.getPointerInfo().getLocation();
                 }
             } catch (AWTException e) {
                 Main.log.log(Level.WARNING, "Failed to start keep-alive thread", e);
@@ -227,7 +225,8 @@ public abstract class Game extends JPanel implements PlayerRenderer {
         // Circle for dice rolls
         if (gearCorner != null) {
             final Point point = getPoint(gearCorner);
-            MapEditor.drawOval(g2d, point.x, point.y, 50, 50, true, true, Color.BLACK, 1);
+            assert point != null;
+            MapEditor.drawOval(g2d, point.x, point.y, 50, 50, true, Color.BLACK, 1);
         }
         drawTargets(g2d);
         drawInfoBox(g2d);
@@ -246,7 +245,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
                 final int damage = entry.getValue();
                 final Point p = node.getLocation();
                 if (nodeId == mouseOverHighlightNodeIndex) {
-                    MapEditor.drawOval(g2d, p.x, p.y, 15, 15, true, true, Color.YELLOW, 1);
+                    MapEditor.drawOval(g2d, p.x, p.y, 15, 15, true, Color.YELLOW, 1);
                     if (damage != 0) {
                         g2d.setFont(bigDamageFont);
                         g2d.setColor(Color.BLACK);
@@ -256,7 +255,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
                         g2d.drawString(str, x, p.y + 4);
                     }
                 } else {
-                    MapEditor.drawOval(g2d, p.x, p.y, 12, 12, true, false, Color.YELLOW, 1);
+                    MapEditor.drawOval(g2d, p.x, p.y, 12, 12, false, Color.YELLOW, 1);
                     if (damage != 0) {
                         g2d.setFont(damageFont);
                         g2d.setColor(Color.RED);
@@ -399,9 +398,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
 
     void updateHitpointMap(GameState gameState) {
         hitpointMap.clear();
-        gameState.getPlayers().forEach(p -> {
-            hitpointMap.put(p.getPlayerId(), p.getHitpoints());
-        });
+        gameState.getPlayers().forEach(p -> hitpointMap.put(p.getPlayerId(), p.getHitpoints()));
     }
 
     void scheduleHitpointAnimation(int loss, Player player, HitpointNotification.Source source) {

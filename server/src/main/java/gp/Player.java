@@ -56,7 +56,7 @@ public class Player {
         return playerId;
     }
 
-    public String getNameAndId() {
+    String getNameAndId() {
         return name + " (" + playerId + ")";
     }
 
@@ -72,7 +72,7 @@ public class Player {
         return stopped;
     }
 
-    public void drawRoll(Graphics2D g2d, @Nullable Integer roll, Point point) {
+    void drawRoll(Graphics2D g2d, @Nullable Integer roll, Point point) {
         if (roll != null && gear != 0) {
             final Color color = getGearColor(gear);
             g2d.setColor(color);
@@ -82,7 +82,7 @@ public class Player {
         }
     }
 
-    Color getGearColor(int gear) {
+    private Color getGearColor(int gear) {
         switch (gear) {
             case 0:
                 return Color.BLACK;
@@ -103,12 +103,12 @@ public class Player {
         }
     }
 
-    public void highlight(Graphics2D g2d) {
+    void highlight(Graphics2D g2d) {
         final Point p = node.getLocation();
-        MapEditor.drawOval(g2d, p.x, p.y, 20, 20, true, false, Color.GREEN, 1);
+        MapEditor.drawOval(g2d, p.x, p.y, 20, 20, false, Color.GREEN, 1);
     }
 
-    public void draw(Graphics2D g2d) {
+    void draw(Graphics2D g2d) {
         if (!stopped) {
             synchronized (route) {
                 if (route.size() > 1) {
@@ -129,7 +129,7 @@ public class Player {
         }
     }
 
-    public void drawRetired(Graphics2D g2d) {
+    void drawRetired(Graphics2D g2d) {
         if (stopped && hitpoints <= 0) {
             // Draw small x for retired players
             final Point p = node.getLocation();
@@ -139,7 +139,7 @@ public class Player {
         }
     }
 
-    public void draw(Graphics2D g, int x, int y, double angle) {
+    void draw(Graphics2D g, int x, int y, double angle) {
         AffineTransform at = new AffineTransform();
         at.translate(x, y);
         g.transform(at);
@@ -149,14 +149,14 @@ public class Player {
         g.translate(-x, -y);
     }
 
-    public static Color manipulateColor(Color color, float factor) {
+    private static Color manipulateColor(Color color, float factor) {
         int r = Math.max(0, Math.min(255, Math.round(color.getRed() * factor)));
         int g = Math.max(0, Math.min(255, Math.round(color.getGreen() * factor)));
         int b = Math.max(0, Math.min(255, Math.round(color.getBlue() * factor)));
         return new Color(r, g, b);
     }
 
-    static void draw(Graphics2D g, Color[] colors, Color color2) {
+    private static void draw(Graphics2D g, Color[] colors, Color color2) {
         g.setColor(colors[0]);
         g.fillRect(8, 0, 1, 1);
         g.setColor(colors[1]);
@@ -208,65 +208,20 @@ public class Player {
         g.fillRect(-4, 3, 1, 2);
     }
 
-    public static void draw(Graphics2D g, int x, int y, double angle, Color color1, Color color2, double scale) {
+    static void draw(Graphics2D g, int x, int y, double angle, Color color1, Color color2, double scale) {
         AffineTransform at = new AffineTransform();
         at.translate(x, y);
         at.scale(scale, scale);
         g.transform(at);
         g.rotate(angle);
-        if (true) {
-            Color[] colors = createColorVariants(color1);
-            draw(g, colors, color2);
-        }
-        else if (true) {
-            g.setColor(color1);
-            g.fillRect(6, -3, 2, 1);
-            g.fillRect(6, 3, 2, 1);
-            g.fillRect(5, 0, 3, 1);
-            g.fillRect(1, -1, 4, 3);
-            g.fillRect(-7, -2, 9, 5);
-            g.setColor(color2);
-            g.fillRect(6, -2, 2, 1);
-            g.fillRect(6, 2, 2, 1);
-            g.fillRect(7, -1, 1, 1);
-            g.fillRect(7, 1, 1, 1);
-            g.fillRect(-4, -3, 5, 2);
-            g.fillRect(-4, 2, 5, 2);
-            g.fillRect(-4, 0, 4, 1);
-            g.fillRect(-6, -1, 2, 3);
-            g.setColor(Color.BLACK);
-            g.fillRect(2, -4, 3, 2);
-            g.fillRect(2, 3, 3, 2);
-            g.fillRect(-6, -4, 3, 2);
-            g.fillRect(-6, 3, 3, 2);
-            g.fillRect(3, -2, 1, 1);
-            g.fillRect(3, 2, 1, 1);
-            g.fillRect(-1, 0, 2, 1);
-        } else {
-            g.fillRect(-7, -3, 1, 7);
-            g.fillRect(-6, 0, 1, 1);
-            g.fillRect(-4, -4, 3, 2);
-            g.fillRect(-4, 3, 3, 2);
-            g.fillRect(6, -3, 1, 7);
-            g.fillRect(3, -2, 1, 1);
-            g.fillRect(3, 2, 1, 1);
-            g.fillRect(2, -4, 3, 2);
-            g.fillRect(2, 3, 3, 2);
-            g.setColor(color1);
-            g.fillRect(-5, -2, 6, 5);
-            g.fillRect(1, -1, 5, 3);
-            g.setColor(color2);
-            g.fillRect(-4, -1, 5, 3);
-            g.fillRect(1, 0, 5, 1);
-            g.setColor(color1);
-            g.fillRect(-3, 0, 3, 1);
-        }
+        Color[] colors = createColorVariants(color1);
+        draw(g, colors, color2);
         // needed if something is drawn after this
         g.rotate(-angle);
         g.translate(-x, -y);
     }
 
-    public void drawStats(Graphics2D g, int x, int y, Map<String, Integer> hitpointMap) {
+    void drawStats(Graphics2D g, int x, int y, Map<String, Integer> hitpointMap) {
         g.setColor(Color.BLACK);
         g.setFont(statsFont);
         g.drawString(name, x, y);
@@ -316,7 +271,7 @@ public class Player {
         }
     }
 
-    public void setLapsRemaining(int lapsToGo) {
+    void setLapsRemaining(int lapsToGo) {
         if (lapsToGo != this.lapsToGo) {
             this.lapsToGo = lapsToGo;
             if (lapsToGo < 0) {
@@ -326,14 +281,14 @@ public class Player {
         }
     }
 
-    public void setCurveStops(int curveStops) {
+    void setCurveStops(int curveStops) {
         if (curveStops != this.curveStops) {
             this.curveStops = curveStops;
             panel.repaint();
         }
     }
 
-    public void clearRoute() {
+    void clearRoute() {
         synchronized (route) {
             route.clear();
         }

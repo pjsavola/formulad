@@ -11,7 +11,7 @@ import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class SoundSystem {
+class SoundSystem {
     public enum Type {
         COLLISION("collision.wav"),
         DNF("dnf.wav"),
@@ -28,7 +28,7 @@ public class SoundSystem {
 
     private static Map<Type, URL> resources;
 
-    public static void playSound(Type type) {
+    static void playSound(Type type) {
         URL url = getSound(type);
         if (url == null) return;
 

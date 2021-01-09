@@ -4,7 +4,6 @@ import javax.swing.*;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 
 public class WindowChanger extends WindowAdapter {
     private final JFrame frame;
@@ -19,7 +18,7 @@ public class WindowChanger extends WindowAdapter {
         this.mainMenu = mainMenu;
     }
 
-    public void reset(JPanel panel) {
+    void reset(JPanel panel) {
         this.panel = panel == mainMenu ? null : panel;
         this.lobby = null;
         this.game = null;
@@ -27,7 +26,7 @@ public class WindowChanger extends WindowAdapter {
         this.confirm = false;
     }
 
-    public void contentChanged(JPanel panel, Lobby lobby, Game game, String name, boolean confirm) {
+    void contentChanged(JPanel panel, Lobby lobby, Game game, String name, boolean confirm) {
         this.panel = panel;
         this.lobby = lobby;
         this.game = game;

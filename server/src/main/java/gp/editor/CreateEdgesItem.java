@@ -1,7 +1,5 @@
 package gp.editor;
 
-import gp.ai.Node;
-
 import java.util.ArrayList;
 import java.util.List;
 

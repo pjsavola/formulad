@@ -6,11 +6,10 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.util.List;
 import java.util.Random;
 
-public class ProfilePanel extends JPanel {
+class ProfilePanel extends JPanel {
     private class CarPreview extends JPanel {
         final int width = 100;
         final int height = 50;
@@ -223,7 +222,7 @@ public class ProfilePanel extends JPanel {
             @Override
             public void mouseClicked(MouseEvent e) {
                 final JFrame frame = (JFrame) getTopLevelAncestor();
-                final ProfileStats stats = new ProfileStats(frame, activeProfile);
+                new ProfileStats(frame, activeProfile);
             }
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -236,7 +235,7 @@ public class ProfilePanel extends JPanel {
         });
     }
 
-    public Profile getActiveProfile() {
+    Profile getActiveProfile() {
         return activeProfile;
     }
 }

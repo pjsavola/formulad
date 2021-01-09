@@ -15,17 +15,17 @@ public class Lobby extends Thread {
     private PlayerSlot[] slots;
     private TrackData data;
     volatile boolean done;
-    final List<RemoteAI> clients = new ArrayList<>();
-    final Map<UUID, RemoteAI> clientMap = new HashMap<>();
-    public Lobby(int port) throws IOException {
+    private final List<RemoteAI> clients = new ArrayList<>();
+    private final Map<UUID, RemoteAI> clientMap = new HashMap<>();
+    Lobby(int port) throws IOException {
         serverSocket = new ServerSocket(port);
     }
 
-    public void setSlots(PlayerSlot[] slots) {
+    void setSlots(PlayerSlot[] slots) {
         this.slots = slots;
     }
 
-    public void setTrack(TrackData data) {
+    void setTrack(TrackData data) {
         if (!data.equals(this.data)) {
             this.data = data;
             synchronized (clientMap) {
@@ -98,12 +98,12 @@ public class Lobby extends Thread {
         }
     }
 
-    public RemoteAI getClient(UUID id) {
+    RemoteAI getClient(UUID id) {
         // Does not need to be synchronized. Map is not mutated anymore.
         return clientMap.get(id);
     }
 
-    public void dropClient(UUID id) {
+    void dropClient(UUID id) {
         synchronized (clientMap) {
             final RemoteAI client = clientMap.remove(id);
             if (client != null) {
@@ -114,7 +114,7 @@ public class Lobby extends Thread {
         }
     }
 
-    public void close() {
+    void close() {
         for (RemoteAI client : clients) {
             client.notify(new Kick("Server closed"));
             client.close();

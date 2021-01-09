@@ -16,21 +16,14 @@ public class ProfileMessage implements Serializable {
     private boolean local;
     private boolean ai;
     private transient AI.Type aiType;
-    public transient Profile originalProfile;
+    transient Profile originalProfile;
 
-    public static ProfileMessage pending = new ProfileMessage("...", false);
+    static ProfileMessage pending = new ProfileMessage("...", false);
 
     private static Random random = new Random();
-    private static String[] drivers = new String[] { "Hamilton", "Bottas", "Verstappen", "Albon", "Vettel", "Leclerc", "Perez", "Stroll", "Norris", "Sainz", "Ricciardo", "Ocon", "Gasly", "Kvyat", "Räikkönen", "Giovinazzi", "Magnussen", "Grosjean", "Russell", "XX" };
     private static String[] randomNames = new String[] { "Mika", "Keke", "Kimi", "Heikki", "Leo", "Valtteri", "Nico", "Michael", "Lewis", "Sebastian", "Max", "Fernando" };
-    private static final Color[] defaultColors = {
-            Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, Color.PINK,
-            Color.CYAN, Color.ORANGE, Color.WHITE, Color.MAGENTA, Color.GRAY };
-    private static final Color[] defaultBorderColors = {
-            new Color(0x770000), new Color(0x000077), new Color(0x007700), new Color(0x777700), new Color(0x773333),
-            new Color(0x007777), new Color(0x993300), Color.GRAY, new Color(0x770077), Color.BLACK };
 
-    public static ProfileMessage createRandomAIProfile(Set<String> usedNames) {
+    static ProfileMessage createRandomAIProfile(Set<String> usedNames) {
         final List<String> validNames = Arrays.stream(randomNames).filter(n -> !usedNames.contains(n)).collect(Collectors.toList());
         final ProfileMessage profile = new ProfileMessage(validNames.get(random.nextInt(validNames.size())), true);
         profile.color1 = random.nextInt(0xFFFFFF + 1);
@@ -39,8 +32,8 @@ public class ProfileMessage implements Serializable {
         return profile;
     }
 
-    public static ProfileMessage readProfile(String[] line) {
-        final ProfileMessage profile = new ProfileMessage(
+    static ProfileMessage readProfile(String[] line) {
+        return new ProfileMessage(
                 UUID.fromString(line[0]),
                 line[1],
                 Integer.parseInt(line[2]),
@@ -48,10 +41,9 @@ public class ProfileMessage implements Serializable {
                 Boolean.parseBoolean(line[4]),
                 AI.Type.valueOf(line[5])
         );
-        return profile;
     }
 
-    public String toLine() {
+    String toLine() {
         return id + "," + name + "," + color1 + "," + color2 + "," + ai + "," + aiType;
     }
 
@@ -74,7 +66,7 @@ public class ProfileMessage implements Serializable {
         this.ai = ai;
     }
 
-    public ProfileMessage(Profile profile) {
+    ProfileMessage(Profile profile) {
         id = profile.getId();
         name = profile.getName();
         color1 = profile.getColor1();
@@ -90,19 +82,19 @@ public class ProfileMessage implements Serializable {
         return name;
     }
 
-    public int getColor1() {
+    int getColor1() {
         return color1;
     }
 
-    public int getColor2() {
+    int getColor2() {
         return color2;
     }
 
-    public void setLocal(boolean local) {
-        this.local = local;
+    void setLocal() {
+        this.local = true;
     }
 
-    public boolean isLocal() {
+    boolean isLocal() {
         return local;
     }
 
@@ -114,11 +106,11 @@ public class ProfileMessage implements Serializable {
         return ai;
     }
 
-    public void setAIType(AI.Type type) {
+    void setAIType(AI.Type type) {
         aiType = type;
     }
 
-    public AI createAI(TrackData data) {
+    AI createAI(TrackData data) {
         if (aiType == null) return null;
         switch (aiType) {
             case BEGINNER: return new BeginnerAI(data);

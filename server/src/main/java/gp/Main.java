@@ -1,16 +1,25 @@
 package gp;
 
+import gp.ai.AI;
+import gp.ai.ManualAI;
+import gp.ai.Node;
+import gp.ai.TrackData;
+import gp.model.*;
+import org.apache.commons.lang3.tuple.Pair;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -18,16 +27,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-
-import gp.ai.*;
-
-import gp.ai.Node;
-import gp.model.*;
-import gp.model.Gear;
-import org.apache.commons.lang3.tuple.Pair;
 
 class PreviousSettings {
     String trackId = "hockenheim.dat";
@@ -61,10 +60,10 @@ public class Main extends Game implements Runnable {
     private final Lobby lobby;
     private final Season resultStorage;
     public static final Logger log = Logger.getLogger(Main.class.getName());
-    public static int defaultColor1 = 0xFF9966;
-    public static int defaultColor2 = 0xCCCC33;
-    public static boolean ide = false;
-    public static boolean sounds = true;
+    static int defaultColor1 = 0xFF9966;
+    static int defaultColor2 = 0xCCCC33;
+    static boolean ide = false;
+    static boolean sounds = true;
 
     static PreviousSettings settings = new PreviousSettings();
 
@@ -141,11 +140,7 @@ public class Main extends Game implements Runnable {
         for (Map.Entry<AI, ProfileMessage> e : aiToProfile.entrySet()) {
             notifications.add(createAiPlayer(e, grid, startingOrder, params.leeway, params.laps, params.maxHitpoints));
         }
-        aiMap.forEach((player, ai) -> {
-            notifications.forEach(notification -> {
-                ai.notify(notification.controlled(notification.getPlayerId().equals(player.getId())));
-            });
-        });
+        aiMap.forEach((player, ai) -> notifications.forEach(notification -> ai.notify(notification.controlled(notification.getPlayerId().equals(player.getId())))));
         immutablePlayerMap = new HashMap<>(aiToProfile.size());
         allPlayers.forEach(player -> immutablePlayerMap.put(player.getId(), player));
     }
@@ -171,7 +166,7 @@ public class Main extends Game implements Runnable {
         return new CreatedPlayerNotification(current.getId(), name, startNode.getId(), maxHitpoints, laps, ai.getValue().getColor1(), ai.getValue().getColor2(), startNode.getGridAngle());
     }
 
-    public void notifyAll(Object notification) {
+    void notifyAll(Object notification) {
         aiMap.values().forEach(a -> a.notify(notification));
     }
 
@@ -296,48 +291,6 @@ public class Main extends Game implements Runnable {
         super.exit();
     }
 
-    public static boolean validateTrack(String trackId, boolean external) {
-        if (external && !new File(trackId).exists()) {
-            log.log(Level.WARNING, "Track validation failed: External data file " + trackId + " not found");
-            return false;
-        }
-        final Level errorLevel = external ? Level.WARNING : Level.SEVERE;
-        final List<Node> nodes = new ArrayList<>();
-        final Map<Node, Double> attributes = new HashMap<>();
-        try (InputStream is = external ? new FileInputStream(trackId) : Main.class.getResourceAsStream("/" + trackId)) {
-            final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes);
-            if (result == null) {
-                log.log(errorLevel, "Track validation failed: Proper header is missing from " + trackId);
-                return false;
-            }
-            final List<Node> grid = TrackData.build(nodes, attributes);
-            if (grid.size() < 10) {
-                log.log(errorLevel, "Track validation failed: Starting grid has less than 10 spots");
-                return false;
-            }
-            final String imageFile = result.getLeft();
-            if (external && (!new File(imageFile).exists() || Files.size(Paths.get(imageFile)) > 5_000_000)) {
-                log.log(errorLevel, "Track validation failed: External background image " + imageFile + " not found or too big");
-                return false;
-            }
-            final BufferedImage image = external ? ImageCache.getImageFromPath(imageFile) : ImageCache.getImage("/" + imageFile);
-            if (image == null) {
-                log.log(errorLevel, "Track validation failed: Background image " + imageFile + " not found");
-                return false;
-            }
-            TrackLanes.buildCollisionMap(nodes);
-        } catch (IOException e) {
-            log.log(errorLevel, "Track validation failed: " + e.getMessage(), e);
-            e.printStackTrace();
-            return false;
-        } catch (Exception e) {
-            log.log(errorLevel, "Track validation failed for " + trackId + ": " + e.getMessage(), e);
-            //e.printStackTrace();
-            return false;
-        }
-        return true;
-    }
-
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -432,7 +385,7 @@ public class Main extends Game implements Runnable {
         if (lobby != null) {
             lobby.setSlots(slots);
         }
-        final TrackPreviewButton changeTrackButton = new TrackPreviewButton(frame, panel, lobby);
+        final TrackPreviewButton changeTrackButton = new TrackPreviewButton(frame, lobby);
         final TrackData previousTrack = TrackData.createTrackData(settings.trackId, settings.external);
         if (previousTrack == null) {
             return;
@@ -543,11 +496,9 @@ public class Main extends Game implements Runnable {
     }
 
     static class ProfileSaver extends WindowAdapter {
-        private final JFrame frame;
         private final Profile.Manager profileManager;
 
-        ProfileSaver(JFrame frame, List<Profile> profiles) {
-            this.frame = frame;
+        ProfileSaver(List<Profile> profiles) {
             this.profileManager = profiles.isEmpty() ? null : profiles.get(0).getManager();
         }
 
@@ -582,9 +533,7 @@ public class Main extends Game implements Runnable {
         Params params = new Params();
 
         final JButton singlePlayerButton = new JButton("Single Race");
-        singlePlayerButton.addActionListener(e -> {
-            showGameSettings(f, p, null, profiles, params, listener);
-        });
+        singlePlayerButton.addActionListener(e -> showGameSettings(f, p, null, profiles, params, listener));
         final JButton championshipButton = new JButton("Championship Season");
         championshipButton.addActionListener(e -> {
             final DefaultListModel<String> model = new DefaultListModel<>();
@@ -845,7 +794,7 @@ public class Main extends Game implements Runnable {
         buttonPanel.add(trackEditorButton);
         f.setContentPane(p);
         f.pack();
-        f.addWindowListener(new ProfileSaver(f, profiles));
+        f.addWindowListener(new ProfileSaver(profiles));
         f.setVisible(true);
     }
 

@@ -1,27 +1,5 @@
 package gp;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.awt.geom.AffineTransform;
-import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
-import java.util.*;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.stream.Collectors;
-
-import javax.annotation.Nullable;
-import javax.swing.*;
-import javax.swing.filechooser.FileFilter;
-
 import gp.ai.AIUtil;
 import gp.ai.Node;
 import gp.ai.NodeType;
@@ -29,9 +7,21 @@ import gp.ai.TrackData;
 import gp.editor.*;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.annotation.Nullable;
+import javax.swing.*;
+import javax.swing.filechooser.FileFilter;
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
+import java.io.*;
+import java.util.*;
+import java.util.List;
+import java.util.stream.Collectors;
+
 public class MapEditor extends JPanel {
 
-    public static final int DIAMETER = 8;
+    static final int DIAMETER = 8;
 
     private static final Color ARC_BEGIN = new Color(0x333300);
     private static final Color ARC_END = new Color(0x990000);
@@ -66,9 +56,9 @@ public class MapEditor extends JPanel {
     private Dimension panelDim;
     private double scale = 1.0;
 
-    public enum Corner { NE, SE, SW, NW };
+    public enum Corner { NE, SE, SW, NW }
 
-	public MapEditor(JFrame frame) {
+	MapEditor(JFrame frame) {
 	    this.frame = frame;
         addMouseListener(new MouseAdapter() {
             @Override
@@ -420,10 +410,10 @@ public class MapEditor extends JPanel {
         final int y = UIUtil.getY(infoBoxCorner, panelDim, 5 + 15 * 10);
         if (selectedNode != null) {
             final Point p = selectedNode.getLocation();
-            drawOval(g2d, p.x, p.y, DIAMETER + 2, DIAMETER + 2, true, false, Color.YELLOW, 1);
+            drawOval(g2d, p.x, p.y, DIAMETER + 2, DIAMETER + 2, false, Color.YELLOW, 1);
             final Double attr = attributes.get(selectedNode);
             if (attr != null) {
-                drawOval(g2d, x + 210, y + 40, 50, 50, true, true, Color.BLACK, 1);
+                drawOval(g2d, x + 210, y + 40, 50, 50, true, Color.BLACK, 1);
                 final String attrStr = Double.toString(attr);
                 g2d.setColor(Color.WHITE);
                 g2d.setFont(Player.rollFont);
@@ -438,7 +428,7 @@ public class MapEditor extends JPanel {
         drawArcs(g2d, nodes);
         for (Node neighbor : debugNeighbors) {
             final Point p = neighbor.getLocation();
-            drawOval(g2d, p.x, p.y, DIAMETER, DIAMETER, true, true, Color.BLUE, 1);
+            drawOval(g2d, p.x, p.y, DIAMETER, DIAMETER, true, Color.BLUE, 1);
         }
 
     }
@@ -584,16 +574,6 @@ public class MapEditor extends JPanel {
         return null;
     }
 
-    public static Pair<String, Corner> loadHeader(String trackId, boolean external) {
-        try (InputStream is = external ? new FileInputStream(trackId) : Main.class.getResourceAsStream("/" + trackId); InputStreamReader ir = new InputStreamReader(is); final BufferedReader br = new BufferedReader(ir)) {
-            final String headerLine = br.readLine();
-            return parseHeaderRow(headerLine);
-        } catch (IOException e) {
-            Main.log.log(Level.SEVERE, "Reading header of " + trackId + " failed", e);
-        }
-        return null;
-    }
-
     public static Pair<String, Corner> loadNodes(InputStream map, Collection<Node> nodes, Map<Node, Double> attributes) {
 	    Pair<String, Corner> result = null;
         try (InputStreamReader ir = new InputStreamReader(map); final BufferedReader br = new BufferedReader(ir)) {
@@ -692,9 +672,7 @@ public class MapEditor extends JPanel {
 
     private void deduceDistances() {
         final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
-        nodes.stream().filter(Node::isCurve).filter(node -> prevNodeMap.get(node).stream().noneMatch(Node::isCurve)).forEach(node -> {
-            attributes.putIfAbsent(node, 0.0);
-        });
+        nodes.stream().filter(Node::isCurve).filter(node -> prevNodeMap.get(node).stream().noneMatch(Node::isCurve)).forEach(node -> attributes.putIfAbsent(node, 0.0));
         repaint();
     }
 
@@ -710,32 +688,30 @@ public class MapEditor extends JPanel {
                   });
               });
 	    final CreateEdgesItem item = new CreateEdgesItem();
-	    candidates.keySet().forEach(n -> {
-            n.childStream().findAny().ifPresent(child -> {
-                final int dx = child.getLocation().x - n.getLocation().x;
-                final int dy = child.getLocation().y - n.getLocation().y;
-                final int distSq = dx * dx + dy * dy;
-                final List<Node> neighbors = candidates.keySet().stream().filter(neighbor -> {
-                    if (neighbor == n) return false;
-                    if (candidates.get(neighbor) == n) return false;
-                    if (candidates.get(n) == neighbor) return false;
+	    candidates.keySet().forEach(n -> n.childStream().findAny().ifPresent(child -> {
+            final int dx = child.getLocation().x - n.getLocation().x;
+            final int dy = child.getLocation().y - n.getLocation().y;
+            final int distSq = dx * dx + dy * dy;
+            final List<Node> neighbors = candidates.keySet().stream().filter(neighbor -> {
+                if (neighbor == n) return false;
+                if (candidates.get(neighbor) == n) return false;
+                if (candidates.get(n) == neighbor) return false;
 
-                    final int dx2 = neighbor.getLocation().x - n.getLocation().x;
-                    final int dy2 = neighbor.getLocation().y - n.getLocation().y;
-                    final int distSq2 = dx2 * dx2 + dy2 * dy2;
-                    return distSq2 < distSq;
-                }).collect(Collectors.toList());
-                if (neighbors.size() == 4) {
-                    neighbors.forEach(neighbor -> {
-                        final Node follower = candidates.get(neighbor);
-                        if (neighbors.contains(follower) && !neighbor.hasChild(n) && !n.hasChild(neighbor) && !follower.hasChild(n) && !n.hasChild(follower)) {
-                            item.addEdge(new CreateEdgeItem(neighbor, n));
-                            item.addEdge(new CreateEdgeItem(n, follower));
-                        }
-                    });
-                }
-            });
-	    });
+                final int dx2 = neighbor.getLocation().x - n.getLocation().x;
+                final int dy2 = neighbor.getLocation().y - n.getLocation().y;
+                final int distSq2 = dx2 * dx2 + dy2 * dy2;
+                return distSq2 < distSq;
+            }).collect(Collectors.toList());
+            if (neighbors.size() == 4) {
+                neighbors.forEach(neighbor -> {
+                    final Node follower = candidates.get(neighbor);
+                    if (neighbors.contains(follower) && !neighbor.hasChild(n) && !n.hasChild(neighbor) && !follower.hasChild(n) && !n.hasChild(follower)) {
+                        item.addEdge(new CreateEdgeItem(neighbor, n));
+                        item.addEdge(new CreateEdgeItem(n, follower));
+                    }
+                });
+            }
+        }));
 	    stack.execute(item);
 	    repaint();
     }
@@ -822,11 +798,9 @@ public class MapEditor extends JPanel {
         try {
             select(null);
             TrackData.build(nodes, attributes);
-            nodes.sort((n1, n2) -> n2.compareTo(n1));
+            nodes.sort(Comparator.reverseOrder());
             final List<Node> newNodes = new ArrayList<>();
-            final Map<Node, Point> newCoordinates = new HashMap<>();
             final Map<Node, Double> newAttributes = new HashMap<>();
-            final Map<Node, Double> newGridAngles = new HashMap<>();
             final Map<Node, Node> oldToNew = new HashMap<>();
             for (Node node : nodes) {
                 final Double attr = attributes.get(node);
@@ -839,9 +813,7 @@ public class MapEditor extends JPanel {
                 oldToNew.put(node, newNode);
                 newNodes.add(newNode);
             }
-            oldToNew.forEach((oldNode, newNode) -> {
-                oldNode.childStream().forEach(oldChild -> newNode.addChild(oldToNew.get(oldChild)));
-            });
+            oldToNew.forEach((oldNode, newNode) -> oldNode.childStream().forEach(oldChild -> newNode.addChild(oldToNew.get(oldChild))));
             oldToNew.clear();
             nodes.clear();
             nodes.addAll(newNodes);
@@ -977,17 +949,17 @@ public class MapEditor extends JPanel {
         final Point p = node.getLocation();
         final double angle = node.getGridAngle();
         if (Double.isNaN(angle)) {
-            drawOval(g2d, p.x, p.y, DIAMETER, DIAMETER, true, true, color, 0);
+            drawOval(g2d, p.x, p.y, DIAMETER, DIAMETER, true, color, 0);
         } else {
             Player.draw(g2d, p.x, p.y, angle / 180 * Math.PI, Color.BLUE, Color.BLACK, 1.0);
         }
         final Double attr = attributes.get(node);
         if (attr != null || node.hasGarage()) {
             // Draw attribute indicator
-            drawOval(g2d, p.x, p.y, 4, 4, true, true, Color.YELLOW, 0);
+            drawOval(g2d, p.x, p.y, 4, 4, true, Color.YELLOW, 0);
         }
         if (node.hasFinish()) {
-            drawOval(g2d, p.x, p.y, DIAMETER + 1, DIAMETER + 1, true, false, Color.BLUE, 2);
+            drawOval(g2d, p.x, p.y, DIAMETER + 1, DIAMETER + 1, false, Color.BLUE, 2);
         }
     }
 
@@ -1008,7 +980,7 @@ public class MapEditor extends JPanel {
         g2d.setColor(tmpC);
     }
 
-    public static void drawOval(Graphics2D g2d, int x, int y, int width, int height, boolean centered, boolean filled, Color color, int lineThickness) {
+    static void drawOval(Graphics2D g2d, int x, int y, int width, int height, boolean filled, Color color, int lineThickness) {
         // Store before changing.
         final Stroke tmpS = g2d.getStroke();
         final Color tmpC = g2d.getColor();
@@ -1016,8 +988,8 @@ public class MapEditor extends JPanel {
         g2d.setColor(color);
         g2d.setStroke(new BasicStroke(lineThickness, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
-        final int x2 = centered ? x - (width / 2) : x;
-        final int y2 = centered ? y - (height / 2) : y;
+        final int x2 = x - (width / 2);
+        final int y2 = y - (height / 2);
 
         if (filled) g2d.fillOval(x2, y2, width, height);
         else g2d.drawOval(x2, y2, width, height);
@@ -1028,7 +1000,7 @@ public class MapEditor extends JPanel {
     }
 
     @Nullable
-    public static Node getNode(Collection<Node> nodes, int x, int y, int threshold) {
+    static Node getNode(Collection<Node> nodes, int x, int y, int threshold) {
         for (Node node : nodes) {
             final Point point = node.getLocation();
             if (Math.hypot(x - point.x, y - point.y) < threshold) {

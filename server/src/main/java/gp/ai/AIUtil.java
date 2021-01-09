@@ -11,7 +11,7 @@ public abstract class AIUtil {
     /**
      * Builds map from player identifier to player state from server input.
      */
-    public static Map<String, PlayerState> buildPlayerMap(GameState gameState) {
+    static Map<String, PlayerState> buildPlayerMap(GameState gameState) {
         final Map<String, PlayerState> playerMap = new HashMap<>();
         gameState.getPlayers().forEach(player -> playerMap.put(player.getPlayerId(), player));
         return playerMap;
@@ -40,14 +40,14 @@ public abstract class AIUtil {
     /**
      * Returns true if the given player can select the given gear.
      */
-    public static boolean validateGear(PlayerState player, int newGear, boolean inPits) {
+    static boolean validateGear(PlayerState player, int newGear, boolean inPits) {
         return validateGear(player.getHitpoints(), player.getGear(), newGear, inPits);
     }
 
     /**
      * Returns true if new gear can be selected if the player currently has old gear and given number of hitpoints.
      */
-    public static boolean validateGear(int hitpoints, int oldGear, int newGear, boolean inPits) {
+    static boolean validateGear(int hitpoints, int oldGear, int newGear, boolean inPits) {
         if (newGear < 1 || newGear > 6) return false;
 
         if (inPits && newGear > 4) return false;
@@ -59,7 +59,7 @@ public abstract class AIUtil {
     }
 
     // Returns -1 if the next curve is not reachable. Otherwise returns the minimum distance to the curve.
-    public static int getMinDistanceToNextCurve(Node node, Set<Node> blockedNodes) {
+    static int getMinDistanceToNextCurve(Node node, Set<Node> blockedNodes) {
         if (node.isCurve()) {
             final Map<Node, Integer> nextStraight = findMinDistancesToNextAreaStart(node, false, blockedNodes);
             if (nextStraight.isEmpty()) {
@@ -82,7 +82,7 @@ public abstract class AIUtil {
     }
 
     // Returns the maximum distance without taking damage.
-    public static int getMaxDistanceWithoutDamage(Node startNode, int stopCount, Set<Node> blockedNodes) {
+    static int getMaxDistanceWithoutDamage(Node startNode, int stopCount, Set<Node> blockedNodes) {
         if (startNode.getStopCount() > stopCount) {
             return findMaxDistanceInThisArea(startNode, blockedNodes);
         }
@@ -100,7 +100,7 @@ public abstract class AIUtil {
     }
 
     // Returns the minimum distance to take damage without opponents.
-    public static int getMinDistanceToTakeDamage(Node startNode, int stopCount) {
+    static int getMinDistanceToTakeDamage(Node startNode, int stopCount) {
         final Map<Node, Integer> nextAreaStart = findMinDistancesToNextAreaStart(startNode, false);
         if (nextAreaStart.isEmpty()) {
             return 1;
@@ -117,7 +117,7 @@ public abstract class AIUtil {
                 .orElse(1);
     }
 
-    public static int getMinDistanceToPits(Node startNode, Set<Node> blockedNodes) {
+    static int getMinDistanceToPits(Node startNode, Set<Node> blockedNodes) {
         final Deque<Node> work = new ArrayDeque<>();
         final Map<Node, Integer> distances = new HashMap<>();
         distances.put(startNode, 0);
@@ -187,7 +187,7 @@ public abstract class AIUtil {
         }
     }
 
-    static int findMaxDistanceToStraight(Node startNode) {
+    private static int findMaxDistanceToStraight(Node startNode) {
         if (!startNode.isCurve()) {
             return 0;
         }
@@ -199,7 +199,7 @@ public abstract class AIUtil {
                 .orElse(0) + 1;
     }
 
-    static int getMaxDistanceToNextStraight(Node startNode) {
+    private static int getMaxDistanceToNextStraight(Node startNode) {
         if (startNode.isCurve()) {
             return findMaxDistanceToStraight(startNode);
         } else {
@@ -227,11 +227,11 @@ public abstract class AIUtil {
         }
     }
 
-    static Map<Node, Integer> findMaxDistancesToNextAreaStart(Node startNode) {
+    private static Map<Node, Integer> findMaxDistancesToNextAreaStart(Node startNode) {
         return findMaxDistancesToNextAreaStart(startNode, Collections.emptySet());
     }
 
-    static Map<Node, Integer> findMaxDistancesToNextAreaStart(Node startNode, Set<Node> blockedNodes) {
+    private static Map<Node, Integer> findMaxDistancesToNextAreaStart(Node startNode, Set<Node> blockedNodes) {
         final NodeType type = startNode.getType();
         if (startNode.isCurve() || startNode.isPit()) {
             final Deque<Node> work = new ArrayDeque<>();
@@ -267,7 +267,7 @@ public abstract class AIUtil {
         return findMinDistancesToNextAreaStart(startNode, allowNonOptimalLastMove, Collections.emptySet());
     }
 
-    static Map<Node, Integer> findMinDistancesToNextAreaStart(Node startNode, boolean allowNonOptimalLastMove, Set<Node> blockedNodes) {
+    private static Map<Node, Integer> findMinDistancesToNextAreaStart(Node startNode, boolean allowNonOptimalLastMove, Set<Node> blockedNodes) {
         final boolean startNodeIsCurve = startNode.isCurve();
         final Deque<Node> work = new ArrayDeque<>();
         final Map<Node, Integer> matchingTypeDistances = new HashMap<>();

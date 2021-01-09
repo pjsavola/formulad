@@ -2,8 +2,6 @@ package gp.editor;
 
 import gp.ai.Node;
 
-import java.awt.*;
-
 public class CreateEdgeItem implements UndoItem {
     private final Node from;
     private final Node to;

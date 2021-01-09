@@ -7,7 +7,7 @@ import java.util.Objects;
 
 public class GameState implements Serializable {
   private GameId game = null;
-  private List<PlayerState> players = new ArrayList<PlayerState>();
+  private List<PlayerState> players = new ArrayList<>();
 
   public GameState game(GameId game) {
     this.game = game;
@@ -21,21 +21,12 @@ public class GameState implements Serializable {
     this.game = game;
   }
 
-  public GameState players(List<PlayerState> players) {
-    this.players = players;
-    return this;
-  }
-
-  public GameState addPlayersItem(PlayerState playersItem) {
+  public void addPlayersItem(PlayerState playersItem) {
     this.players.add(playersItem);
-    return this;
   }
 
   public List<PlayerState> getPlayers() {
     return players;
-  }
- public void setPlayers(List<PlayerState> players) {
-    this.players = players;
   }
 
   @Override
@@ -58,12 +49,10 @@ public class GameState implements Serializable {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("class GameState {\n");
-    sb.append("    game: ").append(toIndentedString(game)).append("\n");
-    sb.append("    players: ").append(toIndentedString(players)).append("\n");
-    sb.append("}");
-    return sb.toString();
+      return "class GameState {\n" +
+              "    game: " + toIndentedString(game) + "\n" +
+              "    players: " + toIndentedString(players) + "\n" +
+              "}";
   }
 
   /**

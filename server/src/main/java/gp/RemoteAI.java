@@ -23,7 +23,7 @@ public class RemoteAI implements AI {
     private GameState gameState;
     private int gear;
 
-    public RemoteAI(Socket clientSocket) {
+    RemoteAI(Socket clientSocket) {
         this.socket = clientSocket;
         try {
             ois = new ObjectInputStream(socket.getInputStream());
@@ -54,7 +54,7 @@ public class RemoteAI implements AI {
         return null;
     }
 
-    public void close() {
+    void close() {
         try {
             if (ois != null) {
                 ois.close();
@@ -70,7 +70,7 @@ public class RemoteAI implements AI {
         oos = null;
     }
 
-    public ProfileMessage getProfile(TrackData data) {
+    ProfileMessage getProfile(TrackData data) {
         fallback = new AmateurAI(data);
         if (oos != null && ois != null) {
             try {

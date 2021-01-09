@@ -1,19 +1,13 @@
 package gp;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBuffer;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import javax.imageio.ImageIO;
-import javax.swing.*;
 
 public abstract class ImageCache {
 
@@ -52,7 +46,7 @@ public abstract class ImageCache {
                 getDefaultScreenDevice().getDefaultConfiguration();
     }
 
-    public static List<BufferedImage> getCarIcons() {
+    static List<BufferedImage> getCarIcons() {
         final List<BufferedImage> icons = new ArrayList<>();
         GraphicsConfiguration gc = getConfiguration();
         int[] sizes = { 16, 32, 64, 128 };

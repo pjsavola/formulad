@@ -4,21 +4,19 @@ import gp.ai.Node;
 import gp.ai.TrackData;
 import gp.model.FinalStandings;
 import gp.model.PlayerStats;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.annotation.Nonnull;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class Season implements Comparable<Season>, TrackSelector {
     private final String name;
@@ -60,9 +58,7 @@ public class Season implements Comparable<Season>, TrackSelector {
         panel.add(rightPanel);
         buttonPanel = new JPanel(new GridLayout(0, 2));
         final JButton addTrackButton = new JButton("Add track...");
-        addTrackButton.addActionListener(a -> {
-            TrackPreviewButton.openTrackSelectionDialog(frame, this);
-        });
+        addTrackButton.addActionListener(a -> TrackPreviewButton.openTrackSelectionDialog(frame, this));
         buttonPanel.add(addTrackButton);
         if (trackIds != null) {
             trackIds.parallelStream().map(f -> {
@@ -98,7 +94,7 @@ public class Season implements Comparable<Season>, TrackSelector {
                 final ProfileMessage localProfile = localProfiles.stream().filter(p -> p.getName().equals(msg.getName())).findFirst().orElse(null);
                 if (localProfile != null) {
                     localProfiles.remove(localProfile);
-                    msg.setLocal(true);
+                    msg.setLocal();
                 }
                 slots[i].setProfile(msg);
                 ++i;
@@ -260,16 +256,11 @@ public class Season implements Comparable<Season>, TrackSelector {
                         final PlayerStats[] stats = results.get(index).getStats();
                         Map<String, UUID> idMapper = new HashMap<>();
                         for (PlayerStats stat : stats) idMapper.put(stat.playerId, stat.id);
-                        final PlayerRenderer renderer = new PlayerRenderer() {
-                            @Override
-                            public void renderPlayer(Graphics2D g2d, int x, int y, int i, String playerId) {
-                                participants.stream().filter(p -> p.getId().equals(idMapper.get(playerId))).findAny().ifPresent(p -> {
-                                    final String name = p.getName();
-                                    g2d.drawString(name, x + 30, y + (i + 1) * 15 + 15);
-                                    Player.draw(g2d, x + 15, y + (i + 1) * 15 + 10, 0, new Color(p.getColor1()), new Color(p.getColor2()), 1.0);
-                                });
-                            }
-                        };
+                        final PlayerRenderer renderer = (g2d, x, y, i1, playerId) -> participants.stream().filter(p -> p.getId().equals(idMapper.get(playerId))).findAny().ifPresent(p -> {
+                            final String name = p.getName();
+                            g2d.drawString(name, x + 30, y + (i1 + 1) * 15 + 15);
+                            Player.draw(g2d, x + 15, y + (i1 + 1) * 15 + 10, 0, new Color(p.getColor1()), new Color(p.getColor2()), 1.0);
+                        });
                         final JDialog dialog = new JDialog(frame);
                         final int height = 5 + 15 * (stats.length + 1);
                         final JPanel panel = new JPanel() {
@@ -468,7 +459,7 @@ public class Season implements Comparable<Season>, TrackSelector {
         save();
     }
 
-    void save() {
+    private void save() {
         timeStamp = System.currentTimeMillis();
         try (final PrintWriter writer = new PrintWriter(name + ".cha", "UTF-8")) {
             writer.print(name);
@@ -512,7 +503,7 @@ public class Season implements Comparable<Season>, TrackSelector {
     }
 
     @Override
-    public int compareTo(Season season) {
+    public int compareTo(@Nonnull Season season) {
         return (int) ((season.timeStamp - timeStamp) / 1000);
     }
 

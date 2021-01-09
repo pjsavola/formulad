@@ -10,7 +10,7 @@ public class SettingsField extends JPanel {
     private final int min;
     private final int max;
 
-    public SettingsField(JPanel parent, String name, String initialValue, int minValue, int maxValue) {
+    SettingsField(JPanel parent, String name, String initialValue, int minValue, int maxValue) {
         super(new FlowLayout(FlowLayout.LEFT));
         final JLabel label = new JLabel(name);
         final JTextField field = new JTextField(initialValue);

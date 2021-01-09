@@ -29,7 +29,7 @@ public class UndoStack {
         menuItem.setEnabled(canUndo());
     }
 
-    public boolean canUndo() {
+    private boolean canUndo() {
         return !items.isEmpty();
     }
 

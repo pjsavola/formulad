@@ -70,16 +70,16 @@ public class Profile implements Serializable {
             this.standings = standings;
         }
 
-        public boolean isComplete() {
+        boolean isComplete() {
             return complete;
         }
 
-        public boolean isChampionshipRace() {
+        boolean isChampionshipRace() {
             return isChampionshipRace;
         }
     }
 
-    public Profile(Manager manager, String name) {
+    Profile(Manager manager, String name) {
         id = UUID.randomUUID();
         this.name = name;
         this.manager = manager;
@@ -98,40 +98,40 @@ public class Profile implements Serializable {
         return name;
     }
 
-    public void setColor1(int color1) {
+    void setColor1(int color1) {
         this.color1 = color1;
     }
 
-    public int getColor1() {
+    int getColor1() {
         return color1;
     }
 
-    public void setColor2(int color2) {
+    void setColor2(int color2) {
         this.color2 = color2;
     }
 
-    public int getColor2() {
+    int getColor2() {
         return color2;
     }
 
-    public void setActive(boolean active) {
+    void setActive(boolean active) {
         this.active = active;
     }
 
-    public boolean isActive() {
+    boolean isActive() {
         return active;
     }
 
-    public List<Result> getResults() {
+    List<Result> getResults() {
         return results;
     }
 
-    public void setManager(Profile.Manager manager) {
+    void setManager(Profile.Manager manager) {
         this.manager = manager;
         manager.profiles.add(this);
     }
 
-    public void delete() {
+    void delete() {
         manager.profiles.remove(this);
     }
 
@@ -162,20 +162,5 @@ public class Profile implements Serializable {
                 }
             }
         }
-    }
-
-    public String getLastTrack() {
-        final String trackId;
-        if (!results.isEmpty()) {
-            trackId = results.get(results.size() - 1).trackId;
-            try {
-                if (Main.validateTrack(trackId, false)) {
-                    return trackId;
-                }
-            } catch (Exception e) {
-                // TODO: Better exception handling
-            }
-        }
-        return Main.settings.trackId;
     }
 }
