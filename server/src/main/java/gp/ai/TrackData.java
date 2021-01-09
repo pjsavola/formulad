@@ -262,6 +262,10 @@ public class TrackData implements Serializable {
                                 break;
                             }
                         }
+                        straight.childStream().filter(Node::isPit).findAny().ifPresent(pitNode -> {
+                            pit.setValue(pitNode);
+                            pitNode.setDistance(newMaxDistance - 0.4);
+                        });
                         break;
                     }
                 }
