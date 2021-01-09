@@ -1,6 +1,8 @@
 package gp;
 
 
+import org.apache.commons.lang3.StringUtils;
+
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -36,8 +38,7 @@ class ProfileStats extends JDialog {
         results = profile.getResults();
         for (final Profile.Result result : results) {
             final String track = result.trackId;
-            final String firstLetter = Character.toString(track.charAt(0)).toUpperCase();
-            final String trackName = firstLetter + track.substring(1, track.length() - 4).toLowerCase();
+            final String trackName = StringUtils.capitalize(track.substring(0, track.length() - 4));
             tracks.add(trackName);
             trackNameToId.put(trackName, track);
         }
