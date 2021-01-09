@@ -2,6 +2,8 @@ package gp;
 
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
@@ -14,6 +16,7 @@ class ProfileStats extends JDialog {
     private Predicate<Profile.Result> trackFilter;
     private Predicate<Profile.Result> typeFilter;
     private Predicate<Profile.Result> playerCountFilter = r -> r.standings != null;
+    private Predicate<Profile.Result> lapCountFilter;
     private final JLabel completedRaces = new JLabel();
     private final JLabel dnfRaces = new JLabel();
     private final JLabel completedLaps = new JLabel();
@@ -73,15 +76,37 @@ class ProfileStats extends JDialog {
             playerCountFilter = r -> r.standings != null && r.standings.size() >= min && r.standings.size() <= max;
             updateStats();
         });
+        final JTextField lapFilter = new JTextField();
+        lapFilter.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                update();
+            }
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                update();
+            }
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                update();
+            }
+            private void update() {
+                try {
+                    final int value = Integer.parseInt(lapFilter.getText());
+                    lapCountFilter = r -> r.totalLaps == value;
+                } catch (NumberFormatException e) {
+                    lapCountFilter = null;
+                }
+                updateStats();
+            }
+        });
 
-        final JPanel contents = new JPanel(new GridLayout(0, 3));
+        final JPanel contents = new JPanel(new GridLayout(0, 2));
         contents.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         contents.add(new JLabel("Total Races:"));
         contents.add(new JLabel(Integer.toString(results.size())));
-        contents.add(new JLabel());
         contents.add(new JLabel("Aborted Races:"));
         contents.add(new JLabel(Long.toString(results.stream().filter(r -> !r.isComplete()).count())));
-        contents.add(new JLabel());
 
         final String timeString;
         final long timeSeconds = results.stream().mapToLong(r -> r.timeUsedMs).sum() / 1000;
@@ -96,32 +121,26 @@ class ProfileStats extends JDialog {
         contents.add(new JLabel(timeString));
         contents.add(new JLabel());
         contents.add(new JLabel());
-        contents.add(new JLabel());
-        contents.add(new JLabel());
         contents.add(new JLabel("Track filter"));
-        contents.add(new JLabel("Race type filter"));
-        contents.add(new JLabel("Player count filter"));
         contents.add(trackFilter);
+        contents.add(new JLabel("Race type filter"));
         contents.add(typeFilter);
+        contents.add(new JLabel("Player count filter"));
         contents.add(playerFilter);
+        contents.add(new JLabel("Lap count filter"));
+        contents.add(lapFilter);
         contents.add(new JLabel("Completed Races:"));
         contents.add(completedRaces);
-        contents.add(new JLabel());
         contents.add(new JLabel("DNF Races:"));
         contents.add(dnfRaces);
-        contents.add(new JLabel());
         contents.add(new JLabel("Completed Laps:"));
         contents.add(completedLaps);
-        contents.add(new JLabel());
         contents.add(new JLabel("Wins:"));
         contents.add(wins);
-        contents.add(new JLabel());
         contents.add(new JLabel("Podiums:"));
         contents.add(podiums);
-        contents.add(new JLabel());
         contents.add(new JLabel("Championship points:"));
         contents.add(championshipPoints);
-        contents.add(new JLabel());
         setContentPane(contents);
         pack();
         setModal(true);
@@ -133,6 +152,7 @@ class ProfileStats extends JDialog {
         Stream<Profile.Result> stream = results.stream().filter(Profile.Result::isComplete);
         if (trackFilter != null) stream = stream.filter(trackFilter);
         if (typeFilter != null) stream = stream.filter(typeFilter);
+        if (lapCountFilter != null) stream = stream.filter(lapCountFilter);
         stream = stream.filter(playerCountFilter);
         final List<Profile.Result> filteredResults = stream.collect(Collectors.toList());
         completedRaces.setText(Long.toString(filteredResults.stream().filter(Profile.Result::isComplete).count()));
