@@ -23,6 +23,7 @@ class ProfileStats extends JDialog {
     private final JLabel wins = new JLabel();
     private final JLabel podiums = new JLabel();
     private final JLabel championshipPoints = new JLabel();
+    private final JLabel bestResult = new JLabel();
 
     ProfileStats(JFrame frame, Profile profile) {
         super(frame);
@@ -141,6 +142,8 @@ class ProfileStats extends JDialog {
         contents.add(podiums);
         contents.add(new JLabel("Championship points:"));
         contents.add(championshipPoints);
+        contents.add(new JLabel("Quickest finish in turns:"));
+        contents.add(bestResult);
         setContentPane(contents);
         pack();
         setModal(true);
@@ -165,5 +168,7 @@ class ProfileStats extends JDialog {
         } else {
             championshipPoints.setText(Integer.toString(filteredResults.stream().filter(Profile.Result::isComplete).filter(Profile.Result::isChampionshipRace).mapToInt(r -> Season.pointDistribution[r.position - 1]).sum()));
         }
+        final int minTurns = filteredResults.stream().filter(r -> r.remainingHitpoints > 0).filter(r -> r.turns > 0).mapToInt(r -> r.turns).min().orElse(0);
+        bestResult.setText(minTurns > 0 ? Integer.toString(minTurns) : "");
     }
 }

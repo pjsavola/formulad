@@ -43,7 +43,7 @@ public class Profile implements Serializable {
         private final int gridPosition;
         private boolean complete;
         int position;
-        private int turns;
+        int turns;
         int remainingHitpoints;
         int completedLaps;
         private double coveredDistance;
