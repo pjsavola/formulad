@@ -39,8 +39,8 @@ public class Profile implements Serializable {
         private static final long serialVersionUID = -299482035708790406L;
         final String trackId;
         final int totalLaps;
-        private final int totalHitpoints;
-        private final int gridPosition;
+        final int totalHitpoints;
+        final int gridPosition;
         private boolean complete;
         int position;
         int turns;

@@ -17,6 +17,7 @@ class ProfileStats extends JDialog {
     private Predicate<Profile.Result> typeFilter;
     private Predicate<Profile.Result> playerCountFilter = r -> r.standings != null;
     private Predicate<Profile.Result> lapCountFilter;
+    private Predicate<Profile.Result> hitpointFilter;
     private final JLabel completedRaces = new JLabel();
     private final JLabel dnfRaces = new JLabel();
     private final JLabel completedLaps = new JLabel();
@@ -78,27 +79,27 @@ class ProfileStats extends JDialog {
             updateStats();
         });
         final JTextField lapFilter = new JTextField();
-        lapFilter.getDocument().addDocumentListener(new DocumentListener() {
+        lapFilter.getDocument().addDocumentListener(new FieldListener() {
             @Override
-            public void insertUpdate(DocumentEvent e) {
-                update();
-            }
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                update();
-            }
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                update();
-            }
-            private void update() {
+            void updateFilter() {
                 try {
                     final int value = Integer.parseInt(lapFilter.getText());
                     lapCountFilter = r -> r.totalLaps == value;
                 } catch (NumberFormatException e) {
                     lapCountFilter = null;
                 }
-                updateStats();
+            }
+        });
+        final JTextField hpFilter = new JTextField();
+        hpFilter.getDocument().addDocumentListener(new FieldListener() {
+            @Override
+            void updateFilter() {
+                try {
+                    final int value = Integer.parseInt(hpFilter.getText());
+                    hitpointFilter = r -> r.totalHitpoints == value;
+                } catch (NumberFormatException e) {
+                    hitpointFilter = null;
+                }
             }
         });
 
@@ -130,6 +131,8 @@ class ProfileStats extends JDialog {
         contents.add(playerFilter);
         contents.add(new JLabel("Lap count filter"));
         contents.add(lapFilter);
+        contents.add(new JLabel("Hitpoint filter"));
+        contents.add(hpFilter);
         contents.add(new JLabel("Completed Races:"));
         contents.add(completedRaces);
         contents.add(new JLabel("DNF Races:"));
@@ -156,6 +159,7 @@ class ProfileStats extends JDialog {
         if (trackFilter != null) stream = stream.filter(trackFilter);
         if (typeFilter != null) stream = stream.filter(typeFilter);
         if (lapCountFilter != null) stream = stream.filter(lapCountFilter);
+        if (hitpointFilter != null) stream = stream.filter(hitpointFilter);
         stream = stream.filter(playerCountFilter);
         final List<Profile.Result> filteredResults = stream.collect(Collectors.toList());
         completedRaces.setText(Long.toString(filteredResults.stream().filter(Profile.Result::isComplete).count()));
@@ -170,5 +174,24 @@ class ProfileStats extends JDialog {
         }
         final int minTurns = filteredResults.stream().filter(r -> r.remainingHitpoints > 0).filter(r -> r.turns > 0).mapToInt(r -> r.turns).min().orElse(0);
         bestResult.setText(minTurns > 0 ? Integer.toString(minTurns) : "");
+    }
+
+    abstract class FieldListener implements DocumentListener {
+        @Override
+        public void insertUpdate(DocumentEvent e) {
+            updateFilter();
+            updateStats();
+        }
+        @Override
+        public void removeUpdate(DocumentEvent e) {
+            updateFilter();
+            updateStats();
+        }
+        @Override
+        public void changedUpdate(DocumentEvent e) {
+            updateFilter();
+            updateStats();
+        }
+        abstract void updateFilter();
     }
 }
