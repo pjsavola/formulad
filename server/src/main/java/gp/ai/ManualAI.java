@@ -1,21 +1,18 @@
 package gp.ai;
 
+import gp.Game;
+import gp.Profile;
+import gp.model.*;
+import gp.model.Gear;
+import org.apache.commons.lang3.mutable.MutableInt;
+
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-
-import javax.swing.JFrame;
-
-import gp.Main;
-import gp.Profile;
-import gp.Game;
-import gp.model.*;
-import gp.model.Gear;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 public class ManualAI extends BaseAI {
 
@@ -65,7 +62,6 @@ public class ManualAI extends BaseAI {
         if (ai instanceof ProAI) {
             ((ProAI) ai).updatePlayerInfo(gameState);
         }
-        final int finalStopCount = stopCount;
         final MutableInt selectedGear = new MutableInt(0);
         final boolean inPits = location != null && location.getType() == NodeType.PIT;
         game.actionMenu.removeAll();
@@ -80,9 +76,7 @@ public class ManualAI extends BaseAI {
                 final MenuItem item = new MenuItem(label);
                 item.setShortcut(new MenuShortcut(KeyEvent.VK_0 + newGear));
                 final int finalNewGear = newGear;
-                item.addActionListener(e -> {
-                    selectedGear.setValue(finalNewGear);
-                });
+                item.addActionListener(e -> selectedGear.setValue(finalNewGear));
                 game.actionMenu.add(item);
             }
         }

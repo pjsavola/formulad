@@ -54,11 +54,11 @@ public final class Node implements Serializable, Comparable<Node> {
         this.point = point;
     }
 
-    public void setStepsToFinishLine(int steps) {
+    void setStepsToFinishLine(int steps) {
         stepsToFinishLine = steps;
     }
 
-    public void setAreaIndex(int index) {
+    void setAreaIndex(int index) {
         areaIndex = index;
     }
 
@@ -90,11 +90,11 @@ public final class Node implements Serializable, Comparable<Node> {
         return point;
     }
 
-    public int getStepsToFinishLine() {
+    int getStepsToFinishLine() {
         return stepsToFinishLine;
     }
 
-    public int getAreaIndex() {
+    int getAreaIndex() {
         return areaIndex;
     }
 
@@ -108,8 +108,8 @@ public final class Node implements Serializable, Comparable<Node> {
         }
     }
 
-    public boolean removeChild(Node node) {
-        return nextNodes.remove(node);
+    public void removeChild(Node node) {
+        nextNodes.remove(node);
     }
 
     public void forEachChild(Consumer<Node> consumer) {
@@ -122,10 +122,6 @@ public final class Node implements Serializable, Comparable<Node> {
 
     public boolean hasChild(Node node) {
         return nextNodes.contains(node);
-    }
-
-    public boolean hasChildren(Collection<Node> node) {
-        return nextNodes.containsAll(node);
     }
 
     public Stream<Node> childStream() {

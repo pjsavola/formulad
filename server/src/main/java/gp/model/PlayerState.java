@@ -1,7 +1,5 @@
 package gp.model;
 
-import gp.ai.NodeType;
-
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -11,7 +9,6 @@ import java.util.Objects;
 public class PlayerState implements Serializable {
   private String playerId = null;
   private Integer gear = null;
-  private NodeType type = null;
   private Integer nodeId = null;
   private Integer hitpoints = null;
   private Integer stops = null;
@@ -40,18 +37,6 @@ public class PlayerState implements Serializable {
   }
   public void setGear(Integer gear) {
     this.gear = gear;
-  }
-
-  public PlayerState type(NodeType type) {
-    this.type = type;
-    return this;
-  }
-
-  public NodeType getType() {
-    return type;
-  }
-  public void setType(NodeType type) {
-    this.type = type;
   }
 
   public Integer getNodeId() {
@@ -117,7 +102,6 @@ public class PlayerState implements Serializable {
     PlayerState playerState = (PlayerState) o;
     return Objects.equals(this.playerId, playerState.playerId) &&
         Objects.equals(this.gear, playerState.gear) &&
-        Objects.equals(this.type, playerState.type) &&
         Objects.equals(this.nodeId, playerState.nodeId) &&
         Objects.equals(this.hitpoints, playerState.hitpoints) &&
         Objects.equals(this.stops, playerState.stops) &&
@@ -127,7 +111,7 @@ public class PlayerState implements Serializable {
 
   @Override
   public int hashCode() {
-    return Objects.hash(playerId, gear, type, nodeId, hitpoints, stops, leeway, lapsToGo);
+    return Objects.hash(playerId, gear, nodeId, hitpoints, stops, leeway, lapsToGo);
   }
 
   @Override
@@ -135,7 +119,6 @@ public class PlayerState implements Serializable {
     return "class PlayerState {\n" +
             "    playerId: " + toIndentedString(playerId) + "\n" +
             "    gear: " + toIndentedString(gear) + "\n" +
-            "    type: " + toIndentedString(type) + "\n" +
             "    nodeId: " + toIndentedString(nodeId) + "\n" +
             "    hitpoints: " + toIndentedString(hitpoints) + "\n" +
             "    stops: " + toIndentedString(stops) + "\n" +

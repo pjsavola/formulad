@@ -13,8 +13,6 @@
 
 package gp.model;
 
-import gp.ai.NodeType;
-
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -22,22 +20,9 @@ import java.util.Objects;
  * A valid move a player can take containing the identifier of the node and what repercussions there will be for choosing that
  */
 public class ValidMove implements Serializable {
-  private NodeType type = null;
   private Integer nodeId = null;
   private Integer overshoot = null;
   private Integer braking = null;
-
-  public ValidMove type(NodeType type) {
-    this.type = type;
-    return this;
-  }
-
-  public NodeType getType() {
-    return type;
-  }
-  public void setType(NodeType type) {
-    this.type = type;
-  }
 
   public ValidMove nodeId(Integer nodeId) {
     this.nodeId = nodeId;
@@ -84,7 +69,7 @@ public class ValidMove implements Serializable {
       return false;
     }
     ValidMove validMove = (ValidMove) o;
-    return Objects.equals(this.type, validMove.type) &&
+    return
         Objects.equals(this.nodeId, validMove.nodeId) &&
         Objects.equals(this.overshoot, validMove.overshoot) &&
         Objects.equals(this.braking, validMove.braking);
@@ -92,13 +77,12 @@ public class ValidMove implements Serializable {
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, nodeId, overshoot, braking);
+    return Objects.hash(nodeId, overshoot, braking);
   }
 
   @Override
   public String toString() {
     return "class ValidMove {\n" +
-            "    type: " + toIndentedString(type) + "\n" +
             "    nodeId: " + toIndentedString(nodeId) + "\n" +
             "    overshoot: " + toIndentedString(overshoot) + "\n" +
             "    braking: " + toIndentedString(braking) + "\n" +

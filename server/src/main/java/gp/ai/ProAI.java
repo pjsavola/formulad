@@ -5,6 +5,7 @@ import gp.NodeUtil;
 import gp.Player;
 import gp.model.*;
 
+import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -260,7 +261,7 @@ public class ProAI extends BaseAI {
             this.max = max;
         }
         @Override
-        public int compareTo(Scores scores) {
+        public int compareTo(@Nonnull Scores scores) {
             final int sum1 = median + min + max;
             final int sum2 = scores.median + scores.min + scores.max;
             if (sum2 == sum1) {

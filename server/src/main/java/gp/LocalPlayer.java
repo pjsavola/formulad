@@ -267,7 +267,6 @@ public final class LocalPlayer extends Player {
                 if (damage < hitpoints) {
                     validMoves.add(new ValidMove()
                         .nodeId(e.getKey().getId())
-                        .type(e.getKey().getType())
                         .overshoot(e.getValue().getDamage())
                         .braking(braking)
                     );
@@ -364,7 +363,6 @@ public final class LocalPlayer extends Player {
     void populate(PlayerState playerState) {
         playerState.setPlayerId(playerId);
         playerState.setNodeId(node.getId());
-        playerState.setType(node.getType());
         playerState.setHitpoints(hitpoints);
         playerState.setGear(gear);
         playerState.setStops(curveStops);
