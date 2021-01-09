@@ -571,11 +571,12 @@ public class MapEditor extends JPanel {
 
     private static Pair<String, Corner> parseHeaderRow(String headerLine) {
         if (headerLine != null && !headerLine.isEmpty()) {
-            final String[] parts = headerLine.split(" ");
+            final int separatorIndex = headerLine.indexOf(".");
+            final String[] parts = headerLine.substring(separatorIndex).split(" ");
             if (parts.length < 2) return null;
             try {
                 final int infoBoxCorner = Integer.parseInt(parts[1]);
-                return Pair.of(parts[0], Corner.values()[infoBoxCorner]);
+                return Pair.of(headerLine.substring(0, separatorIndex) + parts[0], Corner.values()[infoBoxCorner]);
             } catch (NumberFormatException e) {
                 // Fail...
             }
@@ -878,7 +879,7 @@ public class MapEditor extends JPanel {
             try {
                 TrackData.updateDistances(nodes, attributes);
             } catch (Exception e) {
-                JOptionPane.showConfirmDialog(this, "Error when calculating distances: " + e.getMessage(), "Distance calculation error", JOptionPane.DEFAULT_OPTION);
+                // No need to report an error. This is visualization tool.
             }
         }
         if (!showLanes) {
