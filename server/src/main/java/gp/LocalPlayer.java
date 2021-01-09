@@ -14,7 +14,6 @@ import gp.model.*;
 
 public final class LocalPlayer extends Player {
     private UUID id;
-    private int lapsToGo;
     private final List<DamageAndPath> paths = new ArrayList<>();
     private final JPanel panel; // for repaint requests needed for animations
     static int animationDelayInMillis;

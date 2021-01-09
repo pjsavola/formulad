@@ -24,7 +24,7 @@ public class Player {
     private final JPanel panel; // for repaint requests needed for animations
     private final List<Node> route = new ArrayList<>();
     private static final Color transparentWhite = new Color(1.0f, 1.0f, 1.0f, 0.3f);
-    private int lapsToGo;
+    int lapsToGo;
     static final Font rollFont = new Font("Arial", Font.PLAIN, 20);
     private static final Font statsFont = new Font("Arial", Font.PLAIN, 12);
 
@@ -238,6 +238,7 @@ public class Player {
             g.drawString("G: " + Integer.toString(gear), x + 160, y);
             g.setColor(Color.BLACK);
             g.drawString("S: " + Integer.toString(curveStops), x + 190, y);
+            g.drawString("L: " + Integer.toString(lapsToGo + 1), x + 220, y);
         }
     }
 
