@@ -406,19 +406,19 @@ public class MapEditor extends JPanel {
             drawNode(g2d, node);
         }
         UIUtil.drawInfoBox(g2d, panelDim, 10, infoBoxCorner);
-        final int x = UIUtil.getX(infoBoxCorner, panelDim, 280);
+        final int x = UIUtil.getX(infoBoxCorner, panelDim, UIUtil.infoBoxWidth);
         final int y = UIUtil.getY(infoBoxCorner, panelDim, 5 + 15 * 10);
         if (selectedNode != null) {
             final Point p = selectedNode.getLocation();
             drawOval(g2d, p.x, p.y, DIAMETER + 2, DIAMETER + 2, false, Color.YELLOW, 1);
             final Double attr = attributes.get(selectedNode);
             if (attr != null) {
-                drawOval(g2d, x + 240, y + 40, 50, 50, true, Color.BLACK, 1);
+                drawOval(g2d, x + UIUtil.infoBoxWidth - 40, y + 40, 50, 50, true, Color.BLACK, 1);
                 final String attrStr = Double.toString(attr);
                 g2d.setColor(Color.WHITE);
                 g2d.setFont(Player.rollFont);
                 final int width = g2d.getFontMetrics().stringWidth(attrStr);
-                g2d.drawString(attrStr, x + 240 - width / 2, y + 48);
+                g2d.drawString(attrStr, x + UIUtil.infoBoxWidth - 40 - width / 2, y + 48);
             }
         }
         g.setColor(Color.BLACK);
