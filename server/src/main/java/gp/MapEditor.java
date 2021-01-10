@@ -311,8 +311,8 @@ public class MapEditor extends JPanel {
                             break;
                         case KeyEvent.VK_D:
                             debugNeighbors.clear();
-                            TrackData.build(nodes, attributes);
-                            final Map<Node, Set<Node>> collisionMap = TrackLanes.buildCollisionMap(nodes);
+                            final int laneCount = TrackData.build(nodes, attributes, new ArrayList<>(10));
+                            final Map<Node, Set<Node>> collisionMap = TrackLanes.buildCollisionMap(nodes, laneCount);
                             debugNeighbors.addAll(collisionMap.get(selectedNode));
                             repaint();
                             return;
@@ -797,7 +797,7 @@ public class MapEditor extends JPanel {
     private void unifyNodeIdentifiers() {
         try {
             select(null);
-            TrackData.build(nodes, attributes);
+            TrackData.build(nodes, attributes, new ArrayList<>(10));
             nodes.sort(Comparator.reverseOrder());
             final List<Node> newNodes = new ArrayList<>();
             final Map<Node, Double> newAttributes = new HashMap<>();
@@ -901,12 +901,13 @@ public class MapEditor extends JPanel {
 
     private void validateTrack() {
 	    try {
-            final List<Node> grid = TrackData.build(nodes, attributes);
+	        final List<Node> grid = new ArrayList<>(10);
+            final int laneCount = TrackData.build(nodes, attributes, grid);
             if (grid.size() < 10) {
                 JOptionPane.showConfirmDialog(this, "Track validation failed: Starting grid has less than 10 spots", "Validation Error", JOptionPane.DEFAULT_OPTION);
                 return;
             }
-            TrackLanes.buildCollisionMap(nodes);
+            TrackLanes.buildCollisionMap(nodes, laneCount);
             JOptionPane.showConfirmDialog(this, "Track seems OK", "Success", JOptionPane.DEFAULT_OPTION);
         } catch (Exception e) {
             JOptionPane.showConfirmDialog(this, "Track validation failed: " + e.getMessage(), "Validation Error", JOptionPane.DEFAULT_OPTION);

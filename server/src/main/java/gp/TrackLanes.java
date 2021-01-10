@@ -103,7 +103,7 @@ public class TrackLanes {
         return (int) (100 * distance + 0.5);
     }
 
-    public static Map<Node, Set<Node>> buildCollisionMap(Collection<Node> nodes) {
+    public static Map<Node, Set<Node>> buildCollisionMap(Collection<Node> nodes, int laneCount) {
         if (nodes.stream().anyMatch(node -> node.getDistance() < 0.0)) {
             throw new RuntimeException("Some nodes have undefined distances when trying to build collision map");
         }

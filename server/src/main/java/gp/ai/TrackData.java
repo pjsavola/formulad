@@ -65,7 +65,8 @@ public class TrackData implements Serializable {
             if (result == null) {
                 return null;
             }
-            final List<Node> grid = build(nodes, attributes);
+            final List<Node> grid = new ArrayList<>(10);
+            final int laneCount = build(nodes, attributes, grid);
             if (grid.size() < 10) {
                 return null;
             }
@@ -77,60 +78,64 @@ public class TrackData implements Serializable {
             if (image == null) {
                 return null;
             }*/
-            final Map<Node, Set<Node>> collisionMap = TrackLanes.buildCollisionMap(nodes);
+            final Map<Node, Set<Node>> collisionMap = TrackLanes.buildCollisionMap(nodes, laneCount);
             return new TrackData(trackId, external, nodes, grid, collisionMap, result.getLeft(), result.getRight());
         } catch (Exception e) {
             return null;
         }
     }
 
-    public static void updateDistances(List<Node> nodes, Map<Node, Double> attributes) {
-        for (Node node : nodes) {
-            node.setDistance(-1.0);
-            if (node.getType() == NodeType.BLOCKED) {
-                // Temporarily set this distance for blocked nodes to avoid visiting them later.
-                node.setDistance(0.0);
-            }
-        }
+    private static int processFinishLine(List<Node> nodes, Map<Node, List<Node>> prevNodeMap, Deque<Node> work, Deque<Node> curves) {
         final List<Node> edges = nodes.stream().filter(Node::hasFinish).collect(Collectors.toList());
-        if (edges.size() != 3) {
-            throw new RuntimeException("Unable to find Finish line of width 3");
+        final int laneCount = edges.size();
+        if (laneCount < 3 || laneCount > 4) {
+            throw new RuntimeException("Invalid finish line width " + laneCount);
         }
-        final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
-        final Deque<Node> work = new ArrayDeque<>();
-        final Deque<Node> curves = new ArrayDeque<>();
         final Set<Node> children = new HashSet<>();
         edges.forEach(n -> n.childStream().filter(Node::hasFinish).forEach(children::add));
-        Node center = null;
-        if (children.size() == 1) {
-            center = children.iterator().next();
+        if (laneCount == 4) {
+            if (children.size() != 2) {
+                throw new RuntimeException("Malformed Finish line of width 4");
+            }
+            edges.stream().filter(n -> !children.contains(n)).forEach(n -> {
+                n.setDistance(0.0);
+                work.addLast(n);
+            });
+        } else if (children.size() == 1) {
+            final Node center = children.iterator().next();
             edges.remove(center);
             center.setDistance(0.5);
             edges.get(0).setDistance(0.0);
             edges.get(1).setDistance(0.0);
             work.addLast(center);
+
+            // Handle nasty special case where finish line is just before a curve
+            if (center.childCount(null) == 1) {
+                edges.forEach(edge -> edge.childStream().filter(n -> n != center).filter(n -> !center.hasChild(n)).forEach(n -> {
+                    if (n.isCurve()) {
+                        curves.addLast(n);
+                    } else {
+                        n.setDistance(1.0);
+                        work.addLast(n);
+                    }
+                }));
+            }
         } else if (children.size() == 2) {
-            center = edges.stream().filter(n -> !children.contains(n)).findAny().orElse(null);
+            final Node center = edges.stream().filter(n -> !children.contains(n)).findAny().orElse(null);
             if (center == null) {
                 throw new RuntimeException("Malformed Finish line");
             }
-            edges.remove(center);
             center.setDistance(0.0);
             work.addLast(center);
-        } else {
-            if (edges.stream().filter(Node::isCurve).count() == 1) {
-                edges.forEach(n -> children.addAll(prevNodeMap.get(n)));
-                final Optional<Node> candidate = edges.stream().filter(n -> children.stream().allMatch(prev -> prev.hasChild(n))).findAny();
-                if (candidate.isPresent()) {
-                    center = candidate.get();
-                    edges.remove(center);
-                    center.setDistance(0.0);
-                    work.addLast(center);
-                }
-            }
-            if (center == null) {
-                throw new RuntimeException("Finish line seems to be disjoint");
-            } else {
+        } else if (edges.stream().filter(Node::isCurve).count() == 1) {
+            edges.forEach(n -> children.addAll(prevNodeMap.get(n)));
+            final Optional<Node> candidate = edges.stream().filter(n -> children.stream().allMatch(prev -> prev.hasChild(n))).findAny();
+            if (candidate.isPresent()) {
+                final Node center = candidate.get();
+                edges.remove(center);
+                center.setDistance(0.0);
+                work.addLast(center);
+
                 if (edges.get(0).isCurve()) {
                     curves.addLast(edges.get(0));
                     edges.get(1).setDistance(0.5);
@@ -140,24 +145,31 @@ public class TrackData implements Serializable {
                     edges.get(0).setDistance(0.5);
                     work.addLast(edges.get(0));
                 }
+            } else {
+                throw new RuntimeException("Finish line seems to be disjoint");
+            }
+        } else {
+            throw new RuntimeException("Finish line seems to be disjoint");
+        }
+        return laneCount;
+    }
+
+    public static int updateDistances(List<Node> nodes, Map<Node, Double> attributes) {
+        for (Node node : nodes) {
+            node.setDistance(-1.0);
+            if (node.getType() == NodeType.BLOCKED) {
+                // Temporarily set this distance for blocked nodes to avoid visiting them later.
+                node.setDistance(0.0);
             }
         }
+        final Map<Node, List<Node>> prevNodeMap = AIUtil.buildPrevNodeMap(nodes);
+        final Deque<Node> work = new ArrayDeque<>();
+        final Deque<Node> curves = new ArrayDeque<>();
+        final int laneCount = processFinishLine(nodes, prevNodeMap, work, curves);
 
         int areaIndex = 0;
         final MutableObject<Node> pit = new MutableObject<>(null);
 
-        // Handle nasty special case where finish line is just before a curve
-        if (center.getDistance() == 0.5 && center.childCount(null) == 1) {
-            final Node finalCenter = center;
-            edges.forEach(edge -> edge.childStream().filter(n -> n != finalCenter).filter(n -> !finalCenter.hasChild(n)).forEach(n -> {
-                if (n.isCurve()) {
-                    curves.addLast(n);
-                } else {
-                    n.setDistance(1.0);
-                    work.addLast(n);
-                }
-            }));
-        }
         while (!work.isEmpty()) {
             final Node node = work.removeFirst();
             if (node.childCount(NodeType.PIT) == 0) {
@@ -231,7 +243,7 @@ public class TrackData implements Serializable {
                     });
                 }
                 final double newMaxDistance = nodes.stream().map(Node::getDistance).mapToDouble(Double::doubleValue).max().orElse(0);
-                center = null;
+                Node center = null;
                 if (work.isEmpty()) {
                     throw new RuntimeException("Track cannot end in a curve");
                 }
@@ -343,18 +355,18 @@ public class TrackData implements Serializable {
                 throw new RuntimeException("Identical distances for child nodes, unable to deduce lanes: " + n.getId());
             }
         });
+        return laneCount;
     }
 
-    public static List<Node> build(List<Node> nodes, Map<Node, Double> attributes) {
-        updateDistances(nodes, attributes);
+    public static int build(List<Node> nodes, Map<Node, Double> attributes, List<Node> grid) {
+        final int laneCount = updateDistances(nodes, attributes);
         nodes.stream().filter(n -> n.getDistance() < 0.0).findAny().ifPresent(n -> {
             throw new RuntimeException("Track contains unreachable node: " + n.getId() + " (" + n.getLocation().x + "," + n.getLocation().y + ")");
         });
-        final List<Node> grid = nodes
-                .stream()
-                .filter(node -> !Double.isNaN(node.getGridAngle()))
-                .sorted((n1, n2) -> TrackLanes.distanceToInt(n2.getDistance()) - TrackLanes.distanceToInt(n1.getDistance()))
-                .collect(Collectors.toList());
+        nodes.stream()
+             .filter(node -> !Double.isNaN(node.getGridAngle()))
+             .sorted((n1, n2) -> TrackLanes.distanceToInt(n2.getDistance()) - TrackLanes.distanceToInt(n1.getDistance()))
+             .forEach(grid::add);
         nodes.forEach(node -> {
             final boolean isPit = node.getType() == NodeType.PIT;
             final double distance = node.getDistance();
@@ -371,7 +383,7 @@ public class TrackData implements Serializable {
                 }
             });
         });
-        return grid;
+        return laneCount;
     }
 
     public String getTrackId() {
