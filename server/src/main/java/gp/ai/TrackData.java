@@ -219,7 +219,7 @@ public class TrackData implements Serializable {
             });
             if (work.isEmpty() && !curves.isEmpty()) {
                 ++areaIndex;
-                final double maxDistance = nodes.stream().map(Node::getDistance).mapToDouble(Double::doubleValue).max().orElse(0);
+                final double maxDistance = nodes.stream().map(Node::getDistance).mapToDouble(Double::doubleValue).max().orElse(0) + (3 - curves.stream().distinct().count()) * 0.5;
                 while (!curves.isEmpty()) {
                     final Node curve = curves.removeFirst();
                     final Double relativeDistance = attributes.get(curve);
@@ -242,7 +242,7 @@ public class TrackData implements Serializable {
                         curves.addLast(next);
                     });
                 }
-                final double newMaxDistance = nodes.stream().map(Node::getDistance).mapToDouble(Double::doubleValue).max().orElse(0);
+                final double newMaxDistance = nodes.stream().map(Node::getDistance).mapToDouble(Double::doubleValue).max().orElse(0) + (3 - work.stream().distinct().count()) * 0.5;
                 Node center = null;
                 if (work.isEmpty()) {
                     throw new RuntimeException("Track cannot end in a curve");

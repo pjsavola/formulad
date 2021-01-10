@@ -64,11 +64,27 @@ public class TrackLanes {
             collisionMap.get(otherLane.nodes.get(0)).add(firstNode);
         }
 
-        private void checkCurveDistances(Lane lane) {
+        private void checkCurveDistances(Lane lane, int laneCount) {
             boolean inCurve = false;
             int i = 0;
             int j = 0;
             while (i + 1 < nodes.size() && j + 1 < lane.nodes.size()) {
+                if (nodes.get(i + 1).getType() == NodeType.BLOCKED) {
+                    final double targetDistance = nodes.get(i + 1).getDistance();
+                    while (j + 1 < lane.nodes.size() && lane.nodes.get(j + 1).getDistance() < targetDistance) {
+                        ++j;
+                    }
+                    ++i;
+                    continue;
+                }
+                if (lane.nodes.get(j + 1).getType() == NodeType.BLOCKED) {
+                    final double targetDistance = lane.nodes.get(j + 1).getDistance();
+                    while (i + 1 < nodes.size() && nodes.get(i + 1).getDistance() < targetDistance) {
+                        ++i;
+                    }
+                    ++j;
+                    continue;
+                }
                 final boolean nextIsCurve1 = nodes.get(i + 1).isCurve();
                 final boolean nextIsCurve2 = lane.nodes.get(j + 1).isCurve();
                 if (nextIsCurve1 != inCurve && nextIsCurve2 != inCurve) {
@@ -76,7 +92,8 @@ public class TrackLanes {
                     final double dist2 = lane.nodes.get(j).getDistance();
                     final Node curveTransition1 = nodes.get(dist1 > dist2 ? i : i + 1);
                     final Node curveTransition2 = lane.nodes.get(dist1 > dist2 ? j + 1 : j);
-                    if (curveTransition1.getDistance() != curveTransition2.getDistance()) {
+                    final double distanceDiff = (laneCount - 3) * (dist1 > dist2 ? -0.5 : 0.5);
+                    if (curveTransition1.getDistance() + distanceDiff != curveTransition2.getDistance()) {
                         // Allow the case where the first node on the straight is in the middle
                         if (nodes.get(i).getDistance() != lane.nodes.get(j).getDistance()) {
                             throw new RuntimeException("Distances not properly configured at curve: " + curveTransition1.getId() + ", " + curveTransition2.getId());
@@ -113,18 +130,8 @@ public class TrackLanes {
                 .filter(n -> n.getType() != NodeType.PIT)
                 .sorted(Comparator.comparingInt(n1 -> distanceToInt(n1.getDistance())))
                 .collect(Collectors.toList());
-        final List<Node> finishLine = sortedNodes.subList(0, 3);
-        if (finishLine.stream().anyMatch(n -> !n.hasFinish())) {
-            throw new RuntimeException("Finish line nodes don't have the lowest distance");
-        }
-        // Middle node is either 1st node (distance 0.0) or 3rd node (distance 0.5)
-        final int middleIndex = finishLine.get(0).getDistance() == finishLine.get(1).getDistance() ? 2 : 0;
-        final Lane[] lanes = new Lane[3];
-        lanes[0] = new Lane(finishLine.get(middleIndex == 2 ? 0 : 1), collisionMap);
-        lanes[1] = new Lane(finishLine.get(middleIndex), collisionMap);
-        lanes[2] = new Lane(finishLine.get(middleIndex == 2 ? 1 : 2), collisionMap);
-
-        sortedNodes = sortedNodes.subList(3, sortedNodes.size());
+        final Lane[] lanes = initLanes(laneCount, sortedNodes, collisionMap);
+        sortedNodes = sortedNodes.subList(laneCount, sortedNodes.size());
         sortedNodes.forEach(node -> {
             final Lane matchingLane = Arrays
                     .stream(lanes)
@@ -163,9 +170,48 @@ public class TrackLanes {
             }
         }));
 
-        // Sanity checks for distancee definitions
-        lanes[0].checkCurveDistances(lanes[2]);
+        // Sanity checks for distance definitions
+        lanes[0].checkCurveDistances(lanes[laneCount - 1], laneCount);
 
         return collisionMap;
+    }
+
+    static Lane[] initLanes(int laneCount, List<Node> sortedNodes, Map<Node, Set<Node>> collisionMap) {
+        final List<Node> finishLine = sortedNodes.subList(0, laneCount);
+        if (finishLine.stream().anyMatch(n -> !n.hasFinish())) {
+            throw new RuntimeException("Finish line nodes don't have the lowest distance");
+        }
+        final Lane[] lanes = new Lane[laneCount];
+        if (laneCount == 3) {
+            final int middleIndex = finishLine.get(0).getDistance() == finishLine.get(1).getDistance() ? 2 : 0;
+            lanes[0] = new Lane(finishLine.get(middleIndex == 2 ? 0 : 1), collisionMap);
+            lanes[1] = new Lane(finishLine.get(middleIndex), collisionMap);
+            lanes[2] = new Lane(finishLine.get(middleIndex == 2 ? 1 : 2), collisionMap);
+        } else {
+            final Node node1 = finishLine.get(0);
+            final Node node2 = finishLine.get(1);
+            if (node1.hasChild(finishLine.get(2)) && node1.hasChild(finishLine.get(3))) {
+                lanes[0] = new TrackLanes.Lane(node2, collisionMap);
+                final Node commonChild = finishLine.stream().filter(n -> node1.hasChild(n) && node2.hasChild(n)).findAny().orElse(null);
+                if (commonChild == null) {
+                    throw new RuntimeException("Malformed finish line");
+                }
+                lanes[1] = new TrackLanes.Lane(commonChild, collisionMap);
+                lanes[2] = new TrackLanes.Lane(node1, collisionMap);
+                lanes[3] = new TrackLanes.Lane(commonChild == finishLine.get(2) ? finishLine.get(3) : finishLine.get(2), collisionMap);
+            } else if (node2.hasChild(finishLine.get(2)) && node2.hasChild(finishLine.get(3))) {
+                lanes[0] = new TrackLanes.Lane(node1, collisionMap);
+                final Node commonChild = finishLine.stream().filter(n -> node1.hasChild(n) && node2.hasChild(n)).findAny().orElse(null);
+                if (commonChild == null) {
+                    throw new RuntimeException("Malformed finish line");
+                }
+                lanes[1] = new TrackLanes.Lane(commonChild, collisionMap);
+                lanes[2] = new TrackLanes.Lane(node2, collisionMap);
+                lanes[3] = new TrackLanes.Lane(commonChild == finishLine.get(2) ? finishLine.get(3) : finishLine.get(2), collisionMap);
+            } else {
+                throw new RuntimeException("Malformed finish line");
+            }
+        }
+        return lanes;
     }
 }

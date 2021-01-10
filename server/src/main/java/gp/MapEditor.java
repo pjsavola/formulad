@@ -46,7 +46,7 @@ public class MapEditor extends JPanel {
     private final MenuItem setCurveDistance;
     private final MenuItem setGridAngle;
 
-    private TrackLanes.Lane[] lanes = new TrackLanes.Lane[3];
+    private TrackLanes.Lane[] lanes;
     private final List<Node> debugNeighbors = new ArrayList<>();
     private final UndoStack stack = new UndoStack(nodes, attributes);
     private Double previousCurveDistance;
@@ -387,6 +387,8 @@ public class MapEditor extends JPanel {
                     final Node n1 = lane.getNodes().get(i);
                     final Node n2 = lane.getNodes().get((i + 1) % lane.getNodes().size());
                     if (!n1.hasChild(n2)) continue;
+                    if (n1.getType() == NodeType.BLOCKED) continue;
+                    if (n2.getType() == NodeType.BLOCKED) continue;
 
                     final Point p = n1.getLocation();
                     final Point np = n2.getLocation();
@@ -548,7 +550,7 @@ public class MapEditor extends JPanel {
                 showDistances = false;
                 showIdentifiers = false;
                 showLanes = false;
-                lanes = new TrackLanes.Lane[3];
+                lanes = null;
                 previousCurveDistance = null;
                 infoBoxCorner = p.getRight();
                 nextNodeId += nodes.size();
@@ -833,7 +835,7 @@ public class MapEditor extends JPanel {
     }
 
     private void showDistances() {
-	    if (!showDistances && !showLanes) {
+	    if (!showDistances) {
 	        try {
                 TrackData.updateDistances(nodes, attributes);
             } catch (Exception e) {
@@ -847,14 +849,14 @@ public class MapEditor extends JPanel {
     }
 
     private void showLanes() {
-        if (!showLanes && !showDistances) {
-            try {
-                TrackData.updateDistances(nodes, attributes);
-            } catch (Exception e) {
-                // No need to report an error. This is visualization tool.
-            }
-        }
         if (!showLanes) {
+            int laneCount;
+            try {
+                laneCount = TrackData.updateDistances(nodes, attributes);
+            } catch (Exception e) {
+                // Something failed. Assume 3 lanes which is the standard.
+                laneCount = 3;
+            }
             try {
                 // Calculate lanes
                 List<Node> sortedNodes = nodes
@@ -863,18 +865,8 @@ public class MapEditor extends JPanel {
                         .filter(n -> n.getType() != NodeType.PIT)
                         .sorted(Comparator.comparingInt(n1 -> TrackLanes.distanceToInt(n1.getDistance())))
                         .collect(Collectors.toList());
-                final List<Node> finishLine = sortedNodes.subList(0, 3);
-                if (finishLine.stream().anyMatch(n -> !n.hasFinish())) {
-                    throw new RuntimeException("Finish line nodes don't have the lowest distance");
-                }
-                // Middle node is either 1st node (distance 0.0) or 3rd node (distance 0.5)
-                final int middleIndex = finishLine.get(0).getDistance() == finishLine.get(1).getDistance() ? 2 : 0;
-                final Map<Node, Set<Node>> collisionMap = new HashMap<>();
-                lanes[0] = new TrackLanes.Lane(finishLine.get(middleIndex == 2 ? 0 : 1), collisionMap);
-                lanes[1] = new TrackLanes.Lane(finishLine.get(middleIndex), collisionMap);
-                lanes[2] = new TrackLanes.Lane(finishLine.get(middleIndex == 2 ? 1 : 2), collisionMap);
-
-                sortedNodes = sortedNodes.subList(3, sortedNodes.size());
+                lanes = TrackLanes.initLanes(laneCount, sortedNodes, new HashMap<>());
+                sortedNodes = sortedNodes.subList(lanes.length, sortedNodes.size());
                 sortedNodes.forEach(node -> {
                     final TrackLanes.Lane matchingLane = Arrays
                             .stream(lanes)
@@ -893,7 +885,7 @@ public class MapEditor extends JPanel {
         showDistances = false;
         showIdentifiers = false;
         showLanes = !showLanes;
-        if (lanes[0] == null || lanes[1] == null || lanes[2] == null) {
+        if (lanes == null) {
             showLanes = false;
         }
         repaint();
