@@ -147,9 +147,10 @@ public class TrackLanes {
 
         // Now collision map contains all nodes and it is built for each lane. Next we will figure out
         // possible collisions between lanes. Collisions between lanes are symmetric so we only need to check
-        // edge lanes against the middle lane.
-        lanes[0].checkCollisions(lanes[1]);
-        lanes[2].checkCollisions(lanes[1]);
+        // each adjacent pair of lanes once.
+        for (int i = 0; i < laneCount - 1; ++i) {
+            lanes[i].checkCollisions(lanes[i + 1]);
+        }
 
         // Add collisions for pit exit
         nodes.stream().filter(node -> node.getType() == NodeType.PIT).forEach(node -> {
