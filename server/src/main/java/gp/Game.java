@@ -186,6 +186,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
             case NE: return new Point(panelDim.width - 40, 40);
             case SW: return new Point(40, panelDim.height - 40);
             case SE: return new Point(panelDim.width - 40, panelDim.height -  40);
+            default:
         }
         return null;
     }
@@ -225,8 +226,9 @@ public abstract class Game extends JPanel implements PlayerRenderer {
         // Circle for dice rolls
         if (gearCorner != null) {
             final Point point = getPoint(gearCorner);
-            assert point != null;
-            MapEditor.drawOval(g2d, point.x, point.y, 50, 50, true, Color.BLACK, 1);
+            if (point != null) {
+                MapEditor.drawOval(g2d, point.x, point.y, 50, 50, true, Color.BLACK, 1);
+            }
         }
         drawTargets(g2d);
         drawInfoBox(g2d);
@@ -301,7 +303,9 @@ public abstract class Game extends JPanel implements PlayerRenderer {
             final Integer roll = this.roll;
             if (roll != null) {
                 final Point point = getPoint(gearCorner);
-                current.drawRoll(g2d, roll, point);
+                if (point != null) {
+                    current.drawRoll(g2d, roll, point);
+                }
             } else {
                 // TODO: Highlight only manual AI?
                 immutablePlayerMap.values().stream().filter(p -> p == current && !p.isStopped()).forEach(p -> p.highlight(g2d));

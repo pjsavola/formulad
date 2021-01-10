@@ -56,7 +56,7 @@ public class MapEditor extends JPanel {
     private Dimension panelDim;
     private double scale = 1.0;
 
-    public enum Corner { NE, SE, SW, NW }
+    public enum Corner { NE, SE, SW, NW, C }
 
 	MapEditor(JFrame frame) {
 	    this.frame = frame;

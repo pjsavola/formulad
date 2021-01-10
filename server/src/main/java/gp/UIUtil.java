@@ -12,6 +12,7 @@ class UIUtil {
             case SE: return dim.width - w;
             case SW: return 0;
             case NW: return 0;
+            case C:  return (dim.width - w) / 2;
         }
         return 0;
     }
@@ -22,6 +23,7 @@ class UIUtil {
             case SE: return dim.height - h;
             case SW: return dim.height - h;
             case NW: return 0;
+            case C:  return (dim.height - h) / 2;
         }
         return 0;
     }
@@ -50,6 +52,7 @@ class UIUtil {
         switch (corner) {
             case NE:
             case SE:
+            case C:
                 px = new int[] { x - 2, x - 7, x - 7 };
                 py = new int[] { iy + 5, iy + 2, iy + 8 };
                 break;
