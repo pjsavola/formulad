@@ -33,7 +33,11 @@ public class PointDistributionField extends JPanel {
     public int[] getValue() throws NumberFormatException {
         int result[];
         try {
-            result = stringToDist(textField.getText());
+            final String txt = textField.getText();
+            if (txt == null || txt.isEmpty()) {
+                throw new RuntimeException("Empty field");
+            }
+            result = stringToDist(txt);
         } catch (Exception e) {
             JOptionPane.showConfirmDialog(parent, "Invalid value for " + name + ": " + textField.getText(), "Error", JOptionPane.DEFAULT_OPTION);
             throw e;
