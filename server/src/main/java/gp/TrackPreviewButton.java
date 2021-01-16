@@ -118,6 +118,7 @@ class TrackPreviewButton extends JButton implements TrackSelector {
         selectTrackButton.addActionListener(l -> {
             trackSelector.setTrack(data, icon);
             trackDialog.setVisible(false);
+            trackDialog.dispose();
         });
         selectTrackButton.setIcon(icon);
         return selectTrackButton;
