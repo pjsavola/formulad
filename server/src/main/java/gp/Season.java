@@ -560,21 +560,35 @@ public class Season implements Comparable<Season>, TrackSelector {
             tracks.remove(button);
             final int playerCount = tracks.stream().map(b -> b.data).mapToInt(TrackData::getGridMaxSize).min().orElse(Main.minGridSize);
             // Add new slots if needed
+            boolean modified = false;
             while (slots.size() < playerCount) {
                 final PlayerSlot slot = new PlayerSlot(frame, localProfiles, null, slots, slots.size() + 1);
                 playerPanel.add(slot);
                 slots.add(slot);
+                modified = true;
+            }
+            if (modified) {
+                playerPanel.repaint();
+                frame.pack();
             }
         });
         tracks.add(button);
         final int playerCount = tracks.stream().map(b -> b.data).mapToInt(TrackData::getGridMaxSize).min().orElse(Main.minGridSize);
         // Remove unused slots if possible
+        boolean modified = false;
         while (slots.size() > playerCount) {
-            if (slots.get(slots.size() - 1).isFree()) {
+            final PlayerSlot slot = slots.get(slots.size() - 1);
+            if (slot.isFree()) {
                 slots.remove(slots.size() - 1);
+                playerPanel.remove(slot);
+                modified = true;
             } else {
                 break;
             }
+        }
+        if (modified) {
+            playerPanel.repaint();
+            frame.pack();
         }
     }
 }

@@ -189,6 +189,7 @@ class TrackPreviewButton extends JButton implements TrackSelector {
                 lobby.setTrack(newData);
             }
             // Add new slots if needed
+            final int oldSize = slots.size();
             while (slots.size() < newData.getGridMaxSize()) {
                 final PlayerSlot slot = new PlayerSlot(frame, localProfiles, lobby, slots, slots.size() + 1);
                 panel.add(slot);
@@ -196,11 +197,17 @@ class TrackPreviewButton extends JButton implements TrackSelector {
             }
             // Remove unused slots if possible
             while (slots.size() > newData.getGridMaxSize()) {
-                if (slots.get(slots.size() - 1).isFree()) {
+                final PlayerSlot slot = slots.get(slots.size() - 1);
+                if (slot.isFree()) {
                     slots.remove(slots.size() - 1);
+                    panel.remove(slot);
                 } else {
                     break;
                 }
+            }
+            if (oldSize != slots.size()) {
+                panel.repaint();
+                frame.pack();
             }
         }
     }
