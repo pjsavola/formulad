@@ -171,7 +171,7 @@ class ProfileStats extends JDialog {
         if (filteredResults.stream().noneMatch(Profile.Result::isChampionshipRace)) {
             championshipPoints.setText("");
         } else {
-            championshipPoints.setText(Integer.toString(filteredResults.stream().filter(Profile.Result::isComplete).filter(Profile.Result::isChampionshipRace).mapToInt(r -> Season.pointDistribution[r.position - 1]).sum()));
+            championshipPoints.setText(Integer.toString(filteredResults.stream().filter(Profile.Result::isComplete).filter(Profile.Result::isChampionshipRace).mapToInt(r -> Season.getDefaultPoints(r.position)).sum()));
         }
         final int minTurns = filteredResults.stream().filter(r -> r.remainingHitpoints > 0).filter(r -> r.turns > 0).mapToInt(r -> r.turns).min().orElse(0);
         bestResult.setText(minTurns > 0 ? Integer.toString(minTurns) : "");

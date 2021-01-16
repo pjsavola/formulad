@@ -29,6 +29,8 @@ public class Season implements Comparable<Season>, TrackSelector {
     private List<ProfileMessage> participants = new ArrayList<>();
     private List<FinalStandings> results = new ArrayList<>();
     private List<ProfileMessage> sortedParticipants;
+    private int[] pointDistribution = defaultPointDistribution;
+    private static final int[] defaultPointDistribution = { 10, 6, 4, 3, 2, 1 };
 
     // For UI
     private List<TrackButton> tracks = new ArrayList<>();
@@ -40,6 +42,14 @@ public class Season implements Comparable<Season>, TrackSelector {
     Season(JFrame frame, String name) {
         this.frame = frame;
         this.name = name;
+    }
+
+    private int getPoints(int position) {
+        return position > pointDistribution.length ? 0 : pointDistribution[position - 1];
+    }
+
+    static int getDefaultPoints(int position) {
+        return position > defaultPointDistribution.length ? 0 : defaultPointDistribution[position - 1];
     }
 
     String getName() {
@@ -195,8 +205,8 @@ public class Season implements Comparable<Season>, TrackSelector {
     }
 
     private int compare(UUID id1, UUID id2, Map<UUID, List<Integer>> positions) {
-        final int total1 = positions.get(id1).stream().mapToInt(pos -> pointDistribution[pos - 1]).sum();
-        final int total2 = positions.get(id2).stream().mapToInt(pos -> pointDistribution[pos - 1]).sum();
+        final int total1 = positions.get(id1).stream().mapToInt(this::getPoints).sum();
+        final int total2 = positions.get(id2).stream().mapToInt(this::getPoints).sum();
         if (total1 == total2) {
             for (int i = 0; i < pointDistribution.length; ++i) {
                 final int relevantPos = i;
@@ -209,8 +219,6 @@ public class Season implements Comparable<Season>, TrackSelector {
         }
         return total2 - total1;
     }
-
-    static final int[] pointDistribution = { 10, 6, 4, 3, 2, 1, 0, 0, 0, 0 };
 
     private JPanel createStandingsPanel() {
         final JPanel panel = new JPanel(new GridBagLayout());
@@ -326,7 +334,7 @@ public class Season implements Comparable<Season>, TrackSelector {
             final JLabel pos = new JLabel((rank + 1) + ".");
             final JLabel label = new JLabel(player.getName());
             final JPanel ptsTable = new JPanel(new GridLayout(0, tracksAndLaps.size() + 1));
-            final int total = results.isEmpty() ? 0 : positions.get(player.getId()).stream().mapToInt(position -> pointDistribution[position - 1]).sum();
+            final int total = results.isEmpty() ? 0 : positions.get(player.getId()).stream().mapToInt(this::getPoints).sum();
             final JLabel pts = new JLabel(Integer.toString(total));
             pos.setFont(new Font("Arial", Font.BOLD, 20));
             label.setFont(new Font("Arial", Font.BOLD, 20));
@@ -347,7 +355,7 @@ public class Season implements Comparable<Season>, TrackSelector {
             for (int i = 0; i < tracksAndLaps.size(); ++i) {
                 final JLabel ptsLabel;
                 if (results.size() > i) {
-                    ptsLabel = new JLabel(Integer.toString(pointDistribution[positions.get(player.getId()).get(i) - 1]));
+                    ptsLabel = new JLabel(Integer.toString(getPoints(positions.get(player.getId()).get(i))));
                 } else {
                     ptsLabel = new JLabel("-");
                 }
