@@ -13,6 +13,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
@@ -397,7 +398,7 @@ public class Season implements Comparable<Season>, TrackSelector {
     }
 
     boolean load() {
-        try (InputStreamReader ir = new InputStreamReader(new FileInputStream(name + ".cha")); final BufferedReader br = new BufferedReader(ir)) {
+        try (InputStreamReader ir = new InputStreamReader(new FileInputStream(name + ".cha"), StandardCharsets.UTF_8); final BufferedReader br = new BufferedReader(ir)) {
             int phase = 0;
             String line;
             final List<PlayerStats> stats = new ArrayList<>();
