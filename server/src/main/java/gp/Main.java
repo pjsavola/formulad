@@ -377,7 +377,7 @@ public class Main extends Game implements Runnable {
         final List<ProfileMessage> localProfiles = profiles.stream().map(ProfileMessage::new).collect(Collectors.toList());
         final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
         final List<PlayerSlot> slots = new ArrayList<>();
-        for (int i = 0; i < 10; ++i) {
+        for (int i = 0; i < Main.minGridSize; ++i) {
             final PlayerSlot slot = new PlayerSlot(frame, localProfiles, lobby, slots, i + 1);
             playerPanel.add(slot);
             slots.add(slot);
@@ -385,7 +385,7 @@ public class Main extends Game implements Runnable {
         if (lobby != null) {
             lobby.setSlots(slots);
         }
-        final TrackPreviewButton changeTrackButton = new TrackPreviewButton(frame, lobby);
+        final TrackPreviewButton changeTrackButton = new TrackPreviewButton(frame, playerPanel, localProfiles, lobby, slots);
         final TrackData previousTrack = TrackData.createTrackData(settings.trackId, settings.external);
         if (previousTrack == null) {
             return;

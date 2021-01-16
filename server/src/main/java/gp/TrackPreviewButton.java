@@ -4,6 +4,8 @@ import gp.ai.TrackData;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URI;
@@ -21,7 +23,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 class TrackPreviewButton extends JButton implements TrackSelector {
+    private final JFrame frame;
+    private final JPanel panel;
+    private final List<ProfileMessage> localProfiles;
     private final Lobby lobby;
+    private final List<PlayerSlot> slots;
     private TrackData data;
 
     public static class ResourceWalker {
@@ -41,12 +47,33 @@ class TrackPreviewButton extends JButton implements TrackSelector {
         }
     }
 
-    TrackPreviewButton(JFrame frame, Lobby lobby) {
+    TrackPreviewButton(JFrame frame, JPanel panel, List<ProfileMessage> localProfiles, Lobby lobby, List<PlayerSlot> slots) {
+        this.frame = frame;
+        this.panel = panel;
+        this.localProfiles = localProfiles;
         this.lobby = lobby;
-        addActionListener(e -> openTrackSelectionDialog(frame, this));
+        this.slots = slots;
+        addActionListener(e -> openTrackSelectionDialog(frame, this, getRequiredGridSize(), lobby));
     }
 
-    static void openTrackSelectionDialog(JFrame frame, TrackSelector trackSelector) {
+    private int getRequiredGridSize() {
+        int requiredGridSize = Main.minGridSize;
+        for (int i = requiredGridSize; i < slots.size(); ++i) {
+            if (!slots.get(i).isFree()) {
+                requiredGridSize = i + 1;
+            }
+        }
+        return requiredGridSize;
+    }
+
+    static void openTrackSelectionDialog(JFrame frame, TrackSelector trackSelector, int requiredGridSize, Lobby lobby) {
+        if (lobby != null) {
+            if (lobby.busy) {
+                System.out.println("Unable to change track, processing a join request");
+                return;
+            }
+            lobby.busy = true;
+        }
         final List<String> internal = new ArrayList<>();
         final List<String> external = new ArrayList<>();
         getAllTracks(internal, external);
@@ -62,9 +89,18 @@ class TrackPreviewButton extends JButton implements TrackSelector {
         }
         final JPanel trackPanel = new JPanel(new GridLayout(0, cols));
         final JDialog trackDialog = new JDialog(frame);
-        internal.parallelStream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).map(data -> createTrackButton(trackSelector, trackDialog, data)).filter(Objects::nonNull).collect(Collectors.toList()).forEach(trackPanel::add);
-        external.parallelStream().map(f -> TrackData.createTrackData(f, true)).filter(Objects::nonNull).map(data -> createTrackButton(trackSelector, trackDialog, data)).filter(Objects::nonNull).collect(Collectors.toList()).forEach(trackPanel::add);
+        internal.parallelStream().map(f -> TrackData.createTrackData(f, false)).filter(Objects::nonNull).filter(data -> data.getGridMaxSize() >= requiredGridSize).map(data -> createTrackButton(trackSelector, trackDialog, data)).filter(Objects::nonNull).collect(Collectors.toList()).forEach(trackPanel::add);
+        external.parallelStream().map(f -> TrackData.createTrackData(f, true)).filter(Objects::nonNull).filter(data -> data.getGridMaxSize() >= requiredGridSize).map(data -> createTrackButton(trackSelector, trackDialog, data)).filter(Objects::nonNull).collect(Collectors.toList()).forEach(trackPanel::add);
         final JScrollPane scrollPane = new JScrollPane(trackPanel);
+        if (lobby != null) {
+            trackDialog.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosed(WindowEvent e) {
+                    super.windowClosed(e);
+                    lobby.busy = false;
+                }
+            });
+        }
         trackDialog.setTitle("Select track");
         trackDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         trackDialog.setContentPane(scrollPane);
@@ -151,6 +187,20 @@ class TrackPreviewButton extends JButton implements TrackSelector {
             setIcon(icon);
             if (lobby != null) {
                 lobby.setTrack(newData);
+            }
+            // Add new slots if needed
+            while (slots.size() < newData.getGridMaxSize()) {
+                final PlayerSlot slot = new PlayerSlot(frame, localProfiles, lobby, slots, slots.size() + 1);
+                panel.add(slot);
+                slots.add(slot);
+            }
+            // Remove unused slots if possible
+            while (slots.size() > newData.getGridMaxSize()) {
+                if (slots.get(slots.size() - 1).isFree()) {
+                    slots.remove(slots.size() - 1);
+                } else {
+                    break;
+                }
             }
         }
     }

@@ -15,6 +15,7 @@ public class Lobby extends Thread {
     private List<PlayerSlot> slots;
     private TrackData data;
     volatile boolean done;
+    volatile boolean busy;
     private final List<RemoteAI> clients = new ArrayList<>();
     private final Map<UUID, RemoteAI> clientMap = new HashMap<>();
     Lobby(int port) throws IOException {
@@ -55,7 +56,16 @@ public class Lobby extends Thread {
         while (!done) {
             System.out.println("Waiting for clients");
             try {
+                busy = false;
                 final Socket socket = serverSocket.accept();
+                while (busy) {
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                busy = true;
                 for (PlayerSlot slot : slots) {
                     if (slot.isFree()) {
                         slot.setProfile(ProfileMessage.pending);

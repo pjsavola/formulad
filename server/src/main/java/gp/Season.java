@@ -69,7 +69,7 @@ public class Season implements Comparable<Season>, TrackSelector {
         panel.add(rightPanel);
         buttonPanel = new JPanel(new GridLayout(0, 2));
         final JButton addTrackButton = new JButton("Add track...");
-        addTrackButton.addActionListener(a -> TrackPreviewButton.openTrackSelectionDialog(frame, this));
+        addTrackButton.addActionListener(a -> TrackPreviewButton.openTrackSelectionDialog(frame, this, 10, null));
         buttonPanel.add(addTrackButton);
         if (trackIds != null) {
             trackIds.parallelStream().map(f -> {
