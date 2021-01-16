@@ -22,10 +22,24 @@ public class ProfileMessage implements Serializable {
 
     private static Random random = new Random();
     private static String[] randomNames = new String[] { "Mika", "Keke", "Kimi", "Heikki", "Leo", "Valtteri", "Nico", "Michael", "Lewis", "Sebastian", "Max", "Fernando" };
+    private static String[] backupRandomNames = new String[] { "Lando", "Carlos", "Alexander", "George", "Daniel", "Esteban", "Pierre", "Daniil", "Romain", "Kevin", "Nicholas", "Robert", "Charles", "Antonio" };
 
     static ProfileMessage createRandomAIProfile(Set<String> usedNames) {
-        final List<String> validNames = Arrays.stream(randomNames).filter(n -> !usedNames.contains(n)).collect(Collectors.toList());
-        final ProfileMessage profile = new ProfileMessage(validNames.get(random.nextInt(validNames.size())), true);
+        List<String> validNames = Arrays.stream(randomNames).filter(n -> !usedNames.contains(n)).collect(Collectors.toList());
+        if (validNames.isEmpty()) {
+            validNames = Arrays.stream(backupRandomNames).filter(n -> !usedNames.contains(n)).collect(Collectors.toList());
+        }
+        final String name;
+        if (validNames.isEmpty()) {
+            int i = 1;
+            while (usedNames.contains("Player " + i)) {
+                ++i;
+            }
+            name = "Player " + i;
+        } else {
+            name = validNames.get(random.nextInt(validNames.size()));
+        }
+        final ProfileMessage profile = new ProfileMessage(name, true);
         profile.color1 = random.nextInt(0xFFFFFF + 1);
         profile.color2 = random.nextInt(0xFFFFFF + 1);
         profile.aiType = AI.Type.AMATEUR;
