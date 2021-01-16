@@ -115,6 +115,7 @@ class ProfilePanel extends JPanel {
                             activeProfile = newProfile;
                             profileName.setText(result);
                             dialog.setVisible(false);
+                            dialog.dispose();
                             carPreview.repaint();
                         } else {
                             JOptionPane.showConfirmDialog(dialog, "Profile with name " + result + " already exists", "Error", JOptionPane.DEFAULT_OPTION);
@@ -135,6 +136,7 @@ class ProfilePanel extends JPanel {
                         carPreview.repaint();
                     }
                     dialog.setVisible(false);
+                    dialog.dispose();
                 });
                 deleteButton.addActionListener(e13 -> {
                     final int index = list.getSelectedIndex();

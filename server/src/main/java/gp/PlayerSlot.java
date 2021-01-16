@@ -68,6 +68,7 @@ public class PlayerSlot extends JButton {
                     aiProfile.setAIType(type);
                     setProfile(aiProfile);
                     dialog.setVisible(false);
+                    dialog.dispose();
                 });
                 if (selectedType == AI.Type.BEGINNER) {
                     difficultyButton1.setSelected(true);
@@ -100,6 +101,7 @@ public class PlayerSlot extends JButton {
                     selectedProfile.setLocal();
                     setProfile(selectedProfile);
                     dialog.setVisible(false);
+                    dialog.dispose();
                 });
 
                 list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -133,7 +135,9 @@ public class PlayerSlot extends JButton {
                     @Override
                     public void windowClosed(WindowEvent e) {
                         super.windowClosed(e);
-                        profile = null;
+                        if (profile == ProfileMessage.pending) {
+                            profile = null;
+                        }
                     }
                 });
                 dialog.setTitle("Select player");

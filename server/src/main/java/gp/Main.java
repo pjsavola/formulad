@@ -564,6 +564,7 @@ public class Main extends Game implements Runnable {
                     } else {
                         final Season season = new Season(f, result);
                         dialog.setVisible(false);
+                        dialog.dispose();
                         season.start(profiles, null, null, listener);
                     }
                 }
@@ -647,6 +648,7 @@ public class Main extends Game implements Runnable {
                         } else {
                             final Season season = new Season(f, result);
                             dialog.setVisible(false);
+                            dialog.dispose();
                             season.start(profiles, tracksAndLaps, profileMessages, listener);
                         }
                     }
@@ -662,6 +664,7 @@ public class Main extends Game implements Runnable {
                 if (season != null) {
                     season.updateProfileInfo(profiles);
                     dialog.setVisible(false);
+                    dialog.dispose();
                     season.showStandings(listener);
                 }
             });
