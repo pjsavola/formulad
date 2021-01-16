@@ -67,7 +67,7 @@ public class TrackData implements Serializable {
             }
             final List<Node> grid = new ArrayList<>(10);
             final int laneCount = build(nodes, attributes, grid);
-            if (grid.size() < 10) {
+            if (grid.size() < Main.minGridSize) {
                 return null;
             }
             /*
@@ -363,10 +363,6 @@ public class TrackData implements Serializable {
         nodes.stream().filter(n -> n.getDistance() < 0.0).findAny().ifPresent(n -> {
             throw new RuntimeException("Track contains unreachable node: " + n.getId() + " (" + n.getLocation().x + "," + n.getLocation().y + ")");
         });
-        nodes.stream()
-             .filter(node -> !Double.isNaN(node.getGridAngle()))
-             .sorted((n1, n2) -> TrackLanes.distanceToInt(n2.getDistance()) - TrackLanes.distanceToInt(n1.getDistance()))
-             .forEach(grid::add);
         nodes.forEach(node -> {
             final boolean isPit = node.getType() == NodeType.PIT;
             final double distance = node.getDistance();
@@ -383,6 +379,12 @@ public class TrackData implements Serializable {
                 }
             });
         });
+        if (grid != null) {
+            nodes.stream()
+                    .filter(node -> !Double.isNaN(node.getGridAngle()))
+                    .sorted((n1, n2) -> TrackLanes.distanceToInt(n2.getDistance()) - TrackLanes.distanceToInt(n1.getDistance()))
+                    .forEach(grid::add);
+        }
         return laneCount;
     }
 
@@ -400,6 +402,10 @@ public class TrackData implements Serializable {
 
     public List<Node> getNodes() {
         return nodes;
+    }
+
+    public int getGridMaxSize() {
+        return startingGrid.size();
     }
 
     public List<Node> getStartingGrid(int playerCount) {

@@ -64,8 +64,8 @@ public class Main extends Game implements Runnable {
     static int defaultColor2 = 0xCCCC33;
     static boolean ide = false;
     static boolean sounds = true;
-
     static PreviousSettings settings = new PreviousSettings();
+    public static final int minGridSize = 6;
 
     static {
         try {

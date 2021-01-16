@@ -157,8 +157,8 @@ public class Season implements Comparable<Season>, TrackSelector {
                     participants.add(profile);
                 }
             }
-            if (participants.size() < 6) {
-                JOptionPane.showConfirmDialog(frame, "Need at least 6 participants", "Error", JOptionPane.DEFAULT_OPTION);
+            if (participants.size() < Main.minGridSize) {
+                JOptionPane.showConfirmDialog(frame, "Need at least " + Main.minGridSize + " participants", "Error", JOptionPane.DEFAULT_OPTION);
                 participants.clear();
                 return;
             }
