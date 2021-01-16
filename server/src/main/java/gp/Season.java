@@ -423,6 +423,10 @@ public class Season implements Comparable<Season>, TrackSelector {
                             } else {
                                 maxHitpoints = 18;
                             }
+                            if (parts.length > 6) {
+                                final String[] distr = parts[6].split("-");
+                                pointDistribution = Arrays.stream(distr).mapToInt(Integer::parseInt).toArray();
+                            }
                             break;
                         case 1:
                             final TrackData data = TrackData.createTrackData(parts[0], Boolean.parseBoolean(parts[1]));
@@ -485,7 +489,9 @@ public class Season implements Comparable<Season>, TrackSelector {
             writer.print(",");
             writer.print(leewayMs);
             writer.print(",");
-            writer.println(maxHitpoints);
+            writer.print(maxHitpoints);
+            writer.print(",");
+            writer.println(Arrays.stream(pointDistribution).mapToObj(Integer::toString).collect(Collectors.joining("-")));
             writer.println();
             for (Pair<TrackData, Integer> p : tracksAndLaps) {
                 writer.print(p.getLeft().getTrackId());
