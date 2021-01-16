@@ -39,6 +39,9 @@ public class Season implements Comparable<Season>, TrackSelector {
     private final JFrame frame;
     private JPanel masterPanel;
     private JButton continueButton;
+    private JPanel playerPanel;
+    private List<PlayerSlot> slots;
+    private List<ProfileMessage> localProfiles;
 
     Season(JFrame frame, String name) {
         this.frame = frame;
@@ -59,6 +62,7 @@ public class Season implements Comparable<Season>, TrackSelector {
 
     void start(List<Profile> profiles, List<Pair<String, Integer>> trackIds, List<ProfileMessage> profileMessages, WindowChanger listener) {
         final JPanel panel = new JPanel();
+        slots = new ArrayList<>();
         panel.setLayout(new GridLayout(0, 2));
         panel.setBorder(new EmptyBorder(20, 20, 20, 20));
         final JPanel tracksPanel = new JPanel();
@@ -69,7 +73,7 @@ public class Season implements Comparable<Season>, TrackSelector {
         panel.add(rightPanel);
         buttonPanel = new JPanel(new GridLayout(0, 2));
         final JButton addTrackButton = new JButton("Add track...");
-        addTrackButton.addActionListener(a -> TrackPreviewButton.openTrackSelectionDialog(frame, this, 10, null));
+        addTrackButton.addActionListener(a -> TrackPreviewButton.openTrackSelectionDialog(frame, this, TrackPreviewButton.getRequiredGridSize(slots), null));
         buttonPanel.add(addTrackButton);
         if (trackIds != null) {
             trackIds.parallelStream().map(f -> {
@@ -90,10 +94,10 @@ public class Season implements Comparable<Season>, TrackSelector {
                 tracks.get(tracks.size() - 1).laps.setValue(Main.settings.laps);
             });
         }
-        final List<ProfileMessage> localProfiles = profiles.stream().map(ProfileMessage::new).collect(Collectors.toList());
-        final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
-        final List<PlayerSlot> slots = new ArrayList<>();
-        for (int i = 0; i < 10; ++i) {
+        final int playerCount = tracksAndLaps.stream().map(Pair::getLeft).mapToInt(TrackData::getGridMaxSize).min().orElse(Main.minGridSize);
+        localProfiles = profiles.stream().map(ProfileMessage::new).collect(Collectors.toList());
+        playerPanel = new JPanel(new GridLayout(5, 2));
+        for (int i = 0; i < playerCount; ++i) {
             final PlayerSlot slot = new PlayerSlot(frame, localProfiles, null, slots, i + 1) {
                 @Override
                 public String getText() {
@@ -554,7 +558,23 @@ public class Season implements Comparable<Season>, TrackSelector {
             buttonPanel.remove(lapsField);
             frame.pack();
             tracks.remove(button);
+            final int playerCount = tracks.stream().map(b -> b.data).mapToInt(TrackData::getGridMaxSize).min().orElse(Main.minGridSize);
+            // Add new slots if needed
+            while (slots.size() < playerCount) {
+                final PlayerSlot slot = new PlayerSlot(frame, localProfiles, null, slots, slots.size() + 1);
+                playerPanel.add(slot);
+                slots.add(slot);
+            }
         });
         tracks.add(button);
+        final int playerCount = tracks.stream().map(b -> b.data).mapToInt(TrackData::getGridMaxSize).min().orElse(Main.minGridSize);
+        // Remove unused slots if possible
+        while (slots.size() > playerCount) {
+            if (slots.get(slots.size() - 1).isFree()) {
+                slots.remove(slots.size() - 1);
+            } else {
+                break;
+            }
+        }
     }
 }

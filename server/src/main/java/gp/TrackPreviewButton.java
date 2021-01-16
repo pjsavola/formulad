@@ -53,10 +53,10 @@ class TrackPreviewButton extends JButton implements TrackSelector {
         this.localProfiles = localProfiles;
         this.lobby = lobby;
         this.slots = slots;
-        addActionListener(e -> openTrackSelectionDialog(frame, this, getRequiredGridSize(), lobby));
+        addActionListener(e -> openTrackSelectionDialog(frame, this, getRequiredGridSize(slots), lobby));
     }
 
-    private int getRequiredGridSize() {
+    static int getRequiredGridSize(List<PlayerSlot> slots) {
         int requiredGridSize = Main.minGridSize;
         for (int i = requiredGridSize; i < slots.size(); ++i) {
             if (!slots.get(i).isFree()) {
