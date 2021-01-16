@@ -79,7 +79,7 @@ public class Main extends Game implements Runnable {
         }
     }
 
-    public Main(Params params, Lobby lobby, JFrame frame, JPanel panel, PlayerSlot[] slots, TrackData trackData, Season resultStorage) {
+    public Main(Params params, Lobby lobby, JFrame frame, JPanel panel, List<PlayerSlot> slots, TrackData trackData, Season resultStorage) {
         super(frame, panel);
         initTrack(trackData);
         settings.trackId = trackData.getTrackId();
@@ -108,7 +108,7 @@ public class Main extends Game implements Runnable {
         current = waitingPlayers.remove(0);
     }
 
-    private void createGrid(Params params, PlayerSlot[] slots, JFrame frame) {
+    private void createGrid(Params params, List<PlayerSlot> slots, JFrame frame) {
         final Map<AI, ProfileMessage> aiToProfile = new LinkedHashMap<>(); // preserve order
         for (PlayerSlot slot : slots) {
             final ProfileMessage profile = slot.getProfile();
@@ -376,11 +376,11 @@ public class Main extends Game implements Runnable {
     private static void showGameSettings(JFrame frame, JPanel panel, Lobby lobby, List<Profile> profiles, Params params, WindowChanger listener) {
         final List<ProfileMessage> localProfiles = profiles.stream().map(ProfileMessage::new).collect(Collectors.toList());
         final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
-        final PlayerSlot[] slots = new PlayerSlot[10];
-        for (int i = 0; i < slots.length; ++i) {
+        final List<PlayerSlot> slots = new ArrayList<>();
+        for (int i = 0; i < 10; ++i) {
             final PlayerSlot slot = new PlayerSlot(frame, localProfiles, lobby, slots, i + 1);
             playerPanel.add(slot);
-            slots[i] = slot;
+            slots.add(slot);
         }
         if (lobby != null) {
             lobby.setSlots(slots);

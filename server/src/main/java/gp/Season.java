@@ -92,8 +92,8 @@ public class Season implements Comparable<Season>, TrackSelector {
         }
         final List<ProfileMessage> localProfiles = profiles.stream().map(ProfileMessage::new).collect(Collectors.toList());
         final JPanel playerPanel = new JPanel(new GridLayout(5, 2));
-        final PlayerSlot[] slots = new PlayerSlot[10];
-        for (int i = 0; i < slots.length; ++i) {
+        final List<PlayerSlot> slots = new ArrayList<>();
+        for (int i = 0; i < 10; ++i) {
             final PlayerSlot slot = new PlayerSlot(frame, localProfiles, null, slots, i + 1) {
                 @Override
                 public String getText() {
@@ -101,18 +101,18 @@ public class Season implements Comparable<Season>, TrackSelector {
                 }
             };
             playerPanel.add(slot);
-            slots[i] = slot;
+            slots.add(slot);
         }
         if (profileMessages != null) {
             int i = 0;
-            while (i < slots.length && i < profileMessages.size()) {
+            while (i < slots.size() && i < profileMessages.size()) {
                 final ProfileMessage msg = profileMessages.get(i);
                 final ProfileMessage localProfile = localProfiles.stream().filter(p -> p.getName().equals(msg.getName())).findFirst().orElse(null);
                 if (localProfile != null) {
                     localProfiles.remove(localProfile);
                     msg.setLocal();
                 }
-                slots[i].setProfile(msg);
+                slots.get(i).setProfile(msg);
                 ++i;
             }
         }
@@ -382,10 +382,10 @@ public class Season implements Comparable<Season>, TrackSelector {
                 return;
             }
             final int laps = tracksAndLaps.get(results.size()).getRight();
-            final PlayerSlot[] slots = new PlayerSlot[sortedParticipants.size()];
-            for (int i = 0; i < slots.length; ++i) {
+            final List<PlayerSlot> slots = new ArrayList<>(sortedParticipants.size());
+            for (int i = 0; i < sortedParticipants.size(); ++i) {
                 final int pos = i + 1;
-                slots[i] = new PlayerSlot(sortedParticipants.get(sortedParticipants.size() - pos), pos);
+                slots.add(new PlayerSlot(sortedParticipants.get(sortedParticipants.size() - pos), pos));
             }
             final Main server = new Main(new Main.Params(laps, animationDelayMs, timePerTurnMs, leewayMs, maxHitpoints), null, frame, masterPanel, slots, data, Season.this);
             listener.contentChanged(server, null, server, "championship race", true);

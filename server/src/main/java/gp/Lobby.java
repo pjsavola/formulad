@@ -12,7 +12,7 @@ import java.util.logging.Level;
 public class Lobby extends Thread {
 
     private final ServerSocket serverSocket;
-    private PlayerSlot[] slots;
+    private List<PlayerSlot> slots;
     private TrackData data;
     volatile boolean done;
     private final List<RemoteAI> clients = new ArrayList<>();
@@ -21,7 +21,7 @@ public class Lobby extends Thread {
         serverSocket = new ServerSocket(port);
     }
 
-    void setSlots(PlayerSlot[] slots) {
+    void setSlots(List<PlayerSlot> slots) {
         this.slots = slots;
     }
 
@@ -40,7 +40,7 @@ public class Lobby extends Thread {
                     for (PlayerSlot slot : slots) {
                         if (idsToKick.contains(slot.getProfile().getId())) {
                             dropClient(slot.getProfile().getId());
-                            slot.setProfile((ProfileMessage) null);
+                            slot.setProfile(null);
                             slot.setEnabled(true);
                         }
                     }
