@@ -129,6 +129,8 @@ public class Season implements Comparable<Season>, TrackSelector {
         rightPanel.add(randomTrackOrder);
         final SettingsField hitpoints = new SettingsField(panel, "Hitpoints", Integer.toString(Main.settings.maxHitpoints), 1, 30);
         rightPanel.add(hitpoints);
+        final PointDistributionField pointDistributionField = new PointDistributionField(panel, "Point distribution", defaultPointDistribution);
+        rightPanel.add(pointDistributionField);
         final SettingsField animationDelay = new SettingsField(panel, "Animation delay (ms)", Integer.toString(Main.settings.animationDelay), 0, 1000);
         final SettingsField time = new SettingsField(panel, "Time per turn (s)", Integer.toString(Main.settings.timePerTurn), 0, 3600);
         final SettingsField leeway = new SettingsField(panel, "Time leeway (s)", Integer.toString(Main.settings.leeway), 0, 36000);
@@ -165,6 +167,7 @@ public class Season implements Comparable<Season>, TrackSelector {
                 timePerTurnMs = time.getValue() * 1000;
                 leewayMs = leeway.getValue() * 1000;
                 maxHitpoints = hitpoints.getValue();
+                pointDistribution = pointDistributionField.getValue();
             } catch (NumberFormatException ex) {
                 participants.clear();
                 return;
@@ -425,8 +428,7 @@ public class Season implements Comparable<Season>, TrackSelector {
                                 maxHitpoints = 18;
                             }
                             if (parts.length > 6) {
-                                final String[] distr = parts[6].split("-");
-                                pointDistribution = Arrays.stream(distr).mapToInt(Integer::parseInt).toArray();
+                                pointDistribution = PointDistributionField.stringToDist(parts[6]);
                             }
                             break;
                         case 1:
@@ -492,7 +494,7 @@ public class Season implements Comparable<Season>, TrackSelector {
             writer.print(",");
             writer.print(maxHitpoints);
             writer.print(",");
-            writer.println(Arrays.stream(pointDistribution).mapToObj(Integer::toString).collect(Collectors.joining("-")));
+            writer.println(PointDistributionField.distToString(pointDistribution));
             writer.println();
             for (Pair<TrackData, Integer> p : tracksAndLaps) {
                 writer.print(p.getLeft().getTrackId());
