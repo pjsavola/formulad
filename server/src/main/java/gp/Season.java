@@ -196,15 +196,13 @@ public class Season implements Comparable<Season>, TrackSelector {
     }
 
     private class CarIcon implements Icon {
-        private final Color color1;
-        private final Color color2;
-        private CarIcon(int color1, int color2) {
-            this.color1 = new Color(color1);
-            this.color2 = new Color(color2);
+        private final int[] colors;
+        private CarIcon(int[] colors) {
+            this.colors = colors;
         }
         @Override
         public void paintIcon(Component c, Graphics g, int x, int y) {
-            Player.draw((Graphics2D) g.create(), x + 16, y + 9, 0, color1, color2, 2.0);
+            Player.draw((Graphics2D) g.create(), x + 16, y + 9, 0, colors, 2.0);
         }
         @Override
         public int getIconWidth() {
@@ -284,7 +282,7 @@ public class Season implements Comparable<Season>, TrackSelector {
                         final PlayerRenderer renderer = (g2d, x, y, i1, playerId) -> participants.stream().filter(p -> p.getId().equals(idMapper.get(playerId))).findAny().ifPresent(p -> {
                             final String name = p.getName();
                             g2d.drawString(name, x + 30, y + (i1 + 1) * 15 + 15);
-                            Player.draw(g2d, x + 15, y + (i1 + 1) * 15 + 10, 0, new Color(p.getColor1()), new Color(p.getColor2()), 1.0);
+                            Player.draw(g2d, x + 15, y + (i1 + 1) * 15 + 10, 0, p.getColors(), 1.0);
                         });
                         final JDialog dialog = new JDialog(frame);
                         final int height = 5 + 15 * (stats.length + 1);
@@ -351,7 +349,7 @@ public class Season implements Comparable<Season>, TrackSelector {
             pos.setFont(new Font("Arial", Font.BOLD, 20));
             label.setFont(new Font("Arial", Font.BOLD, 20));
             pts.setFont(new Font("Arial", Font.BOLD, 20));
-            label.setIcon(new CarIcon(player.getColor1(), player.getColor2()));
+            label.setIcon(new CarIcon(player.getColors()));
             label.setIconTextGap(20);
             pos.setHorizontalAlignment(SwingConstants.RIGHT);
             label.setBorder(new EmptyBorder(0, 0, 0, 10));

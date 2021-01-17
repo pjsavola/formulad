@@ -25,8 +25,8 @@ public final class LocalPlayer extends Player {
     private int pitStops;
     private final int maxHitpoints;
 
-    LocalPlayer(String playerId, Node node, double initialAngle, int laps, JPanel panel, int leeway, int maxHitpoints, int color1, int color2) {
-        super(playerId, node, initialAngle, panel, color1, color2);
+    LocalPlayer(String playerId, Node node, double initialAngle, int laps, JPanel panel, int leeway, int maxHitpoints, int[] colors) {
+        super(playerId, node, initialAngle, panel, colors);
         lapsToGo = laps;
         this.panel = panel;
         this.leeway = leeway;

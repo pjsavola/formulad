@@ -55,6 +55,7 @@ public class MapEditor extends JPanel {
     private boolean showLanes;
     private Dimension panelDim;
     private double scale = 1.0;
+    private static int[] gridColors = { 0x0000FF, 0x000000, 0x0000FF, 0x000000 };
 
     public enum Corner { NE, SE, SW, NW, C }
 
@@ -944,7 +945,7 @@ public class MapEditor extends JPanel {
         if (Double.isNaN(angle)) {
             drawOval(g2d, p.x, p.y, DIAMETER, DIAMETER, true, color, 0);
         } else {
-            Player.draw(g2d, p.x, p.y, angle / 180 * Math.PI, Color.BLUE, Color.BLACK, 1.0);
+            Player.draw(g2d, p.x, p.y, angle / 180 * Math.PI, gridColors, 1.0);
         }
         final Double attr = attributes.get(node);
         if (attr != null || node.hasGarage()) {

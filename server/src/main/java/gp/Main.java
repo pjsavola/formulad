@@ -151,7 +151,7 @@ public class Main extends Game implements Runnable {
         final String playerId = "p" + (playerCount + 1);
         final int gridPosition = startingOrder.get(playerCount);
         final Node startNode = grid.get(gridPosition);
-        final LocalPlayer player = new LocalPlayer(playerId, startNode, startNode.getGridAngle(), laps, this, leeway, maxHitpoints, ai.getValue().getColor1(), ai.getValue().getColor2());
+        final LocalPlayer player = new LocalPlayer(playerId, startNode, startNode.getGridAngle(), laps, this, leeway, maxHitpoints, ai.getValue().getColors());
         current = player;
         log.info("Initializing player " + playerId);
         final String name = ai.getValue().getName();
@@ -163,7 +163,7 @@ public class Main extends Game implements Runnable {
         allPlayers.add(player);
         player.setGridPosition(gridPosition + 1);
         aiMap.put(player, ai.getKey());
-        return new CreatedPlayerNotification(current.getId(), name, startNode.getId(), maxHitpoints, laps, ai.getValue().getColor1(), ai.getValue().getColor2(), startNode.getGridAngle());
+        return new CreatedPlayerNotification(current.getId(), name, startNode.getId(), maxHitpoints, laps, ai.getValue().getColors(), startNode.getGridAngle());
     }
 
     void notifyAll(Object notification) {
@@ -834,8 +834,9 @@ public class Main extends Game implements Runnable {
             if (profiles.isEmpty()) {
                 final Profile defaultProfile = new Profile(profileManager, "Player");
                 defaultProfile.setActive(true);
-                defaultProfile.setColor1(defaultColor1);
-                defaultProfile.setColor2(defaultColor2);
+                defaultProfile.setColor(0, defaultColor1);
+                defaultProfile.setColor(1, defaultColor2);
+                defaultProfile.setColor(2, defaultColor1);
                 profiles.add(defaultProfile);
             }
         }

@@ -177,7 +177,7 @@ public class Client extends Game implements Runnable {
 
     public void notify(CreatedPlayerNotification notification) {
         final Node startNode = nodes.get(notification.getNodeId());
-        final Player player = new Player(notification.getPlayerId(), startNode, notification.getGridAngle(), this, notification.getColor1(), notification.getColor2());
+        final Player player = new Player(notification.getPlayerId(), startNode, notification.getGridAngle(), this, notification.getColors());
         player.setName(notification.getName());
         player.setHitpoints(notification.getHitpoints());
         player.setLapsRemaining(notification.getLapsRemaining());

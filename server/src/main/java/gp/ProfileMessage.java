@@ -11,8 +11,7 @@ import java.util.stream.Collectors;
 public class ProfileMessage implements Serializable {
     private final UUID id;
     private final String name;
-    private int color1;
-    private int color2;
+    private int[] colors;
     private boolean local;
     private boolean ai;
     private transient AI.Type aiType;
@@ -40,32 +39,41 @@ public class ProfileMessage implements Serializable {
             name = validNames.get(random.nextInt(validNames.size()));
         }
         final ProfileMessage profile = new ProfileMessage(name, true);
-        profile.color1 = random.nextInt(0xFFFFFF + 1);
-        profile.color2 = random.nextInt(0xFFFFFF + 1);
+        profile.colors[0] = random.nextInt(0xFFFFFF + 1);
+        profile.colors[1] = random.nextInt(0xFFFFFF + 1);
+        profile.colors[2] = profile.colors[0];
+        profile.colors[3] = 0x000000;
         profile.aiType = AI.Type.AMATEUR;
         return profile;
     }
 
     static ProfileMessage readProfile(String[] line) {
-        return new ProfileMessage(
-                UUID.fromString(line[0]),
-                line[1],
-                Integer.parseInt(line[2]),
-                Integer.parseInt(line[3]),
-                Boolean.parseBoolean(line[4]),
-                AI.Type.valueOf(line[5])
-        );
+        if (line.length == 6) {
+            // Old format
+            final int[] colors = new int[4];
+            colors[0] = Integer.parseInt(line[2]);
+            colors[1] = Integer.parseInt(line[3]);
+            colors[2] = colors[0];
+            colors[3] = 0x000000;
+            return new ProfileMessage(UUID.fromString(line[0]), line[1], colors, Boolean.parseBoolean(line[4]), AI.Type.valueOf(line[5]));
+        } else if (line.length == 5) {
+            // New format
+            final int[] colors = Arrays.stream(line[2].split(";")).mapToInt(Integer::parseInt).toArray();
+            return new ProfileMessage(UUID.fromString(line[0]), line[1], colors, Boolean.parseBoolean(line[3]), AI.Type.valueOf(line[4]));
+        } else {
+            return null;
+        }
     }
 
     String toLine() {
-        return id + "," + name + "," + color1 + "," + color2 + "," + ai + "," + aiType;
+        final String colorString = Arrays.stream(colors).mapToObj(Integer::toString).collect(Collectors.joining(";"));
+        return id + "," + name + "," + colorString + "," + ai + "," + aiType;
     }
 
-    private ProfileMessage(UUID id, String name, int color1, int color2, boolean ai, AI.Type aiType) {
+    private ProfileMessage(UUID id, String name, int[] colors, boolean ai, AI.Type aiType) {
         this.id = id;
         this.name = name;
-        this.color1 = color1;
-        this.color2 = color2;
+        this.colors = colors;
         local = true;
         this.ai = ai;
         this.aiType = aiType;
@@ -74,8 +82,7 @@ public class ProfileMessage implements Serializable {
     private ProfileMessage(String name, boolean ai) {
         id = UUID.randomUUID();
         this.name = name;
-        color1 = 0;
-        color2 = 0;
+        colors = new int[4];
         local = true;
         this.ai = ai;
     }
@@ -83,8 +90,10 @@ public class ProfileMessage implements Serializable {
     ProfileMessage(Profile profile) {
         id = profile.getId();
         name = profile.getName();
-        color1 = profile.getColor1();
-        color2 = profile.getColor2();
+        colors = new int[4];
+        for (int i = 0; i < 4; ++i) {
+            colors[i] = profile.getColor(i);
+        }
         originalProfile = profile;
     }
 
@@ -96,12 +105,12 @@ public class ProfileMessage implements Serializable {
         return name;
     }
 
-    int getColor1() {
-        return color1;
+    int getColor(int index) {
+        return colors[index];
     }
 
-    int getColor2() {
-        return color2;
+    int[] getColors() {
+        return colors;
     }
 
     void setLocal() {

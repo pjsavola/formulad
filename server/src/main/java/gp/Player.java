@@ -42,10 +42,10 @@ public class Player {
         return colors;
     }
 
-    public Player(String playerId, Node node, double initialAngle, JPanel panel, int color1, int color2) {
+    public Player(String playerId, Node node, double initialAngle, JPanel panel, int[] colors) {
         this.playerId = playerId;
-        this.color1 = new Color(color1);
-        this.color2 = new Color(color2);
+        this.color1 = new Color(colors[0]);
+        this.color2 = new Color(colors[1]);
         this.node = node;
         this.angle = initialAngle / 180 * Math.PI;
         this.panel = panel;
@@ -208,12 +208,14 @@ public class Player {
         g.fillRect(-4, 3, 1, 2);
     }
 
-    static void draw(Graphics2D g, int x, int y, double angle, Color color1, Color color2, double scale) {
+    static void draw(Graphics2D g, int x, int y, double angle, int[] colorCodes, double scale) {
         AffineTransform at = new AffineTransform();
         at.translate(x, y);
         at.scale(scale, scale);
         g.transform(at);
         g.rotate(angle);
+        final Color color1 = new Color(colorCodes[0]);
+        final Color color2 = new Color(colorCodes[1]);
         Color[] colors = createColorVariants(color1);
         draw(g, colors, color2);
         // needed if something is drawn after this

@@ -17,7 +17,7 @@ public class PlayerSlot extends JButton {
         @Override
         public void paintIcon(Component c, Graphics g, int x, int y) {
             if (profile != null && profile != ProfileMessage.pending) {
-                Player.draw((Graphics2D) g, x + 7, y + 4, 0, new Color(profile.getColor1()), new Color(profile.getColor2()), 1.0);
+                Player.draw((Graphics2D) g, x + 7, y + 4, 0, profile.getColors(), 1.0);
             }
         }
         @Override

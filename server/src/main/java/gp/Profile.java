@@ -15,6 +15,8 @@ public class Profile implements Serializable {
     private String name;
     private int color1;
     private int color2;
+    private int color3;
+    private int color4;
     private boolean active;
     private List<Result> results = new ArrayList<>();
     private transient Manager manager;
@@ -98,20 +100,28 @@ public class Profile implements Serializable {
         return name;
     }
 
-    void setColor1(int color1) {
-        this.color1 = color1;
+    void setColor(int index, int color) {
+        switch (index) {
+            case 0: color1 = color; break;
+            case 1: color2 = color; break;
+            case 2: color3 = color; break;
+            case 3: color4 = color; break;
+            default: throw new RuntimeException("Invalid color index");
+        }
     }
 
-    int getColor1() {
-        return color1;
+    int getColor(int index) {
+        switch (index) {
+            case 0: return color1;
+            case 1: return color2;
+            case 2: return color3;
+            case 3: return color4;
+            default: throw new RuntimeException("Invalid color index");
+        }
     }
 
-    void setColor2(int color2) {
-        this.color2 = color2;
-    }
-
-    int getColor2() {
-        return color2;
+    int[] getColors() {
+        return new int[] { color1, color2, color3, color4 };
     }
 
     void setActive(boolean active) {

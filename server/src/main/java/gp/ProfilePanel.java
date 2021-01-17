@@ -18,7 +18,7 @@ class ProfilePanel extends JPanel {
             super.paintComponent(g);
             final int x = width / 2;
             final int y = height / 2;
-            Player.draw((Graphics2D) g, x, y, 0, new Color(activeProfile.getColor1()), new Color(activeProfile.getColor2()), 2.5);
+            Player.draw((Graphics2D) g, x, y, 0, activeProfile.getColors(), 2.5);
         }
 
         @Override
@@ -35,13 +35,16 @@ class ProfilePanel extends JPanel {
         @Override
         public void mouseClicked(MouseEvent e) {
             final boolean mainColor = e.getButton() == MouseEvent.BUTTON1;
-            final int oldColor = mainColor ? activeProfile.getColor1() : activeProfile.getColor2();
+            final int oldColor = mainColor ? activeProfile.getColor(0) : activeProfile.getColor(1);
             final String result = (String) JOptionPane.showInputDialog(ProfilePanel.this, "Set color RGB value", "Set color", JOptionPane.PLAIN_MESSAGE, null, null, "#" + Integer.toHexString(oldColor));
             if (result == null) return;
             try {
                 final int color = Color.decode(result).getRGB() & 0x00FFFFFF;
-                if (mainColor) activeProfile.setColor1(color);
-                else activeProfile.setColor2(color);
+                if (mainColor) {
+                    activeProfile.setColor(0, color);
+                    activeProfile.setColor(2, color);
+                }
+                else activeProfile.setColor(1, color);
                 panel.repaint();
             } catch (NumberFormatException ex) {
                 JOptionPane.showConfirmDialog(ProfilePanel.this, "Please provide valid RGB value between #000000 and #FFFFFF", "Error", JOptionPane.DEFAULT_OPTION);
@@ -69,17 +72,18 @@ class ProfilePanel extends JPanel {
 
         carPreview.addMouseListener(new ColorChangeListener(carPreview));
 
-        final JSlider sliderColor1 = new JSlider(JSlider.HORIZONTAL, 0x000000, 0xFFFFFF, activeProfile.getColor1());
-        final JSlider sliderColor2 = new JSlider(JSlider.HORIZONTAL, 0x000000, 0xFFFFFF, activeProfile.getColor2());
+        final JSlider sliderColor1 = new JSlider(JSlider.HORIZONTAL, 0x000000, 0xFFFFFF, activeProfile.getColor(0));
+        final JSlider sliderColor2 = new JSlider(JSlider.HORIZONTAL, 0x000000, 0xFFFFFF, activeProfile.getColor(1));
 
         sliderColor1.addChangeListener(e -> {
             final JSlider slider = (JSlider) e.getSource();
-            activeProfile.setColor1(slider.getValue());
+            activeProfile.setColor(0, slider.getValue());
+            activeProfile.setColor(2, slider.getValue());
             carPreview.repaint();
         });
         sliderColor2.addChangeListener(e -> {
             final JSlider slider = (JSlider) e.getSource();
-            activeProfile.setColor2(slider.getValue());
+            activeProfile.setColor(1, slider.getValue());
             carPreview.repaint();
         });
 
@@ -108,8 +112,9 @@ class ProfilePanel extends JPanel {
                         if (profiles.stream().noneMatch(p -> p.getName().equals(result))) {
                             final Profile newProfile = new Profile(activeProfile.getManager(), result);
                             newProfile.setActive(true);
-                            newProfile.setColor1(random.nextInt(0xFFFFFF));
-                            newProfile.setColor2(random.nextInt(0xFFFFFF));
+                            newProfile.setColor(0, random.nextInt(0xFFFFFF));
+                            newProfile.setColor(1, random.nextInt(0xFFFFFF));
+                            newProfile.setColor(2, newProfile.getColor(0));
                             profiles.add(newProfile);
                             activeProfile.setActive(false);
                             activeProfile = newProfile;
