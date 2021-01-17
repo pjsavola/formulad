@@ -1,6 +1,7 @@
 package gp;
 
 import gp.ai.Node;
+import gp.model.Tires;
 
 import javax.annotation.Nullable;
 import javax.swing.*;
@@ -23,6 +24,7 @@ public class Player {
     private final List<Node> route = new ArrayList<>();
     private static final Color transparentWhite = new Color(1.0f, 1.0f, 1.0f, 0.3f);
     int lapsToGo;
+    Tires tires;
     static final Font rollFont = new Font("Arial", Font.PLAIN, 20);
     private static final Font statsFont = new Font("Arial", Font.PLAIN, 12);
 
@@ -153,7 +155,7 @@ public class Player {
         at.translate(x, y);
         g.transform(at);
         g.rotate(angle);
-        draw(g, colorVariants);
+        draw(g, colorVariants, tires);
         g.rotate(-angle);
         g.translate(-x, -y);
     }
@@ -165,7 +167,7 @@ public class Player {
         return new Color(r, g, b);
     }
 
-    private static void draw(Graphics2D g, List<List<Color>> colors) {
+    private static void draw(Graphics2D g, List<List<Color>> colors, Tires tires) {
         g.setColor(colors.get(0).get(0));
         g.fillRect(8, 0, 1, 1);
         g.setColor(colors.get(0).get(1));
@@ -207,16 +209,22 @@ public class Player {
         g.fillRect(8, 1, 1, 1);
         g.fillRect(8, -1, 1, 1);
         g.setColor(Color.BLACK);
+        g.fillRect(4, -2, 1, 1);
+        g.fillRect(4, 2, 1, 1);
+        g.fillRect(-1, 0, 2, 1);
+        Color tireColor = null;
+        if (tires != null && tires.getType() == Tires.Type.SOFT) {
+            tireColor = tires.canUse() ? new Color(0x8B008B) : new Color(0x8B0000);
+            tireColor = tireColor.brighter();
+            g.setColor(tireColor);
+        }
         g.fillRect(3, -4, 2, 2);
         g.fillRect(3, 3, 2, 2);
         g.fillRect(-6, -4, 2, 2);
         g.fillRect(-6, 3, 2, 2);
-        g.fillRect(4, -2, 1, 1);
-        g.fillRect(4, 2, 1, 1);
-        g.fillRect(-1, 0, 2, 1);
         g.setColor(colors.get(3).get(0));
         g.fillRect(-1, 0, 1, 1);
-        g.setColor(Color.DARK_GRAY);
+        g.setColor(tireColor == null ? Color.DARK_GRAY : tireColor.brighter());
         g.fillRect(5, -4, 1, 2);
         g.fillRect(5, 3, 1, 2);
         g.fillRect(-4, -4, 1, 2);
@@ -232,7 +240,7 @@ public class Player {
         final Color color1 = new Color(colorCodes[0]);
         final Color color2 = new Color(colorCodes[1]);
         List<List<Color>> colors = createColorVariants(colorCodes);
-        draw(g, colors);
+        draw(g, colors, null);
         // needed if something is drawn after this
         g.rotate(-angle);
         g.translate(-x, -y);

@@ -24,7 +24,6 @@ public final class LocalPlayer extends Player {
     private int gridPosition;
     private int pitStops;
     private final int maxHitpoints;
-    private Tires tires;
 
     LocalPlayer(String playerId, Node node, double initialAngle, int laps, JPanel panel, int leeway, int maxHitpoints, int[] colors) {
         super(playerId, node, initialAngle, panel, colors);
