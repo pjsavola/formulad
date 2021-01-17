@@ -545,7 +545,7 @@ public class Main extends Game implements Runnable {
                     final String name = fn.getName().substring(0, fn.getName().length() - 4);
                     final Season season = new Season(f, name);
                     if (season.load()) {
-                        existingSeasons.put(name, season);
+                        existingSeasons.put(name.toLowerCase(), season);
                     }
                 }
                 existingSeasons.values().stream().sorted(Season::compareTo).map(Season::getName).forEach(model::addElement);
@@ -559,7 +559,7 @@ public class Main extends Game implements Runnable {
             newButton.addActionListener(e1 -> {
                 String result = (String) JOptionPane.showInputDialog(dialog, "New season name", "New season", JOptionPane.PLAIN_MESSAGE, null, null, null);
                 if (result != null && !result.isEmpty()) {
-                    if (existingSeasons.containsKey(result)) {
+                    if (existingSeasons.containsKey(result.toLowerCase())) {
                         JOptionPane.showConfirmDialog(dialog, "Season with name " + result + " already exists", "Error", JOptionPane.DEFAULT_OPTION);
                     } else {
                         final Season season = new Season(f, result);
@@ -643,7 +643,7 @@ public class Main extends Game implements Runnable {
                     }
                     final String result = (String) JOptionPane.showInputDialog(dialog, "New season name", "New season", JOptionPane.PLAIN_MESSAGE, null, null, null);
                     if (result != null && !result.isEmpty()) {
-                        if (existingSeasons.containsKey(result)) {
+                        if (existingSeasons.containsKey(result.toLowerCase())) {
                             JOptionPane.showConfirmDialog(dialog, "Season with name " + result + " already exists", "Error", JOptionPane.DEFAULT_OPTION);
                         } else {
                             final Season season = new Season(f, result);
@@ -676,9 +676,9 @@ public class Main extends Game implements Runnable {
                 final String deletedSeason = model.getElementAt(index);
                 int result = JOptionPane.showConfirmDialog(dialog, "Are you sure you want to delete season " + deletedSeason, "Confirm", JOptionPane.YES_NO_OPTION);
                 if (result == JOptionPane.YES_OPTION) {
-                    final Season season = existingSeasons.get(deletedSeason);
+                    final Season season = existingSeasons.get(deletedSeason.toLowerCase());
                     if (season != null && season.delete()) {
-                        existingSeasons.remove(deletedSeason);
+                        existingSeasons.remove(deletedSeason.toLowerCase());
                         model.remove(index);
                         list.setSelectedIndex(-1);
                     }
