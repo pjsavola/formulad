@@ -3,6 +3,8 @@ package gp;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -28,26 +30,92 @@ class ProfilePanel extends JPanel {
     }
 
     private class ColorChangeListener extends MouseAdapter {
+        private class TextFieldListener implements DocumentListener {
+            private final JTextField field;
+            private final int index;
+            TextFieldListener(JTextField field, int index) {
+                this.field = field;
+                this.index = index;
+            }
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                refresh();
+            }
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                refresh();
+            }
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                refresh();
+            }
+            void refresh() {
+                try {
+                    final int color = Color.decode(toCode(field.getText())).getRGB() & 0x00FFFFFF;
+                    activeProfile.setColor(index, color);
+                    carPreview.repaint();
+                } catch (Exception ex) {
+                    // No repaint
+                }
+            }
+        }
         private final JPanel panel;
+        private final CarPreview carPreview = new CarPreview();
         private ColorChangeListener(JPanel panel) {
             this.panel = panel;
         }
         @Override
         public void mouseClicked(MouseEvent e) {
-            final boolean mainColor = e.getButton() == MouseEvent.BUTTON1;
-            final int oldColor = mainColor ? activeProfile.getColor(0) : activeProfile.getColor(1);
-            final String result = (String) JOptionPane.showInputDialog(ProfilePanel.this, "Set color RGB value", "Set color", JOptionPane.PLAIN_MESSAGE, null, null, "#" + Integer.toHexString(oldColor));
-            if (result == null) return;
-            try {
-                final int color = Color.decode(result).getRGB() & 0x00FFFFFF;
-                if (mainColor) {
-                    activeProfile.setColor(0, color);
-                    activeProfile.setColor(2, color);
+            final int orig0 = activeProfile.getColor(0);
+            final int orig1 = activeProfile.getColor(1);
+            final int orig2 = activeProfile.getColor(2);
+            final int orig3 = activeProfile.getColor(3);
+            JTextField color1 = new JTextField(Integer.toHexString(orig0), 10);
+            JTextField color2 = new JTextField(Integer.toHexString(orig1), 10);
+            JTextField color3 = new JTextField(Integer.toHexString(orig2), 10);
+            JTextField color4 = new JTextField(Integer.toHexString(orig3), 10);
+            color1.getDocument().addDocumentListener(new TextFieldListener(color1, 0));
+            color2.getDocument().addDocumentListener(new TextFieldListener(color2, 1));
+            color3.getDocument().addDocumentListener(new TextFieldListener(color3, 2));
+            color4.getDocument().addDocumentListener(new TextFieldListener(color4, 3));
+
+            JPanel myPanel = new JPanel(new GridLayout(0, 2));
+            myPanel.add(new JLabel("Main color:"));
+            myPanel.add(color1);
+            myPanel.add(new JLabel("Wing Color:"));
+            myPanel.add(color2);
+            myPanel.add(new JLabel("Side Color:"));
+            myPanel.add(color3);
+            myPanel.add(new JLabel("Helmet Color:"));
+            myPanel.add(color4);
+            myPanel.add(carPreview);
+
+            int result = JOptionPane.showConfirmDialog(null, myPanel, "Adjust color RGB values", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+            if (result == JOptionPane.OK_OPTION) {
+                try {
+                    activeProfile.setColor(0, Color.decode(toCode(color1.getText())).getRGB() & 0x00FFFFFF);
+                    activeProfile.setColor(1, Color.decode(toCode(color2.getText())).getRGB() & 0x00FFFFFF);
+                    activeProfile.setColor(2, Color.decode(toCode(color3.getText())).getRGB() & 0x00FFFFFF);
+                    activeProfile.setColor(3, Color.decode(toCode(color4.getText())).getRGB() & 0x00FFFFFF);
+                    panel.repaint();
+                    return;
+                } catch (Exception ex) {
+                    JOptionPane.showConfirmDialog(ProfilePanel.this, "Please provide valid RGB value between 000000 and FFFFFF", "Error", JOptionPane.DEFAULT_OPTION);
                 }
-                else activeProfile.setColor(1, color);
-                panel.repaint();
-            } catch (NumberFormatException ex) {
-                JOptionPane.showConfirmDialog(ProfilePanel.this, "Please provide valid RGB value between #000000 and #FFFFFF", "Error", JOptionPane.DEFAULT_OPTION);
+            }
+            activeProfile.setColor(0, orig0);
+            activeProfile.setColor(1, orig1);
+            activeProfile.setColor(2, orig2);
+            activeProfile.setColor(3, orig3);
+        }
+
+        private String toCode(String str) {
+            if (str.startsWith("0x")) {
+                return "#" + str.substring(2);
+            } else if (str.startsWith("#")) {
+                return str;
+            } else {
+                return "#" + str;
             }
         }
     }
@@ -72,6 +140,7 @@ class ProfilePanel extends JPanel {
 
         carPreview.addMouseListener(new ColorChangeListener(carPreview));
 
+        /*
         final JSlider sliderColor1 = new JSlider(JSlider.HORIZONTAL, 0x000000, 0xFFFFFF, activeProfile.getColor(0));
         final JSlider sliderColor2 = new JSlider(JSlider.HORIZONTAL, 0x000000, 0xFFFFFF, activeProfile.getColor(1));
 
@@ -88,7 +157,7 @@ class ProfilePanel extends JPanel {
         });
 
         add(sliderColor1);
-        add(sliderColor2);
+        add(sliderColor2);*/
         add(profileStats);
 
         profileTitle.addMouseListener(new MouseAdapter() {
