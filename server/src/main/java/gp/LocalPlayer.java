@@ -24,6 +24,7 @@ public final class LocalPlayer extends Player {
     private int gridPosition;
     private int pitStops;
     private final int maxHitpoints;
+    private Tires tires;
 
     LocalPlayer(String playerId, Node node, double initialAngle, int laps, JPanel panel, int leeway, int maxHitpoints, int[] colors) {
         super(playerId, node, initialAngle, panel, colors);
@@ -34,6 +35,7 @@ public final class LocalPlayer extends Player {
             curveStops = node.getStopCount();
         }
         this.maxHitpoints = maxHitpoints;
+        tires = new Tires(Tires.Type.SOFT);
         setHitpoints(maxHitpoints);
     }
 
@@ -252,7 +254,7 @@ public final class LocalPlayer extends Player {
     }
 
     Moves findAllTargets(int roll, String gameId, List<LocalPlayer> players) {
-        int braking = 0;
+        int braking = tires.canUse() ? -1 : 0;
         final Set<Node> forbiddenNodes = players
             .stream()
             .map(player -> player.node)
@@ -262,11 +264,11 @@ public final class LocalPlayer extends Player {
         while (braking < hitpoints) {
             final Map<Node, DamageAndPath> targets = findTargetNodes(roll - braking, forbiddenNodes);
             for (Map.Entry<Node, DamageAndPath> e : targets.entrySet()) {
-                final int damage = e.getValue().getDamage() + braking;
+                final int damage = e.getValue().getDamage() + Math.max(0, braking);
                 if (damage < hitpoints) {
                     validMoves.add(new ValidMove()
                         .nodeId(e.getKey().getId())
-                        .overshoot(e.getValue().getDamage())
+                        .overshoot(e.getValue().getDamage() - Math.min(0, braking))
                         .braking(braking)
                     );
                     paths.add(new DamageAndPath(damage, e.getValue().getPath()));
