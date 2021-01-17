@@ -42,7 +42,7 @@ public class ProfileMessage implements Serializable {
         profile.colors[0] = random.nextInt(0xFFFFFF + 1);
         profile.colors[1] = random.nextInt(0xFFFFFF + 1);
         profile.colors[2] = profile.colors[0];
-        profile.colors[3] = 0x000000;
+        profile.colors[3] = random.nextInt(0xFFFFFF + 1);
         profile.aiType = AI.Type.AMATEUR;
         return profile;
     }

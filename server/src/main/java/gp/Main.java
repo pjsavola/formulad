@@ -616,9 +616,19 @@ public class Main extends Game implements Runnable {
                                         final ProfileMessage profileMessage;
                                         if (profile == null) {
                                             final String ai = parts.length > 1 ? AI.Type.valueOf(parts[1]).toString() : AI.Type.PRO.toString();
-                                            final int color1 = parts.length > 2 ? stringToInt(parts[2]) : random.nextInt(0xFFFFFF + 1);
-                                            final int color2 = parts.length > 3 ? stringToInt(parts[3]) : random.nextInt(0xFFFFFF + 1);
-                                            String[] msg = new String[] { UUID.randomUUID().toString(), name, Integer.toString(color1), Integer.toString(color2), "true", ai };
+                                            String[] msg = null;
+                                            if (parts.length > 2) {
+                                                final String[] colors = parts[2].split(";");
+                                                if (colors.length == 4) {
+                                                    final String colorStr = Arrays.stream(colors).mapToInt(this::stringToInt).mapToObj(Integer::toString).collect(Collectors.joining(";"));
+                                                    msg = new String[] { UUID.randomUUID().toString(), name, colorStr, "true", ai };
+                                                }
+                                            }
+                                            if (msg == null) {
+                                                final int color1 = parts.length > 2 ? stringToInt(parts[2]) : random.nextInt(0xFFFFFF + 1);
+                                                final int color2 = parts.length > 3 ? stringToInt(parts[3]) : random.nextInt(0xFFFFFF + 1);
+                                                msg = new String[] { UUID.randomUUID().toString(), name, Integer.toString(color1), Integer.toString(color2), "true", ai };
+                                            }
                                             profileMessage = ProfileMessage.readProfile(msg);
                                         } else {
                                             profileMessage = new ProfileMessage(profile);
