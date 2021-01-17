@@ -149,17 +149,23 @@ public final class LocalPlayer extends Player {
         return roll;
     }
 
-    public void move(int index) {
-        move(paths.get(index));
+    public void move(int index, int roll) {
+        move(paths.get(index), roll);
     }
 
-    private void move(DamageAndPath dp) {
+    private void move(DamageAndPath dp, int roll) {
         final List<Node> route = dp.getPath();
         if (route == null || route.isEmpty()) {
             throw new RuntimeException("Invalid route: " + route);
         }
         if (node != null && route.get(0) != node) {
             throw new RuntimeException("Invalid starting point for route: " + route);
+        }
+        if (route.size() > roll + 1) {
+            if (!tires.canUse()) {
+                throw new RuntimeException("Invalid usage of soft tires");
+            }
+            tires.use();
         }
         final int oldLapsToGo = lapsToGo;
         int size = route.size();
