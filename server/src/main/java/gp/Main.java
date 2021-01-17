@@ -641,7 +641,7 @@ public class Main extends Game implements Runnable {
                                 }
                             }
                         } catch (Exception ex) {
-                            JOptionPane.showConfirmDialog(dialog, "Invalid file format: " + selectedFile.getName() + "(" + ex.getMessage() + (line == null ? "" : " - " + line + ")"), "File Format Error", JOptionPane.DEFAULT_OPTION);
+                            JOptionPane.showConfirmDialog(dialog, "Invalid file format: " + selectedFile.getName() + " (" + ex.getMessage() + (line == null ? "" : " - " + line + ")"), "File Format Error", JOptionPane.DEFAULT_OPTION);
                             tracksAndLaps.clear();
                             profileMessages.clear();
                             return;

@@ -180,6 +180,7 @@ public class Player {
         g.fillRect(3, -1, 1, 3);
         g.setColor(colors.get(0).get(6));
         g.fillRect(2, -1, 1, 3);
+        g.fillRect(1, -1, 1, 3);
         g.fillRect(-4, -2, 6, 1);
         g.fillRect(-4, 2, 6, 1);
         g.fillRect(-3, -3, 3, 1);
@@ -191,7 +192,7 @@ public class Player {
         g.fillRect(-1, -1, 1, 3);
         g.fillRect(-4, -1, 1, 3);
         g.setColor(colors.get(2).get(2));
-        g.fillRect(1, -1, 1, 3);
+        g.fillRect(1, 0, 1, 1);
         g.fillRect(-3, -1, 1, 3);
         g.setColor(colors.get(2).get(3));
         g.fillRect(-2, -1, 1, 3);
