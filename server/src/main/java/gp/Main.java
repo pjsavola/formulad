@@ -632,6 +632,8 @@ public class Main extends Game implements Runnable {
                             }
                         } catch (Exception ex) {
                             JOptionPane.showConfirmDialog(dialog, "Invalid file format: " + selectedFile.getName() + "(" + ex.getMessage() + (line == null ? "" : " - " + line + ")"), "File Format Error", JOptionPane.DEFAULT_OPTION);
+                            tracksAndLaps.clear();
+                            profileMessages.clear();
                             return;
                         }
                     } else {
@@ -639,12 +641,16 @@ public class Main extends Game implements Runnable {
                     }
                     if (tracksAndLaps.size() < 3) {
                         JOptionPane.showConfirmDialog(dialog, "Invalid template: Less than 3 tracks", "Invalid Template", JOptionPane.DEFAULT_OPTION);
+                        tracksAndLaps.clear();
+                        profileMessages.clear();
                         return;
                     }
                     final String result = (String) JOptionPane.showInputDialog(dialog, "New season name", "New season", JOptionPane.PLAIN_MESSAGE, null, null, null);
                     if (result != null && !result.isEmpty()) {
                         if (existingSeasons.containsKey(result.toLowerCase())) {
                             JOptionPane.showConfirmDialog(dialog, "Season with name " + result + " already exists", "Error", JOptionPane.DEFAULT_OPTION);
+                            tracksAndLaps.clear();
+                            profileMessages.clear();
                         } else {
                             final Season season = new Season(f, result);
                             dialog.setVisible(false);
