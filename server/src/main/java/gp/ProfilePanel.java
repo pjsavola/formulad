@@ -6,12 +6,15 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.Random;
 
 class ProfilePanel extends JPanel {
+    private static Random random = new Random();
     private class CarPreview extends JPanel {
         final int width = 100;
         final int height = 50;
@@ -59,6 +62,21 @@ class ProfilePanel extends JPanel {
                 }
             }
         }
+        private class ButtonListener implements ActionListener {
+            private final JTextField field;
+            private final int index;
+            ButtonListener(JTextField field, int index) {
+                this.field = field;
+                this.index = index;
+            }
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                final int color = random.nextInt(0xFFFFFF + 1);
+                activeProfile.setColor(index, color);
+                carPreview.repaint();
+                field.setText(Integer.toHexString(color));
+            }
+        }
         private final JPanel panel;
         private final CarPreview carPreview = new CarPreview();
         private ColorChangeListener(JPanel panel) {
@@ -79,15 +97,29 @@ class ProfilePanel extends JPanel {
             color3.getDocument().addDocumentListener(new TextFieldListener(color3, 2));
             color4.getDocument().addDocumentListener(new TextFieldListener(color4, 3));
 
-            JPanel myPanel = new JPanel(new GridLayout(0, 2));
+            final JButton button0 = new JButton("Randomize");
+            final JButton button1 = new JButton("Randomize");
+            final JButton button2 = new JButton("Randomize");
+            final JButton button3 = new JButton("Randomize");
+            button0.addActionListener(new ButtonListener(color1, 0));
+            button1.addActionListener(new ButtonListener(color2, 1));
+            button2.addActionListener(new ButtonListener(color3, 2));
+            button3.addActionListener(new ButtonListener(color4, 3));
+
+            JPanel myPanel = new JPanel(new GridLayout(0, 3));
             myPanel.add(new JLabel("Main color:"));
             myPanel.add(color1);
+            myPanel.add(button0);
             myPanel.add(new JLabel("Wing Color:"));
             myPanel.add(color2);
+            myPanel.add(button1);
             myPanel.add(new JLabel("Side Color:"));
             myPanel.add(color3);
+            myPanel.add(button2);
             myPanel.add(new JLabel("Helmet Color:"));
             myPanel.add(color4);
+            myPanel.add(button3);
+            myPanel.add(new JPanel());
             myPanel.add(carPreview);
 
             int result = JOptionPane.showConfirmDialog(null, myPanel, "Adjust color RGB values", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
@@ -131,11 +163,11 @@ class ProfilePanel extends JPanel {
         final JLabel profileName = new JLabel(activeProfile.getName());
         profileName.setFont(new Font("Arial", Font.PLAIN, 16));
         final CarPreview carPreview = new CarPreview();
-        final JLabel profileStats = new JLabel("Stats");
-        profileStats.setFont(new Font("Arial", Font.PLAIN, 16));
-
+        final JLabel profileStats = new JLabel("- Stats");
+        profileStats.setFont(new Font("Arial", Font.PLAIN, 14));
         add(profileTitle);
         add(profileName);
+        add(profileStats);
         add(carPreview);
 
         carPreview.addMouseListener(new ColorChangeListener(carPreview));
@@ -158,7 +190,6 @@ class ProfilePanel extends JPanel {
 
         add(sliderColor1);
         add(sliderColor2);*/
-        add(profileStats);
 
         profileTitle.addMouseListener(new MouseAdapter() {
             @Override
