@@ -172,25 +172,6 @@ class ProfilePanel extends JPanel {
 
         carPreview.addMouseListener(new ColorChangeListener(carPreview));
 
-        /*
-        final JSlider sliderColor1 = new JSlider(JSlider.HORIZONTAL, 0x000000, 0xFFFFFF, activeProfile.getColor(0));
-        final JSlider sliderColor2 = new JSlider(JSlider.HORIZONTAL, 0x000000, 0xFFFFFF, activeProfile.getColor(1));
-
-        sliderColor1.addChangeListener(e -> {
-            final JSlider slider = (JSlider) e.getSource();
-            activeProfile.setColor(0, slider.getValue());
-            activeProfile.setColor(2, slider.getValue());
-            carPreview.repaint();
-        });
-        sliderColor2.addChangeListener(e -> {
-            final JSlider slider = (JSlider) e.getSource();
-            activeProfile.setColor(1, slider.getValue());
-            carPreview.repaint();
-        });
-
-        add(sliderColor1);
-        add(sliderColor2);*/
-
         profileTitle.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
