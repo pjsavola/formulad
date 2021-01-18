@@ -250,7 +250,7 @@ public class Main extends Game implements Runnable {
                 } else {
                     log.info("Move input received: " + selectedIndex);
                 }
-                current.move(selectedIndex, roll);
+                current.move(selectedIndex);
                 current.collide(players, collisionMap, rng);
                 if (roll == 20 || roll == 30) {
                     LocalPlayer.possiblyAddEngineDamage(players, rng);

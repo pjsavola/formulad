@@ -150,22 +150,17 @@ public final class LocalPlayer extends Player {
         return roll;
     }
 
-    public void move(int index, int roll) {
-        move(paths.get(index), roll);
+    public void move(int index) {
+        move(paths.get(index));
     }
 
-    private void move(DamageAndPath dp, int roll) {
+    private void move(DamageAndPath dp) {
         final List<Node> route = dp.getPath();
         if (route == null || route.isEmpty()) {
             throw new RuntimeException("Invalid route: " + route);
         }
         if (node != null && route.get(0) != node) {
             throw new RuntimeException("Invalid starting point for route: " + route);
-        }
-        if (route.size() > roll + 1) {
-            if (!tires.canUse()) {
-                throw new RuntimeException("Invalid usage of soft tires");
-            }
         }
         final int oldLapsToGo = lapsToGo;
         int size = route.size();
@@ -268,9 +263,10 @@ public final class LocalPlayer extends Player {
             .map(player -> player.node)
             .collect(Collectors.toSet());
         paths.clear();
+        boolean rain = true;
         final int overshootMultiplier = tires == null ? 1 : tires.getOvershootDamage(null);
         final List<ValidMove> validMoves = new ArrayList<>();
-        if (tires != null && tires.canUse()) {
+        if (tires != null && tires.canUse() && !rain) {
             final Map<Node, DamageAndPath> targets = findTargetNodes(roll + 1, forbiddenNodes);
             for (Map.Entry<Node, DamageAndPath> e : targets.entrySet()) {
                 final int damage = e.getValue().getDamage();
@@ -284,9 +280,14 @@ public final class LocalPlayer extends Player {
                 }
             }
         }
+        final Set<Node> slideNodes = new HashSet<>();
         while (braking < hitpoints) {
             final Map<Node, DamageAndPath> targets = findTargetNodes(roll - braking, forbiddenNodes);
             for (Map.Entry<Node, DamageAndPath> e : targets.entrySet()) {
+                if (rain && (e.getKey().isCurve() || e.getValue().getDamage() > 0)) {
+                    slideNodes.add(e.getKey());
+                    continue;
+                }
                 final int damage = e.getValue().getDamage() + braking;
                 if (damage < hitpoints) {
                     validMoves.add(new ValidMove()
@@ -301,6 +302,31 @@ public final class LocalPlayer extends Player {
                 break;
             }
             braking++;
+        }
+        if (!slideNodes.isEmpty()) {
+            final int slide = 3;
+            braking = 0;
+            while (braking < hitpoints) {
+                final Map<Node, DamageAndPath> targets = findTargetNodes(roll + slide - braking, forbiddenNodes);
+                for (Map.Entry<Node, DamageAndPath> e : targets.entrySet()) {
+                    if (e.getValue().getPath().stream().noneMatch(slideNodes::contains)) {
+                        continue;
+                    }
+                    final int damage = e.getValue().getDamage() + braking;
+                    if (damage < hitpoints) {
+                        validMoves.add(new ValidMove()
+                                .nodeId(e.getKey().getId())
+                                .overshoot(e.getValue().getDamage() * overshootMultiplier)
+                                .braking(braking)
+                        );
+                        paths.add(new DamageAndPath(damage, e.getValue().getPath()));
+                    }
+                }
+                if (braking == roll + slide) {
+                    break;
+                }
+                braking++;
+            }
         }
         return new Moves().game(new GameId().gameId(gameId)).moves(validMoves);
     }
