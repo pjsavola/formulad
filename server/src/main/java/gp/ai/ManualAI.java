@@ -6,7 +6,6 @@ import gp.model.*;
 import gp.model.Gear;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableObject;
 
 import javax.swing.*;
 import java.awt.*;
@@ -91,6 +90,8 @@ public class ManualAI extends BaseAI {
                 final String choice = (String) JOptionPane.showInputDialog(frame, "Select tires", "Select tires", JOptionPane.PLAIN_MESSAGE, null, new String[] { "Hard", "Soft", "Wet" }, previous);
                 if (choice != null) {
                     tires = new Tires(Tires.Type.valueOf(choice.toUpperCase()));
+                    game.getCurrent().setTires(tires);
+                    game.repaint();
                 }
             });
             game.actionMenu.add(item);

@@ -441,5 +441,5 @@ public abstract class Game extends JPanel implements PlayerRenderer {
         }
     }
 
-    protected abstract Player getCurrent();
+    public abstract Player getCurrent();
 }

@@ -227,7 +227,7 @@ public class Client extends Game implements Runnable {
     }
 
     @Override
-    protected Player getCurrent() {
+    public Player getCurrent() {
         return current;
     }
 }

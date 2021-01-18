@@ -83,6 +83,10 @@ public class Player {
         return stopped;
     }
 
+    public void setTires(Tires tires) {
+        this.tires = tires;
+    }
+
     void drawRoll(Graphics2D g2d, @Nullable Integer roll, Point point) {
         if (roll != null && gear != 0) {
             final Color color = getGearColor(gear);

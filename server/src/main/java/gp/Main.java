@@ -882,7 +882,7 @@ public class Main extends Game implements Runnable {
     }
 
     @Override
-    protected LocalPlayer getCurrent() {
+    public LocalPlayer getCurrent() {
         return current;
     }
 }
