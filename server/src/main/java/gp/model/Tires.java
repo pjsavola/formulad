@@ -4,7 +4,6 @@ import java.io.Serializable;
 
 public class Tires implements Serializable {
     public enum Type { HARD, SOFT, WET }
-    public enum Weather { DRY, RAIN }
 
     private final Type type;
     private int age;

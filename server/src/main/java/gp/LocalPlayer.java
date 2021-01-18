@@ -25,7 +25,7 @@ public final class LocalPlayer extends Player {
     private int pitStops;
     private final int maxHitpoints;
 
-    LocalPlayer(String playerId, Node node, double initialAngle, int laps, JPanel panel, int leeway, int maxHitpoints, boolean tireChanges, int[] colors) {
+    LocalPlayer(String playerId, Node node, double initialAngle, int laps, JPanel panel, int leeway, int maxHitpoints, Tires tires, int[] colors) {
         super(playerId, node, initialAngle, panel, colors);
         lapsToGo = laps;
         this.panel = panel;
@@ -34,9 +34,7 @@ public final class LocalPlayer extends Player {
             curveStops = node.getStopCount();
         }
         this.maxHitpoints = maxHitpoints;
-        if (tireChanges) {
-            tires = new Tires(Tires.Type.HARD);
-        }
+        this.tires = tires;
         setHitpoints(maxHitpoints);
     }
 
@@ -256,15 +254,15 @@ public final class LocalPlayer extends Player {
         }
     }
 
-    Moves findAllTargets(int roll, String gameId, List<LocalPlayer> players) {
+    Moves findAllTargets(int roll, String gameId, List<LocalPlayer> players, Weather weather) {
         int braking = 0;
         final Set<Node> forbiddenNodes = players
             .stream()
             .map(player -> player.node)
             .collect(Collectors.toSet());
         paths.clear();
-        boolean rain = true;
-        final int overshootMultiplier = tires == null ? 1 : tires.getOvershootDamage(null);
+        final boolean rain = weather == Weather.RAIN;
+        final int overshootMultiplier = tires == null ? 1 : tires.getOvershootDamage(weather);
         final List<ValidMove> validMoves = new ArrayList<>();
         if (tires != null && tires.canUse() && !rain) {
             final Map<Node, DamageAndPath> targets = findTargetNodes(roll + 1, forbiddenNodes);
@@ -304,7 +302,7 @@ public final class LocalPlayer extends Player {
             braking++;
         }
         if (!slideNodes.isEmpty()) {
-            final int slide = 3;
+            final int slide = tires != null && tires.getType() == Tires.Type.WET ? 1 : 3;
             braking = 0;
             while (braking < hitpoints) {
                 final Map<Node, DamageAndPath> targets = findTargetNodes(roll + slide - braking, forbiddenNodes);

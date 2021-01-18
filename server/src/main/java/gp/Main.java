@@ -83,6 +83,7 @@ public class Main extends Game implements Runnable {
     public Main(Params params, Lobby lobby, JFrame frame, JPanel panel, List<PlayerSlot> slots, TrackData trackData, Season resultStorage) {
         super(frame, panel);
         initTrack(trackData);
+        weather = params.tireChanges ? Weather.RAIN : Weather.DRY; // TODO: Randomize
         settings.trackId = trackData.getTrackId();
         settings.external = trackData.isExternal();
         this.lobby = lobby;
@@ -139,20 +140,21 @@ public class Main extends Game implements Runnable {
         enableTimeout = true;
         final List<CreatedPlayerNotification> notifications = new ArrayList<>();
         for (Map.Entry<AI, ProfileMessage> e : aiToProfile.entrySet()) {
-            notifications.add(createAiPlayer(e, grid, startingOrder, params.leeway, params.laps, params.maxHitpoints, params.tireChanges));
+            final Tires defaultTires = weather == Weather.RAIN ? new Tires(Tires.Type.WET) : new Tires(Tires.Type.HARD);
+            notifications.add(createAiPlayer(e, grid, startingOrder, params.leeway, params.laps, params.maxHitpoints, defaultTires));
         }
         aiMap.forEach((player, ai) -> notifications.forEach(notification -> ai.notify(notification.controlled(notification.getPlayerId().equals(player.getId())))));
         immutablePlayerMap = new HashMap<>(aiToProfile.size());
         allPlayers.forEach(player -> immutablePlayerMap.put(player.getId(), player));
     }
 
-    private CreatedPlayerNotification createAiPlayer(Map.Entry<AI, ProfileMessage> ai, List<Node> grid, List<Integer> startingOrder, int leeway, int laps, int maxHitpoints, boolean tireChanges) {
+    private CreatedPlayerNotification createAiPlayer(Map.Entry<AI, ProfileMessage> ai, List<Node> grid, List<Integer> startingOrder, int leeway, int laps, int maxHitpoints, Tires defaultTires) {
         // Recreate track for each player, so nothing bad happens if AI mutates it.
         final int playerCount = allPlayers.size();
         final String playerId = "p" + (playerCount + 1);
         final int gridPosition = startingOrder.get(playerCount);
         final Node startNode = grid.get(gridPosition);
-        final LocalPlayer player = new LocalPlayer(playerId, startNode, startNode.getGridAngle(), laps, this, leeway, maxHitpoints, tireChanges, ai.getValue().getColors());
+        final LocalPlayer player = new LocalPlayer(playerId, startNode, startNode.getGridAngle(), laps, this, leeway, maxHitpoints, defaultTires, ai.getValue().getColors());
         current = player;
         log.info("Initializing player " + playerId);
         final String name = ai.getValue().getName();
@@ -211,10 +213,11 @@ public class Main extends Game implements Runnable {
 
     @Override
     public void run() {
+        if (weather != null) notifyAll(new WeatherNotification(weather));
         while (!stopped) {
             current.beginTurn();
             final AI ai = aiMap.get(current);
-            final GameState gameState = ApiHelper.buildGameState(data.getTrackId(), allPlayers);
+            final GameState gameState = ApiHelper.buildGameState(data.getTrackId(), allPlayers, weather);
             log.info("Querying gear input from AI " + current.getNameAndId());
             final Gear gearResponse = getAiInput(() -> ai.selectGear(gameState), gearTimeoutInMillis);
             if (ai instanceof ManualAI || allPlayers.stream().filter(pl -> !pl.isStopped()).map(aiMap::get).noneMatch(p -> p instanceof ManualAI)) {
@@ -233,7 +236,7 @@ public class Main extends Game implements Runnable {
             }
             roll = current.roll(rng);
             repaint();
-            final Moves allMoves = current.findAllTargets(roll, data.getTrackId(), players);
+            final Moves allMoves = current.findAllTargets(roll, data.getTrackId(), players, weather);
             if (current.getLeeway() <= 0) {
                 log.info("Player " + current.getNameAndId() + " used his timeout leeway and was dropped from the game");
                 current.stop();
@@ -350,6 +353,7 @@ public class Main extends Game implements Runnable {
             allPlayers.sort((p1, p2) -> p1.compareTo(p2, stoppedPlayers));
             standings = new ArrayList<>(allPlayers);
             notifyAll(new Standings(allPlayers));
+            if (weather != null) notifyAll(new WeatherNotification(weather));
         }
         previous = current;
         current = waitingPlayers.remove(0);
@@ -403,7 +407,7 @@ public class Main extends Game implements Runnable {
 
         final JButton startButton = new JButton("Start");
         final JCheckBox randomStartingOrder = new JCheckBox("Randomize starting order", settings.randomStartOrder);
-        final JCheckBox tireChanges = new JCheckBox("Enable tire selection", settings.tireChanges);
+        final JCheckBox tireChanges = new JCheckBox("Enable weather rules", settings.tireChanges);
         final SettingsField laps = new SettingsField(lobbyPanel, "Laps", Integer.toString(settings.laps), 1, 200);
         final SettingsField hitpoints = new SettingsField(lobbyPanel, "Hitpoints", Integer.toString(settings.maxHitpoints), 1, 30);
         final SettingsField animationDelay = new SettingsField(lobbyPanel, "Animation delay (ms)", Integer.toString(settings.animationDelay), 0, 1000);

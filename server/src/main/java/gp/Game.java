@@ -5,6 +5,7 @@ import gp.ai.TrackData;
 import gp.model.GameState;
 import gp.model.HitpointNotification;
 import gp.model.PlayerStats;
+import gp.model.Weather;
 
 import javax.annotation.Nullable;
 import javax.swing.*;
@@ -36,6 +37,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
     Integer roll;
     List<Player> standings;
     Map<String, Player> immutablePlayerMap;
+    Weather weather;
 
     private Map<String, Integer> hitpointMap = new HashMap<>();
 

@@ -43,6 +43,8 @@ public class Client extends Game implements Runnable {
                 } else if (request instanceof Standings) {
                     final Standings standings = (Standings) request;
                     this.standings = Arrays.stream(standings.getPlayerIds()).map(immutablePlayerMap::get).collect(Collectors.toList());
+                } else if (request instanceof WeatherNotification) {
+                    weather = ((WeatherNotification) request).getWeather();
                 } else if (request instanceof FinalStandings) {
                     final FinalStandings standings = (FinalStandings) request;
                     if (!initialStandingsReceived) {
