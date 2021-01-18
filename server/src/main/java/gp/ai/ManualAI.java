@@ -64,7 +64,7 @@ public class ManualAI extends BaseAI {
         if (ai instanceof ProAI) {
             ((ProAI) ai).updatePlayerInfo(gameState);
         }
-        if (tires != null && (gear == 0 || location.isPit())) {
+        if (tires != null && (gear == 0 || location.hasGarage())) {
             // Query for new tires
             final String previous = StringUtils.capitalize(tires.getType().name().toLowerCase());
             final String choice = (String) JOptionPane.showInputDialog(frame, "Select tires", "Select tires", JOptionPane.PLAIN_MESSAGE, null, new String[] { "Hard", "Soft", "Wet" }, previous);

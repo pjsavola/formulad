@@ -20,6 +20,7 @@ public abstract class BaseAI implements AI {
         nodes = data.getNodes();
     }
 
+    // This is called if AI takes over of a player after selecting a gear but before selecting where to move.
     public void init(GameState gameState, int gear) {
         selectGear(gameState);
         this.gear = gear;

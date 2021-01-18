@@ -391,7 +391,7 @@ public final class LocalPlayer extends Player {
 
     void changeTires(Tires tires) {
         if (tires != null && tires != this.tires) {
-            if (gear == 0 || node.isPit()) {
+            if (gear == 0 || node.hasGarage()) {
                 this.tires = tires;
                 ((Main) panel).notifyAll(new TireChangeNotification(playerId, tires));
             }

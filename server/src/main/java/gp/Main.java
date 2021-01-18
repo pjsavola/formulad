@@ -219,14 +219,14 @@ public class Main extends Game implements Runnable {
             if (ai instanceof ManualAI || allPlayers.stream().filter(pl -> !pl.isStopped()).map(aiMap::get).noneMatch(p -> p instanceof ManualAI)) {
                 updateHitpointMap(gameState);
             }
+            final Tires newTires = gearResponse == null ? null : gearResponse.getTires();
+            current.changeTires(newTires);
             final Integer selectedGear = gearResponse == null ? null : gearResponse.getGear();
             if (selectedGear != null && current.switchGear(selectedGear)) {
                 log.info("Gear input received: " + selectedGear);
             } else {
                 log.warning("Invalid gear selection " + selectedGear + ", using current gear instead");
             }
-            final Tires newTires = gearResponse == null ? null : gearResponse.getTires();
-            current.changeTires(newTires);
             if (previous != null) {
                 previous.clearRoute();
             }
