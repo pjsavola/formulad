@@ -6,6 +6,7 @@ import gp.model.*;
 import gp.model.Gear;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableObject;
 
 import javax.swing.*;
 import java.awt.*;
@@ -63,14 +64,6 @@ public class ManualAI extends BaseAI {
         if (ai instanceof ProAI) {
             ((ProAI) ai).updatePlayerInfo(gameState);
         }
-        if (tires != null && (gear == 0 || location.hasGarage())) {
-            // Query for new tires
-            final String previous = StringUtils.capitalize(tires.getType().name().toLowerCase());
-            final String choice = (String) JOptionPane.showInputDialog(frame, "Select tires", "Select tires", JOptionPane.PLAIN_MESSAGE, null, new String[] { "Hard", "Soft", "Wet" }, previous);
-            if (choice != null) {
-                tires = new Tires(Tires.Type.valueOf(choice.toUpperCase()));
-            }
-        }
         final MutableInt selectedGear = new MutableInt(0);
         final boolean inPits = location != null && location.getType() == NodeType.PIT;
         game.actionMenu.removeAll();
@@ -88,6 +81,19 @@ public class ManualAI extends BaseAI {
                 item.addActionListener(e -> selectedGear.setValue(finalNewGear));
                 game.actionMenu.add(item);
             }
+        }
+        if (tires != null && (gear == 0 || location.hasGarage())) {
+            // Query for new tires
+            final MenuItem item = new MenuItem("Change tires");
+            item.setShortcut(new MenuShortcut(KeyEvent.VK_T));
+            item.addActionListener(e -> {
+                final String previous = StringUtils.capitalize(tires.getType().name().toLowerCase());
+                final String choice = (String) JOptionPane.showInputDialog(frame, "Select tires", "Select tires", JOptionPane.PLAIN_MESSAGE, null, new String[] { "Hard", "Soft", "Wet" }, previous);
+                if (choice != null) {
+                    tires = new Tires(Tires.Type.valueOf(choice.toUpperCase()));
+                }
+            });
+            game.actionMenu.add(item);
         }
         if (!location.isPit()) data.getNodes().stream().filter(Node::isPit).forEach(blockedNodes::add);
         final MenuItem item1 = new MenuItem("Min distance to next curve" + getAidText(AIUtil.getMinDistanceToNextCurve(location, blockedNodes)));
