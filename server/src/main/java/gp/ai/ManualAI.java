@@ -90,7 +90,7 @@ public class ManualAI extends BaseAI {
                 final String choice = (String) JOptionPane.showInputDialog(frame, "Select tires", "Select tires", JOptionPane.PLAIN_MESSAGE, null, new String[] { "Hard", "Soft", "Wet" }, previous);
                 if (choice != null) {
                     tires = new Tires(Tires.Type.valueOf(choice.toUpperCase()));
-                    game.getCurrent().setTires(tires);
+                    game.getCurrent().setTires(tires); // This is done only to update visuals. Tires will be overwritten by the returned choice later.
                     game.repaint();
                 }
             });

@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 public class Tires implements Serializable {
     public enum Type { HARD, SOFT, WET }
+    public enum Weather { DRY, RAIN }
 
     private final Type type;
     private int age;
@@ -16,11 +17,16 @@ public class Tires implements Serializable {
         return type;
     }
 
-    public int getOvershootDamage() {
+    public int getOvershootDamage(Weather weather) {
         switch (type) {
-            case HARD: return 1;
-            case SOFT: return age < 3 ? 2 : 3;
-            case WET: return 2;
+            case HARD:
+                return 1;
+            case WET:
+                if (weather == Weather.RAIN) {
+                    return 1;
+                }
+            case SOFT:
+                return age < 3 ? 2 : 3;
         }
         throw new RuntimeException("Invalid tire type");
     }

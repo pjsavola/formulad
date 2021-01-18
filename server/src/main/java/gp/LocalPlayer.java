@@ -268,7 +268,7 @@ public final class LocalPlayer extends Player {
             .map(player -> player.node)
             .collect(Collectors.toSet());
         paths.clear();
-        final int overshootMultiplier = tires == null ? 1 : tires.getOvershootDamage();
+        final int overshootMultiplier = tires == null ? 1 : tires.getOvershootDamage(null);
         final List<ValidMove> validMoves = new ArrayList<>();
         if (tires != null && tires.canUse()) {
             final Map<Node, DamageAndPath> targets = findTargetNodes(roll + 1, forbiddenNodes);
