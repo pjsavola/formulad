@@ -14,6 +14,7 @@ public class PlayerState implements Serializable {
   private Integer stops = null;
   private Integer leeway = null;
   private Integer lapsToGo = null;
+  private Tires tires = null;
 
   public PlayerState playerId(String playerId) {
     this.playerId = playerId;
@@ -91,6 +92,14 @@ public class PlayerState implements Serializable {
     this.lapsToGo = lapsToGo;
   }
 
+  public Tires getTires() {
+    return tires;
+  }
+
+  public void setTires(Tires tires) {
+    this.tires = tires;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -106,12 +115,13 @@ public class PlayerState implements Serializable {
         Objects.equals(this.hitpoints, playerState.hitpoints) &&
         Objects.equals(this.stops, playerState.stops) &&
         Objects.equals(this.leeway, playerState.leeway) &&
-        Objects.equals(this.lapsToGo, playerState.lapsToGo);
+        Objects.equals(this.lapsToGo, playerState.lapsToGo) &&
+        Objects.equals(this.tires, playerState.tires);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(playerId, gear, nodeId, hitpoints, stops, leeway, lapsToGo);
+    return Objects.hash(playerId, gear, nodeId, hitpoints, stops, leeway, lapsToGo, tires);
   }
 
   @Override
@@ -124,6 +134,7 @@ public class PlayerState implements Serializable {
             "    stops: " + toIndentedString(stops) + "\n" +
             "    leeway: " + toIndentedString(leeway) + "\n" +
             "    lapsToGo: " + toIndentedString(lapsToGo) + "\n" +
+            "    tires: " + toIndentedString(tires == null ? null : tires.getType().toString()) + "\n" +
             "}";
   }
 

@@ -34,7 +34,6 @@ public final class LocalPlayer extends Player {
             curveStops = node.getStopCount();
         }
         this.maxHitpoints = maxHitpoints;
-        tires = new Tires(Tires.Type.SOFT);
         setHitpoints(maxHitpoints);
     }
 
@@ -259,7 +258,7 @@ public final class LocalPlayer extends Player {
     }
 
     Moves findAllTargets(int roll, String gameId, List<LocalPlayer> players) {
-        int braking = tires.canUse() ? -1 : 0;
+        int braking = tires != null && tires.canUse() ? -1 : 0;
         final Set<Node> forbiddenNodes = players
             .stream()
             .map(player -> player.node)
@@ -374,6 +373,7 @@ public final class LocalPlayer extends Player {
         playerState.setStops(curveStops);
         playerState.setLeeway(leeway);
         playerState.setLapsToGo(lapsToGo);
+        playerState.setTires(tires);
     }
 
     void reduceLeeway(long amount) {
@@ -386,5 +386,14 @@ public final class LocalPlayer extends Player {
 
     int getLeeway() {
         return leeway;
+    }
+
+    void changeTires(Tires tires) {
+        if (tires != null && tires != this.tires) {
+            if (gear == 0 || node.isPit()) {
+                this.tires = tires;
+                ((Main) panel).notifyAll(new TireChangeNotification(playerId, tires));
+            }
+        }
     }
 }

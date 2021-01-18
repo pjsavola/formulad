@@ -151,6 +151,15 @@ public class Client extends Game implements Runnable {
         }
     }
 
+    public void notify(TireChangeNotification notification) {
+        final Player player = immutablePlayerMap.get(notification.getPlayerId());
+        if (player != null) {
+            setCurrent(player);
+            player.tires = notification.getTires();
+            repaint();
+        }
+    }
+
     public void notify(HitpointNotification notification) {
         final Player player = immutablePlayerMap.get(notification.getPlayerId());
         if (player != null) {

@@ -8,6 +8,7 @@ import java.util.Objects;
  */
 public class Gear implements Serializable {
   private Integer gear = null;
+  private Tires tires = null;
 
   public Gear gear(Integer gear) {
     this.gear = gear;
@@ -17,8 +18,14 @@ public class Gear implements Serializable {
   public Integer getGear() {
     return gear;
   }
-  public void setGear(Integer gear) {
-    this.gear = gear;
+
+  public Gear tires(Tires tires) {
+    this.tires = tires;
+    return this;
+  }
+
+  public Tires getTires() {
+    return tires;
   }
 
   @Override
@@ -30,18 +37,19 @@ public class Gear implements Serializable {
       return false;
     }
     Gear gear = (Gear) o;
-    return Objects.equals(this.gear, gear.gear);
+    return Objects.equals(this.gear, gear.gear) && Objects.equals(this.tires, gear.tires);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(gear);
+    return Objects.hash(gear, tires);
   }
 
   @Override
   public String toString() {
     return "class Gear {\n" +
             "    gear: " + toIndentedString(gear) + "\n" +
+            "    tires: " + toIndentedString(tires == null ? null : tires.getType().toString()) + "\n" +
             "}";
   }
 

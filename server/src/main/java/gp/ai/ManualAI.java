@@ -4,6 +4,7 @@ import gp.Game;
 import gp.Profile;
 import gp.model.*;
 import gp.model.Gear;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import javax.swing.*;
@@ -45,12 +46,14 @@ public class ManualAI extends BaseAI {
     public Gear selectGear(GameState gameState) {
         final Set<Node> blockedNodes = new HashSet<>();
         int stopCount = 0;
+        Tires tires = null;
         for (PlayerState playerState : gameState.getPlayers()) {
             if (playerId.equals(playerState.getPlayerId())) {
                 hitpoints = playerState.getHitpoints();
                 gear = playerState.getGear();
                 location = data.getNodes().get(playerState.getNodeId());
                 stopCount = playerState.getStops();
+                tires = playerState.getTires();
                 //System.err.println("EVAL: " + evaluate(playerState));
             } else if (playerState.getHitpoints() > 0 && playerState.getLapsToGo() >= 0) {
                 blockedNodes.add(data.getNodes().get(playerState.getNodeId()));
@@ -61,6 +64,14 @@ public class ManualAI extends BaseAI {
         }
         if (ai instanceof ProAI) {
             ((ProAI) ai).updatePlayerInfo(gameState);
+        }
+        if (tires != null && (gear == 0 || location.isPit())) {
+            // Query for new tires
+            final String previous = StringUtils.capitalize(tires.getType().name().toLowerCase());
+            final String choice = (String) JOptionPane.showInputDialog(frame, "Select tires", "Select tires", JOptionPane.PLAIN_MESSAGE, null, new String[] { "Hard", "Soft", "Wet" }, previous);
+            if (choice != null) {
+                tires = new Tires(Tires.Type.valueOf(choice.toUpperCase()));
+            }
         }
         final MutableInt selectedGear = new MutableInt(0);
         final boolean inPits = location != null && location.getType() == NodeType.PIT;
@@ -152,10 +163,10 @@ public class ManualAI extends BaseAI {
                 frame.removeKeyListener(keyListener);
                 game.actionMenu.removeAll();
                 game.drivingAids.removeAll();
-                return new Gear().gear(newGear);
+                return new Gear().gear(newGear).tires(tires);
             }
         }
-        return new Gear().gear(gear);
+        return new Gear().gear(gear).tires(tires);
     }
 
     @Override

@@ -225,6 +225,8 @@ public class Main extends Game implements Runnable {
             } else {
                 log.warning("Invalid gear selection " + selectedGear + ", using current gear instead");
             }
+            final Tires newTires = gearResponse == null ? null : gearResponse.getTires();
+            current.changeTires(newTires);
             if (previous != null) {
                 previous.clearRoute();
             }
