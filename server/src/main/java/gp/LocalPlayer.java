@@ -290,7 +290,7 @@ public final class LocalPlayer extends Player {
                 if (damage < hitpoints) {
                     validMoves.add(new ValidMove()
                         .nodeId(e.getKey().getId())
-                        .overshoot(e.getValue().getDamage() - braking)
+                        .overshoot(e.getValue().getDamage())
                         .braking(braking)
                     );
                     paths.add(new DamageAndPath(damage, e.getValue().getPath()));
