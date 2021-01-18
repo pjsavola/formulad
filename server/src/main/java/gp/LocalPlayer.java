@@ -268,6 +268,7 @@ public final class LocalPlayer extends Player {
             .map(player -> player.node)
             .collect(Collectors.toSet());
         paths.clear();
+        final int overshootMultiplier = tires == null ? 1 : tires.getOvershootDamage();
         final List<ValidMove> validMoves = new ArrayList<>();
         if (tires != null && tires.canUse()) {
             final Map<Node, DamageAndPath> targets = findTargetNodes(roll + 1, forbiddenNodes);
@@ -276,7 +277,7 @@ public final class LocalPlayer extends Player {
                 if (damage < hitpoints) {
                     validMoves.add(new ValidMove()
                             .nodeId(e.getKey().getId())
-                            .overshoot(e.getValue().getDamage())
+                            .overshoot(e.getValue().getDamage() * overshootMultiplier)
                             .braking(0)
                     );
                     paths.add(new DamageAndPath(damage, e.getValue().getPath()));
@@ -290,7 +291,7 @@ public final class LocalPlayer extends Player {
                 if (damage < hitpoints) {
                     validMoves.add(new ValidMove()
                         .nodeId(e.getKey().getId())
-                        .overshoot(e.getValue().getDamage())
+                        .overshoot(e.getValue().getDamage() * overshootMultiplier)
                         .braking(braking)
                     );
                     paths.add(new DamageAndPath(damage, e.getValue().getPath()));
