@@ -26,6 +26,7 @@ public class Season implements Comparable<Season>, TrackSelector {
     private int timePerTurnMs;
     private int leewayMs;
     private int maxHitpoints;
+    private boolean tireChanges;
     private List<Pair<TrackData, Integer>> tracksAndLaps = new ArrayList<>();
     private List<ProfileMessage> participants = new ArrayList<>();
     private List<FinalStandings> results = new ArrayList<>();
@@ -132,9 +133,11 @@ public class Season implements Comparable<Season>, TrackSelector {
         final JLabel playersLabel = new JLabel("PLAYERS");
         playersLabel.setFont(new Font("Arial", Font.BOLD, 20));
         final JCheckBox randomTrackOrder = new JCheckBox("Randomize track order", false);
+        final JCheckBox tireChanges = new JCheckBox("Enable tire selection", Main.settings.tireChanges);
         rightPanel.add(playersLabel);
         rightPanel.add(playerPanel);
         rightPanel.add(randomTrackOrder);
+        rightPanel.add(tireChanges);
         final SettingsField hitpoints = new SettingsField(panel, "Hitpoints", Integer.toString(Main.settings.maxHitpoints), 1, 30);
         rightPanel.add(hitpoints);
         final PointDistributionField pointDistributionField = new PointDistributionField(panel, "Point distribution", defaultPointDistribution);
@@ -176,6 +179,7 @@ public class Season implements Comparable<Season>, TrackSelector {
                 leewayMs = leeway.getValue() * 1000;
                 maxHitpoints = hitpoints.getValue();
                 pointDistribution = pointDistributionField.getValue();
+                this.tireChanges = tireChanges.isSelected();
             } catch (NumberFormatException ex) {
                 participants.clear();
                 return;
@@ -393,7 +397,7 @@ public class Season implements Comparable<Season>, TrackSelector {
                 final int pos = i + 1;
                 slots.add(new PlayerSlot(sortedParticipants.get(sortedParticipants.size() - pos), pos));
             }
-            final Main server = new Main(new Main.Params(laps, animationDelayMs, timePerTurnMs, leewayMs, maxHitpoints), null, frame, masterPanel, slots, data, Season.this);
+            final Main server = new Main(new Main.Params(laps, animationDelayMs, timePerTurnMs, leewayMs, maxHitpoints, tireChanges), null, frame, masterPanel, slots, data, Season.this);
             listener.contentChanged(server, null, server, "championship race", true);
             Main.setContent(frame, server);
             new Thread(server).start();
@@ -435,6 +439,9 @@ public class Season implements Comparable<Season>, TrackSelector {
                             }
                             if (parts.length > 6) {
                                 pointDistribution = PointDistributionField.stringToDist(parts[6]);
+                            }
+                            if (parts.length > 7) {
+                                tireChanges = Boolean.parseBoolean(parts[7]);
                             }
                             break;
                         case 1:
@@ -500,7 +507,9 @@ public class Season implements Comparable<Season>, TrackSelector {
             writer.print(",");
             writer.print(maxHitpoints);
             writer.print(",");
-            writer.println(PointDistributionField.distToString(pointDistribution));
+            writer.print(PointDistributionField.distToString(pointDistribution));
+            writer.print(",");
+            writer.println(Boolean.toString(tireChanges));
             writer.println();
             for (Pair<TrackData, Integer> p : tracksAndLaps) {
                 writer.print(p.getLeft().getTrackId());
