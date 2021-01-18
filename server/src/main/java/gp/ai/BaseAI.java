@@ -14,6 +14,7 @@ public abstract class BaseAI implements AI {
     final TrackData data;
     final List<Node> nodes;
     int gear;
+    Tires tires;
 
     BaseAI(TrackData data) {
         this.data = data;
@@ -21,9 +22,10 @@ public abstract class BaseAI implements AI {
     }
 
     // This is called if AI takes over of a player after selecting a gear but before selecting where to move.
-    public void init(GameState gameState, int gear) {
+    public void init(GameState gameState, int gear, Tires tires) {
         selectGear(gameState);
         this.gear = gear;
+        this.tires = tires;
     }
 
     @Override

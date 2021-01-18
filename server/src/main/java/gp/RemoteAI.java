@@ -22,6 +22,7 @@ public class RemoteAI implements AI {
     private AmateurAI fallback;
     private GameState gameState;
     private int gear;
+    private Tires tires;
 
     RemoteAI(Socket clientSocket) {
         this.socket = clientSocket;
@@ -98,6 +99,7 @@ public class RemoteAI implements AI {
                     response = getResponse();
                 } while (!(response instanceof Gear));
                 gear = ((Gear) response).getGear();
+                tires = ((Gear) response).getTires();
                 return (Gear) response;
             } catch (IOException | ClassNotFoundException e) {
                 close();
@@ -122,7 +124,7 @@ public class RemoteAI implements AI {
                 return (SelectedIndex) response;
             } catch (IOException | ClassNotFoundException e) {
                 close();
-                fallback.init(gameState, gear);
+                fallback.init(gameState, gear, tires);
                 Main.log.log(Level.WARNING, "Lost connection to client, using fallback AI instead", e);
             }
         }

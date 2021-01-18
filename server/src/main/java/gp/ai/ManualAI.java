@@ -45,7 +45,6 @@ public class ManualAI extends BaseAI {
     public Gear selectGear(GameState gameState) {
         final Set<Node> blockedNodes = new HashSet<>();
         int stopCount = 0;
-        Tires tires = null;
         for (PlayerState playerState : gameState.getPlayers()) {
             if (playerId.equals(playerState.getPlayerId())) {
                 hitpoints = playerState.getHitpoints();
