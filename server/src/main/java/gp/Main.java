@@ -34,6 +34,7 @@ class PreviousSettings {
     String port = "1277";
     String server = "localhost:1277";
     boolean randomStartOrder = true;
+    boolean tireChanges = false;
     int laps = 1;
     int animationDelay = 60;
     int timePerTurn = 3;
@@ -138,20 +139,20 @@ public class Main extends Game implements Runnable {
         enableTimeout = true;
         final List<CreatedPlayerNotification> notifications = new ArrayList<>();
         for (Map.Entry<AI, ProfileMessage> e : aiToProfile.entrySet()) {
-            notifications.add(createAiPlayer(e, grid, startingOrder, params.leeway, params.laps, params.maxHitpoints));
+            notifications.add(createAiPlayer(e, grid, startingOrder, params.leeway, params.laps, params.maxHitpoints, params.tireChanges));
         }
         aiMap.forEach((player, ai) -> notifications.forEach(notification -> ai.notify(notification.controlled(notification.getPlayerId().equals(player.getId())))));
         immutablePlayerMap = new HashMap<>(aiToProfile.size());
         allPlayers.forEach(player -> immutablePlayerMap.put(player.getId(), player));
     }
 
-    private CreatedPlayerNotification createAiPlayer(Map.Entry<AI, ProfileMessage> ai, List<Node> grid, List<Integer> startingOrder, int leeway, int laps, int maxHitpoints) {
+    private CreatedPlayerNotification createAiPlayer(Map.Entry<AI, ProfileMessage> ai, List<Node> grid, List<Integer> startingOrder, int leeway, int laps, int maxHitpoints, boolean tireChanges) {
         // Recreate track for each player, so nothing bad happens if AI mutates it.
         final int playerCount = allPlayers.size();
         final String playerId = "p" + (playerCount + 1);
         final int gridPosition = startingOrder.get(playerCount);
         final Node startNode = grid.get(gridPosition);
-        final LocalPlayer player = new LocalPlayer(playerId, startNode, startNode.getGridAngle(), laps, this, leeway, maxHitpoints, ai.getValue().getColors());
+        final LocalPlayer player = new LocalPlayer(playerId, startNode, startNode.getGridAngle(), laps, this, leeway, maxHitpoints, tireChanges, ai.getValue().getColors());
         current = player;
         log.info("Initializing player " + playerId);
         final String name = ai.getValue().getName();
@@ -371,6 +372,7 @@ public class Main extends Game implements Runnable {
         private int leeway = 3600000;
         private Long seed = null;
         private boolean randomizeStartingOrder = false;
+        private boolean tireChanges = false;
         private int laps = 1;
         private int maxHitpoints = 18;
     }
@@ -400,6 +402,7 @@ public class Main extends Game implements Runnable {
 
         final JButton startButton = new JButton("Start");
         final JCheckBox randomStartingOrder = new JCheckBox("Randomize starting order", settings.randomStartOrder);
+        final JCheckBox tireChanges = new JCheckBox("Enable tire selection", settings.tireChanges);
         final SettingsField laps = new SettingsField(lobbyPanel, "Laps", Integer.toString(settings.laps), 1, 200);
         final SettingsField hitpoints = new SettingsField(lobbyPanel, "Hitpoints", Integer.toString(settings.maxHitpoints), 1, 30);
         final SettingsField animationDelay = new SettingsField(lobbyPanel, "Animation delay (ms)", Integer.toString(settings.animationDelay), 0, 1000);
@@ -441,7 +444,9 @@ public class Main extends Game implements Runnable {
                 lobby.interrupt();
             }
             params.randomizeStartingOrder = randomStartingOrder.isSelected();
+            params.tireChanges = tireChanges.isSelected();
             settings.randomStartOrder = params.randomizeStartingOrder;
+            settings.tireChanges = params.tireChanges;
             settings.laps = params.laps;
             settings.animationDelay = params.animationDelayInMillis;
             settings.timePerTurn = time.getValue();
@@ -458,12 +463,14 @@ public class Main extends Game implements Runnable {
         final JPanel settings = new JPanel();
         settings.setLayout(new BoxLayout(settings, BoxLayout.Y_AXIS));
         randomStartingOrder.setAlignmentX(Component.LEFT_ALIGNMENT);
+        tireChanges.setAlignmentX(Component.LEFT_ALIGNMENT);
         laps.setAlignmentX(Component.LEFT_ALIGNMENT);
         hitpoints.setAlignmentX(Component.LEFT_ALIGNMENT);
         animationDelay.setAlignmentX(Component.LEFT_ALIGNMENT);
         time.setAlignmentX(Component.LEFT_ALIGNMENT);
         leeway.setAlignmentX(Component.LEFT_ALIGNMENT);
         settings.add(randomStartingOrder);
+        settings.add(tireChanges);
         settings.add(laps);
         settings.add(hitpoints);
         settings.add(animationDelay);

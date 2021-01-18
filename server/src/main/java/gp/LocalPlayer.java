@@ -25,7 +25,7 @@ public final class LocalPlayer extends Player {
     private int pitStops;
     private final int maxHitpoints;
 
-    LocalPlayer(String playerId, Node node, double initialAngle, int laps, JPanel panel, int leeway, int maxHitpoints, int[] colors) {
+    LocalPlayer(String playerId, Node node, double initialAngle, int laps, JPanel panel, int leeway, int maxHitpoints, boolean tireChanges, int[] colors) {
         super(playerId, node, initialAngle, panel, colors);
         lapsToGo = laps;
         this.panel = panel;
@@ -34,7 +34,9 @@ public final class LocalPlayer extends Player {
             curveStops = node.getStopCount();
         }
         this.maxHitpoints = maxHitpoints;
-        tires = new Tires(Tires.Type.HARD);
+        if (tireChanges) {
+            tires = new Tires(Tires.Type.HARD);
+        }
         setHitpoints(maxHitpoints);
     }
 
