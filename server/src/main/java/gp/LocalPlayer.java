@@ -166,7 +166,6 @@ public final class LocalPlayer extends Player {
             if (!tires.canUse()) {
                 throw new RuntimeException("Invalid usage of soft tires");
             }
-            tires.use();
         }
         final int oldLapsToGo = lapsToGo;
         int size = route.size();
@@ -174,6 +173,7 @@ public final class LocalPlayer extends Player {
             for (Node node : route) {
                 if (node.hasFinish()) {
                     --lapsToGo;
+                    if (tires != null) tires.increaseAge();
                     break;
                 }
             }
@@ -186,6 +186,7 @@ public final class LocalPlayer extends Player {
                     // Do not count the lap counter twice in that case.
                     if (oldLapsToGo == lapsToGo) {
                         --lapsToGo;
+                        if (tires != null) tires.increaseAge();
                     }
                     ++pitStops;
                     break;
@@ -261,21 +262,35 @@ public final class LocalPlayer extends Player {
     }
 
     Moves findAllTargets(int roll, String gameId, List<LocalPlayer> players) {
-        int braking = tires != null && tires.canUse() ? -1 : 0;
+        int braking = 0;
         final Set<Node> forbiddenNodes = players
             .stream()
             .map(player -> player.node)
             .collect(Collectors.toSet());
         paths.clear();
         final List<ValidMove> validMoves = new ArrayList<>();
+        if (tires != null && tires.canUse()) {
+            final Map<Node, DamageAndPath> targets = findTargetNodes(roll + 1, forbiddenNodes);
+            for (Map.Entry<Node, DamageAndPath> e : targets.entrySet()) {
+                final int damage = e.getValue().getDamage();
+                if (damage < hitpoints) {
+                    validMoves.add(new ValidMove()
+                            .nodeId(e.getKey().getId())
+                            .overshoot(e.getValue().getDamage())
+                            .braking(0)
+                    );
+                    paths.add(new DamageAndPath(damage, e.getValue().getPath()));
+                }
+            }
+        }
         while (braking < hitpoints) {
             final Map<Node, DamageAndPath> targets = findTargetNodes(roll - braking, forbiddenNodes);
             for (Map.Entry<Node, DamageAndPath> e : targets.entrySet()) {
-                final int damage = e.getValue().getDamage() + Math.max(0, braking);
+                final int damage = e.getValue().getDamage() + braking;
                 if (damage < hitpoints) {
                     validMoves.add(new ValidMove()
                         .nodeId(e.getKey().getId())
-                        .overshoot(e.getValue().getDamage() - Math.min(0, braking))
+                        .overshoot(e.getValue().getDamage() - braking)
                         .braking(braking)
                     );
                     paths.add(new DamageAndPath(damage, e.getValue().getPath()));

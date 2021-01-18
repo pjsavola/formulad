@@ -7,7 +7,6 @@ public class Tires implements Serializable {
 
     private final Type type;
     private int age;
-    private boolean used;
 
     public Tires(Type type) {
         this.type = type;
@@ -17,19 +16,20 @@ public class Tires implements Serializable {
         return type;
     }
 
-    public int getAge() {
-        return age;
+    public int getOvershootDamage() {
+        switch (type) {
+            case HARD: return 1;
+            case SOFT: return age < 3 ? 2 : 3;
+            case WET: return 2;
+        }
+        throw new RuntimeException("Invalid tire type");
     }
 
     public boolean canUse() {
-        return type == Type.SOFT && !used;
+        return type == Type.SOFT && age <= 1;
     }
 
     public void increaseAge() {
         ++age;
-    }
-
-    public void use() {
-        used = true;
     }
 }

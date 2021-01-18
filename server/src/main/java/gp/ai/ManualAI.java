@@ -184,13 +184,13 @@ public class ManualAI extends BaseAI {
             indexMap.computeIfAbsent(brakingDamage, _key -> new HashMap<>()).put(nodeId, i);
         }
         // Automatically use brakes if there are no valid moves without
-        int minBraking = -1;
+        int minBraking = 0;
         while (!brakingMap.containsKey(minBraking)) {
             ++minBraking;
         }
         final int finalMinBraking = minBraking;
-        game.highlightNodes(brakingMap.get(Math.max(0, finalMinBraking)), false);
-        final MutableInt braking = new MutableInt(Math.max(0, finalMinBraking));
+        game.highlightNodes(brakingMap.get(finalMinBraking));
+        final MutableInt braking = new MutableInt(finalMinBraking);
         game.actionMenu.removeAll();
         final MenuItem item1 = new MenuItem("Brake more");
         final MenuItem item2 = new MenuItem("Brake less");
@@ -201,14 +201,14 @@ public class ManualAI extends BaseAI {
         item1.addActionListener(e -> {
             final int b = braking.getValue();
             braking.setValue(b + 1);
-            game.highlightNodes(brakingMap.get(b + 1), false);
+            game.highlightNodes(brakingMap.get(b + 1));
             item1.setEnabled(braking.getValue() + 1 < hitpoints && brakingMap.containsKey(braking.getValue() + 1));
             item2.setEnabled(braking.getValue() > finalMinBraking);
         });
         item2.addActionListener(e -> {
             final int b = braking.getValue();
             braking.setValue(b - 1);
-            game.highlightNodes(brakingMap.get(b - 1), b <= 0);
+            game.highlightNodes(brakingMap.get(b - 1));
             item1.setEnabled(braking.getValue() + 1 < hitpoints && brakingMap.containsKey(braking.getValue() + 1));
             item2.setEnabled(braking.getValue() > finalMinBraking);
         });
@@ -221,10 +221,10 @@ public class ManualAI extends BaseAI {
                 final int b = braking.getValue();
                 if (c == '.' && b > finalMinBraking) {
                     braking.setValue(b - 1);
-                    game.highlightNodes(brakingMap.get(b - 1), b <= 0);
+                    game.highlightNodes(brakingMap.get(b - 1));
                 } else if (c == ',' && b + 1 < hitpoints && brakingMap.containsKey(b + 1)) {
                     braking.setValue(b + 1);
-                    game.highlightNodes(brakingMap.get(b + 1), false);
+                    game.highlightNodes(brakingMap.get(b + 1));
                 } else if (c == 'D') {
                     final Map<Integer, Integer> debugMap = new HashMap<>(   );
                     if (ai instanceof ProAI) {
@@ -236,7 +236,7 @@ public class ManualAI extends BaseAI {
                             debugMap.put(nodeId, score);
                         });
                     }
-                    game.highlightNodes(debugMap, false);
+                    game.highlightNodes(debugMap);
                 }
             }
         };
@@ -272,7 +272,7 @@ public class ManualAI extends BaseAI {
             }
             final int index = selectedIndex.getValue();
             if (index != -1) {
-                game.highlightNodes(null, false);
+                game.highlightNodes(null);
                 game.setMouseOverHighlightNodeIndex(-1);
                 frame.removeKeyListener(keyListener);
                 game.removeMouseListener(mouseListener);

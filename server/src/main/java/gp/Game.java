@@ -32,7 +32,6 @@ public abstract class Game extends JPanel implements PlayerRenderer {
     // Used when selecting where to move. Maps node index to damage taken if that node is selected.
     private Map<Integer, Integer> highlightedNodeToDamage;
     private int mouseOverHighlightNodeIndex = -1;
-    private boolean useTires;
 
     Integer roll;
     List<Player> standings;
@@ -248,7 +247,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
                 final int damage = entry.getValue();
                 final Point p = node.getLocation();
                 if (nodeId == mouseOverHighlightNodeIndex) {
-                    MapEditor.drawOval(g2d, p.x, p.y, 15, 15, true, useTires ? Color.PINK : Color.YELLOW, 1);
+                    MapEditor.drawOval(g2d, p.x, p.y, 15, 15, true, Color.YELLOW, 1);
                     if (damage != 0) {
                         g2d.setFont(bigDamageFont);
                         g2d.setColor(Color.BLACK);
@@ -258,7 +257,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
                         g2d.drawString(str, x, p.y + 4);
                     }
                 } else {
-                    MapEditor.drawOval(g2d, p.x, p.y, 12, 12, false, useTires ? Color.PINK : Color.YELLOW, 1);
+                    MapEditor.drawOval(g2d, p.x, p.y, 12, 12, false, Color.YELLOW, 1);
                     if (damage != 0) {
                         g2d.setFont(damageFont);
                         g2d.setColor(Color.RED);
@@ -376,9 +375,8 @@ public abstract class Game extends JPanel implements PlayerRenderer {
     /**
      * Sets nodes for highlighting, may be useful when rendering valid targets.
      */
-    public void highlightNodes(@Nullable Map<Integer, Integer> nodeToDamage, boolean useTires) {
+    public void highlightNodes(@Nullable Map<Integer, Integer> nodeToDamage) {
         this.highlightedNodeToDamage = nodeToDamage;
-        this.useTires = useTires;
         repaint();
     }
 
