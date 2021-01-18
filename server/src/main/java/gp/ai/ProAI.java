@@ -14,7 +14,6 @@ public class ProAI extends BaseAI {
     private Map<String, PlayerState> playerMap;
     private Node location;
     private PlayerState player;
-    private int gear;
     private final Random random = new Random();
     public boolean debug;
     public boolean debug2;

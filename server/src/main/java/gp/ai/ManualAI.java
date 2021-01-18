@@ -18,7 +18,6 @@ import java.util.Set;
 public class ManualAI extends BaseAI {
 
     private int hitpoints;
-    private int gear;
     private Node location;
     private final AI ai;
     private final JFrame frame;

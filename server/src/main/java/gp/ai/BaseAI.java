@@ -13,10 +13,16 @@ public abstract class BaseAI implements AI {
     int maxHitpoints;
     final TrackData data;
     final List<Node> nodes;
+    int gear;
 
     BaseAI(TrackData data) {
         this.data = data;
         nodes = data.getNodes();
+    }
+
+    public void init(GameState gameState, int gear) {
+        selectGear(gameState);
+        this.gear = gear;
     }
 
     @Override

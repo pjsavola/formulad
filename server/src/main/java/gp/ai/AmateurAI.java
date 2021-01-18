@@ -11,7 +11,6 @@ public class AmateurAI extends BaseAI {
     private Map<String, PlayerState> playerMap;
     private Node location;
     private PlayerState player;
-    private int gear;
     private int stopsNeeded;
     private Random random = new Random();
     public boolean debug = true;
@@ -36,11 +35,6 @@ public class AmateurAI extends BaseAI {
             }
         }
         return Pair.of(min, max);
-    }
-
-    public void init(GameState gameState, int selectedGear) {
-        selectGear(gameState);
-        gear = selectedGear;
     }
 
     private static int getNextGear(int gearMask) {

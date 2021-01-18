@@ -9,17 +9,11 @@ public class BeginnerAI extends BaseAI {
     private Map<String, PlayerState> playerMap;
     private Node location;
     private PlayerState player;
-    private int gear;
     private Random random = new Random();
     public boolean debug;
 
     public BeginnerAI(TrackData data) {
         super(data);
-    }
-
-    public void init(GameState gameState, int selectedGear) {
-        selectGear(gameState);
-        gear = selectedGear;
     }
 
     @Override

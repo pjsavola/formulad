@@ -34,6 +34,7 @@ public final class LocalPlayer extends Player {
             curveStops = node.getStopCount();
         }
         this.maxHitpoints = maxHitpoints;
+        tires = new Tires(Tires.Type.HARD);
         setHitpoints(maxHitpoints);
     }
 
