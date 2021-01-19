@@ -216,19 +216,14 @@ public class Player {
         g.fillRect(4, -2, 1, 1);
         g.fillRect(4, 2, 1, 1);
         g.fillRect(-1, 0, 2, 1);
-        Color tireColor = null;
-        if (tires != null && tires.getType() == Tires.Type.SOFT) {
-            tireColor = tires.canUse() ? new Color(0x8B008B) : new Color(0x8B0000);
-            tireColor = tireColor.brighter();
-            g.setColor(tireColor);
-        }
+        g.setColor(tires == null ? Color.BLACK : tires.getColor());
         g.fillRect(3, -4, 2, 2);
         g.fillRect(3, 3, 2, 2);
         g.fillRect(-6, -4, 2, 2);
         g.fillRect(-6, 3, 2, 2);
         g.setColor(colors.get(3).get(0));
         g.fillRect(-1, 0, 1, 1);
-        g.setColor(tireColor == null ? Color.DARK_GRAY : tireColor.brighter());
+        g.setColor(tires == null ? Color.DARK_GRAY : tires.getColor2());
         g.fillRect(5, -4, 1, 2);
         g.fillRect(5, 3, 1, 2);
         g.fillRect(-4, -4, 1, 2);

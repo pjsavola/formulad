@@ -1,5 +1,6 @@
 package gp.model;
 
+import java.awt.*;
 import java.io.Serializable;
 
 public class Tires implements Serializable {
@@ -36,5 +37,28 @@ public class Tires implements Serializable {
 
     public void increaseAge() {
         ++age;
+    }
+
+    public Color getColor() {
+        switch (type) {
+            case HARD:
+                return Color.BLACK;
+            case WET:
+                return age < 3 ? Color.BLUE : Color.CYAN;
+            case SOFT:
+                return age <= 1 ? Color.RED : (age < 3 ? Color.PINK : Color.WHITE);
+        }
+        throw new RuntimeException("Invalid tire type");
+    }
+
+    public Color getColor2() {
+        switch (type) {
+            case HARD:
+                return Color.DARK_GRAY;
+            case WET:
+            case SOFT:
+                return getColor();
+        }
+        throw new RuntimeException("Invalid tire type");
     }
 }
