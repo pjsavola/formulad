@@ -37,7 +37,8 @@ public abstract class Game extends JPanel implements PlayerRenderer {
     Integer roll;
     List<Player> standings;
     Map<String, Player> immutablePlayerMap;
-    Weather weather;
+    List<Weather> weatherForecast;
+    int weatherIndex;
 
     private Map<String, Integer> hitpointMap = new HashMap<>();
 
@@ -230,6 +231,16 @@ public abstract class Game extends JPanel implements PlayerRenderer {
             final Point point = getPoint(gearCorner);
             if (point != null) {
                 MapEditor.drawOval(g2d, point.x, point.y, 50, 50, true, Color.BLACK, 1);
+                Weather weather = getWeather();
+                if (weather != null) {
+                    g.setColor(weather == Weather.DRY ? Color.WHITE : Color.BLUE);
+                    g.fillRect(point.x - 39, point.y - 39, 10, 10);
+                    for (int i = 1; i < 30; ++i) {
+                        weather = getWeather(i);
+                        g.setColor(weather == Weather.DRY ? Color.WHITE : Color.BLUE);
+                        g.fillRect(point.x - 25 + 3 * i, point.y - 39, 3, 10);
+                    }
+                }
             }
         }
         drawTargets(g2d);
@@ -444,4 +455,12 @@ public abstract class Game extends JPanel implements PlayerRenderer {
     }
 
     public abstract Player getCurrent();
+
+    Weather getWeather() {
+        return getWeather(0);
+    }
+
+    Weather getWeather(int offset) {
+        return weatherForecast == null ? null : weatherForecast.get(Math.min(weatherForecast.size() - 1, weatherIndex + offset));
+    }
 }

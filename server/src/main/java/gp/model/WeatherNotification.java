@@ -3,15 +3,16 @@ package gp.model;
 import gp.Client;
 
 import java.io.Serializable;
+import java.util.List;
 
 public class WeatherNotification implements Serializable {
-    private final Weather weather;
+    private final List<Weather> weather;
 
-    public WeatherNotification(Weather weather) {
+    public WeatherNotification(List<Weather> weather) {
         this.weather = weather;
     }
 
-    public Weather getWeather() {
+    public List<Weather> getWeatherForecast() {
         return weather;
     }
 }

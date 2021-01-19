@@ -8,7 +8,6 @@ import java.util.Objects;
 public class GameState implements Serializable {
   private GameId game = null;
   private List<PlayerState> players = new ArrayList<>();
-  private Weather weather = null;
 
   public GameState game(GameId game) {
     this.game = game;
@@ -30,14 +29,6 @@ public class GameState implements Serializable {
     return players;
   }
 
-  public Weather getWeather() {
-    return weather;
-  }
-
-  public void setWeather(Weather weather) {
-    this.weather = weather;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -48,13 +39,12 @@ public class GameState implements Serializable {
     }
     GameState gameState = (GameState) o;
     return Objects.equals(this.game, gameState.game) &&
-        Objects.equals(this.players, gameState.players) &&
-        Objects.equals(this.weather, gameState.weather);
+        Objects.equals(this.players, gameState.players);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(game, players, weather);
+    return Objects.hash(game, players);
   }
 
   @Override
@@ -62,7 +52,6 @@ public class GameState implements Serializable {
       return "class GameState {\n" +
               "    game: " + toIndentedString(game) + "\n" +
               "    players: " + toIndentedString(players) + "\n" +
-              "    weather: " + toIndentedString(weather == null ? null : weather.toString()) + "\n" +
               "}";
   }
 

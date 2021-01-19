@@ -3,6 +3,7 @@ package gp.model;
 import gp.Client;
 
 import java.io.Serializable;
+import java.util.List;
 
 public class CreatedPlayerNotification extends Notification implements Serializable {
     private final String name;
