@@ -12,7 +12,7 @@ public enum Weather {
 
     private final static Random rand = new Random();
 
-    public static List<Weather> forecast(int rainProbability, int volatility, int turns) {
+    public static List<Weather> forecast(int rainProbability, int volatility, int shortestPeriod, int turns) {
         int i = 0;
         int sum = 0;
         int randomMotion[] = new int[turns];
@@ -30,6 +30,24 @@ public enum Weather {
         // rainProbability 50 -> (min + max) / 2
         final int pr = Math.min(100, Math.max(0, rainProbability));
         final int rainThreshold = (max - min) * rainProbability / 100 + min + (pr == 100 ? 1 : 0);
-        return Arrays.stream(randomMotion).mapToObj(r -> r < rainThreshold ? RAIN : DRY).collect(Collectors.toList());
+        final List<Weather> forecast = Arrays.stream(randomMotion).mapToObj(r -> r < rainThreshold ? RAIN : DRY).collect(Collectors.toList());
+        int period = 1;
+        Weather weather = forecast.get(0);
+        for (i = 1; i < forecast.size(); ++i) {
+            Weather previous = weather;
+            weather = forecast.get(i);
+            if (previous == weather) {
+                ++period;
+            } else if (period < shortestPeriod) {
+                for (int j = i - 1; j >= i - period; --j) {
+                    forecast.set(j, weather);
+                }
+                ++period;
+            } else {
+                period = 1;
+            }
+        }
+
+        return forecast;
     }
 }

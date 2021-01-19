@@ -83,7 +83,7 @@ public class Main extends Game implements Runnable {
     public Main(Params params, Lobby lobby, JFrame frame, JPanel panel, List<PlayerSlot> slots, TrackData trackData, Season resultStorage) {
         super(frame, panel);
         initTrack(trackData);
-        weatherForecast = params.tireChanges ? Weather.forecast(50, 1, params.laps * 30) : null;
+        weatherForecast = params.tireChanges ? Weather.forecast(50, 5, 10, params.laps * 30) : null;
         settings.trackId = trackData.getTrackId();
         settings.external = trackData.isExternal();
         this.lobby = lobby;

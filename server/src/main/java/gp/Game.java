@@ -235,7 +235,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
                 if (weather != null) {
                     g.setColor(weather == Weather.DRY ? Color.WHITE : Color.BLUE);
                     g.fillRect(point.x - 39, point.y - 39, 10, 10);
-                    for (int i = 1; i < 30; ++i) {
+                    for (int i = 1; i < 300; ++i) {
                         weather = getWeather(i);
                         g.setColor(weather == Weather.DRY ? Color.WHITE : Color.BLUE);
                         g.fillRect(point.x - 25 + 3 * i, point.y - 39, 3, 10);
