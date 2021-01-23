@@ -312,6 +312,7 @@ public class MapEditor extends JPanel {
             int newValue = changeParam("Set weather volatility", params.volatility);
             if (newValue >= 1) params.volatility = newValue;
         });
+        menuBar.add(weatherMenu);
 
         frame.setMenuBar(menuBar);
         frame.addKeyListener(new KeyAdapter() {

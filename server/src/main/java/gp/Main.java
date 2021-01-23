@@ -229,6 +229,7 @@ public class Main extends Game implements Runnable {
             if (selectedGear != null && current.switchGear(selectedGear)) {
                 log.info("Gear input received: " + selectedGear);
             } else {
+                current.useCurrentGear();
                 log.warning("Invalid gear selection " + selectedGear + ", using current gear instead");
             }
             if (previous != null) {

@@ -140,6 +140,18 @@ public final class LocalPlayer extends Player {
         return false;
     }
 
+    public void useCurrentGear() {
+        if (gear == 0) {
+            setGear(1);
+            panel.repaint();
+            try {
+                Thread.sleep(animationDelayInMillis);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public int roll(Random rng) {
         if (gear == 0) return 0;
         final int[] distribution = Gear.getDistribution(gear);
