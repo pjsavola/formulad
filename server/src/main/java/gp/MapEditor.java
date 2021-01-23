@@ -5,6 +5,7 @@ import gp.ai.Node;
 import gp.ai.NodeType;
 import gp.ai.TrackData;
 import gp.editor.*;
+import gp.model.Weather;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
@@ -56,6 +57,7 @@ public class MapEditor extends JPanel {
     private Dimension panelDim;
     private double scale = 1.0;
     private static int[] gridColors = { 0x0000FF, 0x000000, 0x0000FF, 0x000000 };
+    private Weather.Params params = new Weather.Params();
 
     public enum Corner { NE, SE, SW, NW, C }
 
@@ -541,7 +543,7 @@ public class MapEditor extends JPanel {
         if (result == JFileChooser.APPROVE_OPTION) {
             final File selectedFile = fileChooser.getSelectedFile();
             try (FileInputStream fis = new FileInputStream(selectedFile)) {
-                final Pair<String, Corner> p = loadNodes(fis, nodes, attributes);
+                final Pair<String, Corner> p = loadNodes(fis, nodes, attributes, params);
                 if (p == null) {
                     JOptionPane.showConfirmDialog(this, "Wrong file format: " + selectedFile.getName(), "File Format Error", JOptionPane.DEFAULT_OPTION);
                     return;
@@ -562,12 +564,17 @@ public class MapEditor extends JPanel {
         }
     }
 
-    private static Pair<String, Corner> parseHeaderRow(String headerLine) {
+    private static Pair<String, Corner> parseHeaderRow(String headerLine, Weather.Params params) {
         if (headerLine != null && !headerLine.isEmpty()) {
             final int separatorIndex = headerLine.indexOf(".");
             final String[] parts = headerLine.substring(separatorIndex).split(" ");
             if (parts.length < 2) return null;
             try {
+                if (parts.length > 4) {
+                    params.rainProbability = Integer.parseInt(parts[2]);
+                    params.shortestPeriod = Integer.parseInt(parts[3]);
+                    params.volatility = Integer.parseInt(parts[4]);
+                }
                 final int infoBoxCorner = Integer.parseInt(parts[1]);
                 return Pair.of(headerLine.substring(0, separatorIndex) + parts[0], Corner.values()[infoBoxCorner]);
             } catch (NumberFormatException e) {
@@ -577,11 +584,11 @@ public class MapEditor extends JPanel {
         return null;
     }
 
-    public static Pair<String, Corner> loadNodes(InputStream map, Collection<Node> nodes, Map<Node, Double> attributes) {
+    public static Pair<String, Corner> loadNodes(InputStream map, Collection<Node> nodes, Map<Node, Double> attributes, Weather.Params params) {
 	    Pair<String, Corner> result = null;
         try (InputStreamReader ir = new InputStreamReader(map); final BufferedReader br = new BufferedReader(ir)) {
             final String headerLine = br.readLine();
-            result = parseHeaderRow(headerLine);
+            result = parseHeaderRow(headerLine, params);
             if (result == null) {
                 return null;
             }

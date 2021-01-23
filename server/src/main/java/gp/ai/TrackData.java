@@ -4,6 +4,7 @@ import gp.ImageCache;
 import gp.Main;
 import gp.MapEditor;
 import gp.TrackLanes;
+import gp.model.Weather;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.Pair;
@@ -22,10 +23,11 @@ public class TrackData implements Serializable {
     private final List<Integer> targets = new ArrayList<>();
     private final ImageData imageData;
     private final MapEditor.Corner infoBoxCorner;
+    public transient final Weather.Params weatherParams;
     private transient List<Node> startingGrid; // client does not need this
     private transient Map<Node, Set<Node>> collisionMap; // client does not need this
 
-    private TrackData(String trackId, boolean external, List<Node> nodes, List<Node> startingGrid, Map<Node, Set<Node>> collisionMap, String imageFile, MapEditor.Corner infoBoxCorner) {
+    private TrackData(String trackId, boolean external, List<Node> nodes, List<Node> startingGrid, Map<Node, Set<Node>> collisionMap, String imageFile, MapEditor.Corner infoBoxCorner, Weather.Params params) {
         this.trackId = trackId;
         this.external = external;
         this.nodes = nodes.stream().sorted(Comparator.comparingInt(Node::getId)).collect(Collectors.toList());
@@ -43,6 +45,7 @@ public class TrackData implements Serializable {
         this.collisionMap = collisionMap;
         imageData = imageFile == null ? null : new ImageData(imageFile, external);
         this.infoBoxCorner = infoBoxCorner;
+        this.weatherParams = params;
     }
 
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
@@ -60,8 +63,9 @@ public class TrackData implements Serializable {
         }
         final List<Node> nodes = new ArrayList<>();
         final Map<Node, Double> attributes = new HashMap<>();
+        final Weather.Params params = new Weather.Params();
         try (InputStream is = external ? new FileInputStream(trackId) : Main.class.getResourceAsStream("/" + trackId)) {
-            final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes);
+            final Pair<String, MapEditor.Corner> result = MapEditor.loadNodes(is, nodes, attributes, params);
             if (result == null) {
                 return null;
             }
@@ -79,7 +83,7 @@ public class TrackData implements Serializable {
                 return null;
             }*/
             final Map<Node, Set<Node>> collisionMap = TrackLanes.buildCollisionMap(nodes, laneCount);
-            return new TrackData(trackId, external, nodes, grid, collisionMap, result.getLeft(), result.getRight());
+            return new TrackData(trackId, external, nodes, grid, collisionMap, result.getLeft(), result.getRight(), params);
         } catch (Exception e) {
             return null;
         }

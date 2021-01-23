@@ -12,14 +12,20 @@ public enum Weather {
 
     private final static Random rand = new Random();
 
-    public static List<Weather> forecast(int rainProbability, int volatility, int shortestPeriod, int turns) {
+    public static class Params {
+        public int rainProbability;
+        public int volatility;
+        public int shortestPeriod;
+    }
+
+    public static List<Weather> forecast(Params params, int turns) {
         int i = 0;
         int sum = 0;
         int randomMotion[] = new int[turns];
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
         while (i < turns) {
-            final int next = rand.nextInt(volatility * 2 + 1) - volatility;
+            final int next = rand.nextInt(params.volatility * 2 + 1) - params.volatility;
             sum += next;
             randomMotion[i++] = sum;
             min = Math.min(min, sum);
@@ -28,8 +34,8 @@ public enum Weather {
         // rainProbability 100 -> max
         // rainProbability 0 -> min
         // rainProbability 50 -> (min + max) / 2
-        final int pr = Math.min(100, Math.max(0, rainProbability));
-        final int rainThreshold = (max - min) * rainProbability / 100 + min + (pr == 100 ? 1 : 0);
+        final int pr = Math.min(100, Math.max(0, params.rainProbability));
+        final int rainThreshold = (max - min) * params.rainProbability / 100 + min + (pr == 100 ? 1 : 0);
         final List<Weather> forecast = Arrays.stream(randomMotion).mapToObj(r -> r < rainThreshold ? RAIN : DRY).collect(Collectors.toList());
         int period = 1;
         Weather weather = forecast.get(0);
@@ -38,7 +44,7 @@ public enum Weather {
             weather = forecast.get(i);
             if (previous == weather) {
                 ++period;
-            } else if (period < shortestPeriod) {
+            } else if (period < params.shortestPeriod) {
                 for (int j = i - 1; j >= i - period; --j) {
                     forecast.set(j, weather);
                 }
