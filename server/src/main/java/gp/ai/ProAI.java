@@ -423,37 +423,6 @@ public class ProAI extends BaseAI {
         }
     }
 
-    private Tires getBestTires(Tires current, int lapsToGo, boolean free) {
-        if (current == null) return null;
-        int rainCount = 0;
-        for (int i = 1; i < 20; ++i) {
-            Weather w = getWeather(i);
-            if (w == Weather.RAIN) ++rainCount;
-        }
-        if (rainCount > 9) {
-            if (current.getType() == Tires.Type.WET) return current;
-            else return new Tires(Tires.Type.WET);
-        }
-        if (lapsToGo <= 1) {
-            if (free) {
-                if (current.getType() == Tires.Type.SOFT && current.getAge() == 0) return current;
-                return new Tires(Tires.Type.SOFT);
-            } else {
-                if (current.getType() != Tires.Type.HARD) return new Tires(Tires.Type.SOFT);
-                return current;
-            }
-        }
-        if (current.getType() == Tires.Type.WET) {
-            if (random.nextInt(2) == 0) return new Tires(Tires.Type.SOFT);
-            else return new Tires(Tires.Type.HARD);
-        }
-        if (current.getType() == Tires.Type.SOFT && current.getAge() > 0) {
-            if (random.nextInt(2) == 0) return new Tires(Tires.Type.SOFT);
-            else return new Tires(Tires.Type.HARD);
-        }
-        return current;
-    }
-
     private int getGearAvg(int gear) {
         int avg = Gear.getAvg(gear);
         if (tires != null && tires.canUse(getWeather(0))) {

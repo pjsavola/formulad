@@ -27,6 +27,14 @@ public class BeginnerAI extends BaseAI {
         if (location == null) {
             throw new RuntimeException("Unknown location for player: " + playerId);
         }
+        tires = player.getTires();
+
+        if (player.getGear() == 0 || location.hasGarage()) {
+            final Tires chosenTires = getBestTires(tires, player.getLapsToGo(), true);
+            if (chosenTires != tires) {
+                tires = chosenTires;
+            }
+        }
         final boolean inPits = location.getType() == NodeType.PIT;
         final int maxGear = inPits ? 4 : 6;
         final int stopsDone = player.getStops();
@@ -138,7 +146,7 @@ public class BeginnerAI extends BaseAI {
                 }
             }
         }
-        return new gp.model.Gear().gear(gear);
+        return new gp.model.Gear().gear(gear).tires(tires);
     }
 
     public static int getStopsRequiredInNextCurve(Node startNode) {

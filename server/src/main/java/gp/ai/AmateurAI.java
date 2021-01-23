@@ -57,7 +57,12 @@ public class AmateurAI extends BaseAI {
         if (location == null) {
             throw new RuntimeException("Unknown location for player: " + playerId);
         }
+        tires = player.getTires();
         if (player.getGear() == 0) {
+            final Tires chosenTires = getBestTires(tires, player.getLapsToGo(), true);
+            if (chosenTires != tires) {
+                tires = chosenTires;
+            }
             gear = 1;
             return new gp.model.Gear().gear(1);
         }
@@ -93,8 +98,14 @@ public class AmateurAI extends BaseAI {
         //System.out.println("Safe gear: " + safeGear);
         //System.out.println("Best gear: " + avgGear);
 
+        if (location.hasGarage()) {
+            final Tires chosenTires = getBestTires(tires, player.getLapsToGo(), true);
+            if (chosenTires != tires) {
+                tires = chosenTires;
+            }
+        }
 
-        if (true) return new gp.model.Gear().gear(riskGear);
+        if (true) return new gp.model.Gear().gear(riskGear).tires(tires);
         // Find gear sequences for:
         // - max of mins (safe option)
         // - min of maxs (risky option)
@@ -144,7 +155,7 @@ public class AmateurAI extends BaseAI {
         } else {
             int bestGear = minGear;
             int bestScore = Integer.MIN_VALUE;
-            final int[] initialScores = { 0, 3, 6, 7, 8, 4 }; // may depend on damage
+            final int[] initialScores = {0, 3, 6, 7, 8, 4}; // may depend on damage
             for (int gear = minGear; gear <= maxGear; ++gear) {
                 int score = Math.min(player.getHitpoints(), initialScores[gear - 1]);
                 final int gearMin = Gear.getMin(gear);
@@ -162,7 +173,7 @@ public class AmateurAI extends BaseAI {
             if (debug) System.out.println("Selected: " + bestGear);
             gear = bestGear;
         }
-        return new gp.model.Gear().gear(gear);
+        return new gp.model.Gear().gear(gear).tires(tires);
     }
 
     private Random r = new Random();
