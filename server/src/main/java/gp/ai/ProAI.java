@@ -115,9 +115,9 @@ public class ProAI extends BaseAI {
             description += "Penalty from missing stops in the curve: " + (stopsToDo * stopValue) + "\n";
 
             // Penatly from too low gear...
-            int maxSteps = Gear.getAvg(Math.min(6, gear + 1));
+            int maxSteps = getGearAvg(Math.min(6, gear + 1));
             for (int i = 2; i <= stopsToDo; ++i) {
-                maxSteps += Gear.getAvg(Math.min(6, gear + i));
+                maxSteps += getGearAvg(Math.min(6, gear + i));
             }
             if (movePermit > maxSteps) {
                 score -= movePermit - maxSteps;
@@ -207,10 +207,10 @@ public class ProAI extends BaseAI {
         final int penalty = Math.max(0, distanceToNextCurve - minRoll);
         if (penalty == 0 && !node.isCurve()) {
             // Approaching a corner, check that the gear is not too low for that corner.
-            int maxSteps = Gear.getMax(Math.min(inPits ? 4 : 6, gear + 1));
+            int maxSteps = getGearMax(Math.min(inPits ? 4 : 6, gear + 1));
             int stops = AIUtil.getStopsRequiredInNextCurve(node);
             for (int i = 2; i <= stops; ++i) {
-                maxSteps = Gear.getMax(Math.min(inPits ? 4 : 6, gear + i));
+                maxSteps = getGearMax(Math.min(inPits ? 4 : 6, gear + i));
             }
             return Math.max(0, movePermit - maxSteps);
         }
@@ -324,7 +324,14 @@ public class ProAI extends BaseAI {
             final int[] distribution = Gear.getDistribution(gear);
             for (int roll : distribution) {
                 final Map<Node, DamageAndPath> res = NodeUtil.findTargetNodes(location, gear, roll, player.getHitpoints(), player.getStops(), player.getLapsToGo(), blockedNodes);
-                final int maxScore = res.entrySet().stream().map(e -> evaluate(e.getKey(), e.getValue().getDamage(), finalGear)).mapToInt(Integer::intValue).max().orElse(Scores.MIN);
+                int maxScore = res.entrySet().stream().map(e -> evaluate(e.getKey(), e.getValue().getDamage(), finalGear)).mapToInt(Integer::intValue).max().orElse(Scores.MIN);
+                if (tires != null && tires.canUse()) {
+                    final Map<Node, DamageAndPath> resOpt = NodeUtil.findTargetNodes(location, gear, roll + 1, player.getHitpoints(), player.getStops(), player.getLapsToGo(), blockedNodes);
+                    final int optMaxScore = resOpt.entrySet().stream().map(e -> evaluate(e.getKey(), e.getValue().getDamage(), finalGear)).mapToInt(Integer::intValue).max().orElse(Scores.MIN);
+                    if (optMaxScore > maxScore) {
+                        maxScore = optMaxScore;
+                    }
+                }
                 gearToScore.computeIfAbsent(gear, g -> new ArrayList<>()).add(maxScore);
             }
         }
@@ -379,7 +386,7 @@ public class ProAI extends BaseAI {
         }
     }
 
-    public Tires getBestTires(Tires current, int lapsToGo) {
+    private Tires getBestTires(Tires current, int lapsToGo) {
         int rainCount = 0;
         for (int i = 1; i < 20; ++i) {
             Weather w = getWeather(i);
@@ -402,5 +409,21 @@ public class ProAI extends BaseAI {
             else return new Tires(Tires.Type.HARD);
         }
         return current;
+    }
+
+    private int getGearAvg(int gear) {
+        int avg = Gear.getAvg(gear);
+        if (tires != null && tires.canUse()) {
+            ++avg;
+        }
+        return avg;
+    }
+
+    private int getGearMax(int gear) {
+        int max = Gear.getMax(gear);
+        if (tires != null && tires.canUse()) {
+            ++max;
+        }
+        return max;
     }
 }
