@@ -136,7 +136,7 @@ public class ProAI extends BaseAI {
             score -= penalty;
             description += "Penalty from low gear (pits): " + penalty + "\n";
             if (weatherForecast != null) {
-                final Tires bestTires = getBestTires(tires, lapsToGo);
+                final Tires bestTires = getBestTires(tires, lapsToGo, false);
                 if (bestTires != tires) {
                     score += 10;
                     description += "Bonus for switching to proper tires (pits): " + 10 + "\n";
@@ -303,7 +303,7 @@ public class ProAI extends BaseAI {
     public gp.model.Gear selectGear(GameState gameState) {
         updatePlayerInfo(gameState);
         if (player.getGear() == 0) {
-            final Tires chosenTires = getBestTires(tires, player.getLapsToGo());
+            final Tires chosenTires = getBestTires(tires, player.getLapsToGo(), true);
             if (chosenTires != tires) {
                 tires = chosenTires;
                 debug("Changed tires " + tires.getType().name());
@@ -317,7 +317,7 @@ public class ProAI extends BaseAI {
         debug("Pos: " + pos + " Pos among running: " + posAmongCompeting);
 
         if (location.hasGarage()) {
-            final Tires chosenTires = getBestTires(tires, player.getLapsToGo());
+            final Tires chosenTires = getBestTires(tires, player.getLapsToGo(), true);
             if (chosenTires != tires) {
                 tires = chosenTires;
                 debug("Changed tires " + tires.getType().name());
@@ -399,7 +399,7 @@ public class ProAI extends BaseAI {
         }
     }
 
-    private Tires getBestTires(Tires current, int lapsToGo) {
+    private Tires getBestTires(Tires current, int lapsToGo, boolean free) {
         if (current == null) return null;
         int rainCount = 0;
         for (int i = 1; i < 20; ++i) {
@@ -411,8 +411,13 @@ public class ProAI extends BaseAI {
             else return new Tires(Tires.Type.WET);
         }
         if (lapsToGo <= 1) {
-            if (current.getType() == Tires.Type.SOFT && current.getAge() == 0) return current;
-            return new Tires(Tires.Type.SOFT);
+            if (free) {
+                if (current.getType() == Tires.Type.SOFT && current.getAge() == 0) return current;
+                return new Tires(Tires.Type.SOFT);
+            } else {
+                if (current.getType() != Tires.Type.HARD) return new Tires(Tires.Type.SOFT);
+                return current;
+            }
         }
         if (current.getType() == Tires.Type.WET) {
             if (random.nextInt(2) == 0) return new Tires(Tires.Type.SOFT);
