@@ -350,10 +350,16 @@ public class ProAI extends BaseAI {
                         }
                     }
                 }
-                int maxScore = res.entrySet().stream().map(e -> evaluate(e.getKey(), e.getValue().getDamage() * overshootMultiplier, finalGear)).mapToInt(Integer::intValue).max().orElse(Scores.MIN);
+                int maxScore = res.entrySet().stream()
+                        .filter(e -> e.getValue().getDamage() * overshootMultiplier < player.getHitpoints())
+                        .map(e -> evaluate(e.getKey(), e.getValue().getDamage() * overshootMultiplier, finalGear))
+                        .mapToInt(Integer::intValue).max().orElse(Scores.MIN);
                 if (tires != null && tires.canUse(weather)) {
                     final Map<Node, DamageAndPath> resOpt = NodeUtil.findTargetNodes(location, gear, roll + 1, player.getHitpoints(), player.getStops(), player.getLapsToGo(), blockedNodes);
-                    final int optMaxScore = resOpt.entrySet().stream().map(e -> evaluate(e.getKey(), e.getValue().getDamage() * overshootMultiplier, finalGear)).mapToInt(Integer::intValue).max().orElse(Scores.MIN);
+                    final int optMaxScore = resOpt.entrySet().stream()
+                            .filter(e -> e.getValue().getDamage() * overshootMultiplier < player.getHitpoints())
+                            .map(e -> evaluate(e.getKey(), e.getValue().getDamage() * overshootMultiplier, finalGear))
+                            .mapToInt(Integer::intValue).max().orElse(Scores.MIN);
                     if (optMaxScore > maxScore) {
                         maxScore = optMaxScore;
                     }
@@ -363,6 +369,7 @@ public class ProAI extends BaseAI {
                     final Map<Node, DamageAndPath> targets = NodeUtil.findTargetNodes(location, gear, roll + slide, player.getHitpoints(), player.getStops(), player.getLapsToGo(), blockedNodes);
                     final int slideScore = targets.entrySet().stream()
                             .filter(e -> e.getValue().getPath().stream().anyMatch(slideNodes::contains))
+                            .filter(e -> e.getValue().getDamage() * overshootMultiplier < player.getHitpoints())
                             .map(e -> evaluate(e.getKey(), e.getValue().getDamage() * overshootMultiplier, finalGear))
                             .mapToInt(Integer::intValue).max().orElse(Scores.MIN);
                     if (slideScore > maxScore) {
