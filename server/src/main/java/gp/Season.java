@@ -133,7 +133,7 @@ public class Season implements Comparable<Season>, TrackSelector {
         final JLabel playersLabel = new JLabel("PLAYERS");
         playersLabel.setFont(new Font("Arial", Font.BOLD, 20));
         final JCheckBox randomTrackOrder = new JCheckBox("Randomize track order", false);
-        final JCheckBox tireChanges = new JCheckBox("Enable tire selection", Main.settings.tireChanges);
+        final JCheckBox tireChanges = new JCheckBox("Enable weather rules", Main.settings.tireChanges);
         rightPanel.add(playersLabel);
         rightPanel.add(playerPanel);
         rightPanel.add(randomTrackOrder);

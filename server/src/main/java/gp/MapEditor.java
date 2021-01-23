@@ -143,6 +143,7 @@ public class MapEditor extends JPanel {
         final Menu view = new Menu("View");
         final Menu toolMenu = new Menu("Tools");
         final Menu validationMenu = new Menu("Validation");
+        final Menu weatherMenu = new Menu("Weather");
 
         menuBar.add(fileMenu);
         final MenuItem loadBackgroundImage = new MenuItem("Load Background Image");
@@ -293,6 +294,25 @@ public class MapEditor extends JPanel {
         validate.setShortcut(new MenuShortcut(KeyEvent.VK_V));
         validationMenu.add(validate);
 
+        final MenuItem rainProbability = new MenuItem("Rain probability");
+        final MenuItem shortestPeriod = new MenuItem("Minimum rounds before weather change");
+        final MenuItem volatility = new MenuItem("Weather volatility");
+        weatherMenu.add(rainProbability);
+        weatherMenu.add(shortestPeriod);
+        weatherMenu.add(volatility);
+        rainProbability.addActionListener(e -> {
+            int newValue = changeParam("Set rain probability", params.rainProbability);
+            if (newValue >= 0) params.rainProbability = newValue;
+        });
+        shortestPeriod.addActionListener(e -> {
+            int newValue = changeParam("Set minimum rounds before weather change", params.shortestPeriod);
+            if (newValue >= 1) params.shortestPeriod = newValue;
+        });
+        volatility.addActionListener(e -> {
+            int newValue = changeParam("Set weather volatility", params.volatility);
+            if (newValue >= 1) params.volatility = newValue;
+        });
+
         frame.setMenuBar(menuBar);
         frame.addKeyListener(new KeyAdapter() {
             @Override
@@ -332,6 +352,26 @@ public class MapEditor extends JPanel {
                 }
             }
         });
+    }
+
+    private int changeParam(String msg, int oldValue) {
+        final Object attr = JOptionPane.showInputDialog(
+                this,
+                msg + ":",
+                msg,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                null,
+                oldValue
+        );
+        if (attr instanceof String) {
+            try {
+                return Integer.parseInt((String) attr);
+            } catch (NumberFormatException ex) {
+                // Fail
+            }
+        }
+        return -1;
     }
 
     private void select(Node node) {
@@ -481,7 +521,13 @@ public class MapEditor extends JPanel {
             try (final PrintWriter writer = new PrintWriter(selectedFile, "UTF-8")) {
                 writer.print(backgroundImageFileName);
                 writer.print(" ");
-                writer.println(infoBoxCorner.ordinal());
+                writer.print(infoBoxCorner.ordinal());
+                writer.print(" ");
+                writer.print(params.rainProbability);
+                writer.print(" ");
+                writer.print(params.shortestPeriod);
+                writer.print(" ");
+                writer.println(params.volatility);
                 final Map<Node, Integer> idMap = new HashMap<>();
                 for (int i = 0; i < nodes.size(); i++) {
                     final Node node = nodes.get(i);
