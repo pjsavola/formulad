@@ -16,6 +16,7 @@ public abstract class BaseAI implements AI {
     int gear;
     Tires tires;
     List<Weather> weatherForecast;
+    int weatherIndex;
 
     BaseAI(TrackData data) {
         this.data = data;
@@ -42,6 +43,12 @@ public abstract class BaseAI implements AI {
             maxHitpoints = createdPlayer.getHitpoints();
         } else if (notification instanceof WeatherNotification) {
             weatherForecast = ((WeatherNotification) notification).getWeatherForecast();
+        } else if (notification instanceof Standings) {
+            ++weatherIndex;
         }
+    }
+
+    Weather getWeather(int offset) {
+        return weatherForecast == null ? null : weatherForecast.get(Math.min(weatherForecast.size() - 1, weatherIndex + offset));
     }
 }
