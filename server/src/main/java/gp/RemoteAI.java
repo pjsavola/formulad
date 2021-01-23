@@ -143,5 +143,8 @@ public class RemoteAI implements AI {
                 Main.log.log(Level.WARNING, "Error when notifying client", e);
             }
         }
+        if (fallback != null) {
+            fallback.notify(notification);
+        }
     }
 }
