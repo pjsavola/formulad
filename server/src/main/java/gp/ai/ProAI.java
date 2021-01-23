@@ -135,6 +135,13 @@ public class ProAI extends BaseAI {
             final int penalty = getPenaltyForLowGear(endNode, gear, distance, movePermit) * player.getHitpoints() / maxHitpoints;
             score -= penalty;
             description += "Penalty from low gear (pits): " + penalty + "\n";
+            if (weatherForecast != null) {
+                final Tires bestTires = getBestTires(tires, lapsToGo);
+                if (bestTires != tires) {
+                    score += 10;
+                    description += "Bonus for switching to proper tires (pits): " + 10 + "\n";
+                }
+            }
             //final int penaltyForHP = Math.max(0, player.getHitpoints() - 9);
             //description += "Penalty from HP (pits): " + penaltyForHP + "\n";
             //score -= penaltyForHP;
@@ -370,5 +377,30 @@ public class ProAI extends BaseAI {
         if (debug) {
             System.err.println(msg);
         }
+    }
+
+    public Tires getBestTires(Tires current, int lapsToGo) {
+        int rainCount = 0;
+        for (int i = 1; i < 20; ++i) {
+            Weather w = getWeather(i);
+            if (w == Weather.RAIN) ++rainCount;
+        }
+        if (rainCount > 9) {
+            if (current.getType() == Tires.Type.WET) return current;
+            else return new Tires(Tires.Type.WET);
+        }
+        if (lapsToGo <= 1) {
+            if (current.getType() != Tires.Type.HARD) return new Tires(Tires.Type.SOFT);
+            else return current;
+        }
+        if (current.getType() == Tires.Type.WET) {
+            if (random.nextInt(2) == 0) return new Tires(Tires.Type.SOFT);
+            else return new Tires(Tires.Type.HARD);
+        }
+        if (current.getType() == Tires.Type.SOFT && current.getAge() > 0) {
+            if (random.nextInt(2) == 0) return new Tires(Tires.Type.SOFT);
+            else return new Tires(Tires.Type.HARD);
+        }
+        return current;
     }
 }

@@ -35,6 +35,10 @@ public class Tires implements Serializable {
         return type == Type.SOFT && age <= 1;
     }
 
+    public int getAge() {
+        return age;
+    }
+
     public void increaseAge() {
         ++age;
     }
