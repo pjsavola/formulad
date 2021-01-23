@@ -411,8 +411,8 @@ public class ProAI extends BaseAI {
             else return new Tires(Tires.Type.WET);
         }
         if (lapsToGo <= 1) {
-            if (current.getType() != Tires.Type.HARD) return new Tires(Tires.Type.SOFT);
-            else return current;
+            if (current.getType() == Tires.Type.SOFT && current.getAge() == 0) return current;
+            return new Tires(Tires.Type.SOFT);
         }
         if (current.getType() == Tires.Type.WET) {
             if (random.nextInt(2) == 0) return new Tires(Tires.Type.SOFT);

@@ -360,6 +360,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
             final PlayerStats stats = finalStandings[i];
             g2d.setColor(Color.BLACK);
             renderer.renderPlayer(g2d, x, y, i, stats.playerId);
+            g2d.setColor(Color.BLACK);
             final String hp = stats.hitpoints > 0 ? Integer.toString(stats.hitpoints) : "DNF";
             g2d.drawString(hp, x + 140, y + (i + 1) * 15 + 15);
             g2d.drawString(Integer.toString(stats.turns), x + 190, y + (i + 1) * 15 + 15);

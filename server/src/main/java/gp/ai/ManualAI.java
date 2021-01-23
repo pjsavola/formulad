@@ -110,13 +110,15 @@ public class ManualAI extends BaseAI {
                     if (gear != null) {
                         automaticMove = true;
                         selectedGear.setValue(gear.getGear());
+                        tires = gear.getTires();
                     }
                 } else if (c == 'g') {
                     final Gear gear = ai.selectGear(gameState);
                     if (gear != null) {
                         selectedGear.setValue(gear.getGear());
+                        tires = gear.getTires();
                     }
-                    } else if (c >= '1' && c <= '6') {
+                } else if (c >= '1' && c <= '6') {
                     if (AIUtil.validateGear(hitpoints, gear, c - '0', inPits)) {
                         selectedGear.setValue(c - '0');
                     }
