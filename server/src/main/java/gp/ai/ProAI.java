@@ -296,20 +296,33 @@ public class ProAI extends BaseAI {
         if (location == null) {
             throw new RuntimeException("Unknown location for player: " + playerId);
         }
+        tires = player.getTires();
     }
 
     @Override
     public gp.model.Gear selectGear(GameState gameState) {
         updatePlayerInfo(gameState);
         if (player.getGear() == 0) {
+            final Tires chosenTires = getBestTires(tires, player.getLapsToGo());
+            if (chosenTires != tires) {
+                tires = chosenTires;
+                debug("Changed tires " + tires.getType().name());
+            }
             gear = 1;
-            return new gp.model.Gear().gear(1);
+            return new gp.model.Gear().gear(1).tires(tires);
         }
         final int pos = gameState.getPlayers().indexOf(player) + 1;
         final List<PlayerState> competingPlayers = gameState.getPlayers().stream().filter(p -> p.getLapsToGo() >= 0 && p.getHitpoints() > 0).collect(Collectors.toList());
         final int posAmongCompeting = competingPlayers.indexOf(player) + 1;
         debug("Pos: " + pos + " Pos among running: " + posAmongCompeting);
 
+        if (location.hasGarage()) {
+            final Tires chosenTires = getBestTires(tires, player.getLapsToGo());
+            if (chosenTires != tires) {
+                tires = chosenTires;
+                debug("Changed tires " + tires.getType().name());
+            }
+        }
         final Set<Node> blockedNodes = playerMap
                 .values()
                 .stream()
@@ -353,7 +366,7 @@ public class ProAI extends BaseAI {
         results.sort(Scores::compareTo);
         gear = results.get(0).gear;
         debug("Chose gear " + gear);
-        return new gp.model.Gear().gear(gear);
+        return new gp.model.Gear().gear(gear).tires(tires);
     }
 
     @Override
@@ -387,6 +400,7 @@ public class ProAI extends BaseAI {
     }
 
     private Tires getBestTires(Tires current, int lapsToGo) {
+        if (current == null) return null;
         int rainCount = 0;
         for (int i = 1; i < 20; ++i) {
             Weather w = getWeather(i);
