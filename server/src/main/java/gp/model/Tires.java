@@ -33,7 +33,7 @@ public class Tires implements Serializable {
     }
 
     public boolean canUse(Weather weather) {
-        return weather != null && weather == Weather.RAIN && type == Type.SOFT && age <= 1;
+        return weather != null && weather != Weather.RAIN && type == Type.SOFT && age <= 1;
     }
 
     public int getAge() {
