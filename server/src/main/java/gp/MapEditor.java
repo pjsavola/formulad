@@ -296,10 +296,8 @@ public class MapEditor extends JPanel {
 
         final MenuItem rainProbability = new MenuItem("Rain probability");
         final MenuItem shortestPeriod = new MenuItem("Minimum rounds before weather change");
-        final MenuItem volatility = new MenuItem("Weather volatility");
         weatherMenu.add(rainProbability);
         weatherMenu.add(shortestPeriod);
-        weatherMenu.add(volatility);
         rainProbability.addActionListener(e -> {
             int newValue = changeParam("Set rain probability", params.rainProbability);
             if (newValue >= 0) params.rainProbability = newValue;
@@ -307,10 +305,6 @@ public class MapEditor extends JPanel {
         shortestPeriod.addActionListener(e -> {
             int newValue = changeParam("Set minimum rounds before weather change", params.shortestPeriod);
             if (newValue >= 1) params.shortestPeriod = newValue;
-        });
-        volatility.addActionListener(e -> {
-            int newValue = changeParam("Set weather volatility", params.volatility);
-            if (newValue >= 1) params.volatility = newValue;
         });
         menuBar.add(weatherMenu);
 
@@ -526,9 +520,7 @@ public class MapEditor extends JPanel {
                 writer.print(" ");
                 writer.print(params.rainProbability);
                 writer.print(" ");
-                writer.print(params.shortestPeriod);
-                writer.print(" ");
-                writer.println(params.volatility);
+                writer.println(params.shortestPeriod);
                 final Map<Node, Integer> idMap = new HashMap<>();
                 for (int i = 0; i < nodes.size(); i++) {
                     final Node node = nodes.get(i);
@@ -617,10 +609,9 @@ public class MapEditor extends JPanel {
             final String[] parts = headerLine.substring(separatorIndex).split(" ");
             if (parts.length < 2) return null;
             try {
-                if (parts.length > 4) {
+                if (parts.length > 3) {
                     params.rainProbability = Integer.parseInt(parts[2]);
                     params.shortestPeriod = Integer.parseInt(parts[3]);
-                    params.volatility = Integer.parseInt(parts[4]);
                 }
                 final int infoBoxCorner = Integer.parseInt(parts[1]);
                 return Pair.of(headerLine.substring(0, separatorIndex) + parts[0], Corner.values()[infoBoxCorner]);

@@ -14,7 +14,6 @@ public enum Weather {
 
     public static class Params {
         public int rainProbability;
-        public int volatility;
         public int shortestPeriod;
     }
 
@@ -25,7 +24,7 @@ public enum Weather {
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
         while (i < turns) {
-            final int next = rand.nextInt(params.volatility * 2 + 1) - params.volatility;
+            final int next = rand.nextInt(3) - 1;
             sum += next;
             randomMotion[i++] = sum;
             min = Math.min(min, sum);
