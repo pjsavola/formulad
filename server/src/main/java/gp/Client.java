@@ -49,7 +49,7 @@ public class Client extends Game implements Runnable {
                 } else if (request instanceof FinalStandings) {
                     final FinalStandings standings = (FinalStandings) request;
                     if (!initialStandingsReceived) {
-                        profile.standingsReceived(standings.getStats(), data.getTrackId(), standings.isSingleRace());
+                        profile.standingsReceived(standings.getStats(), data.getTrackId(), standings.isSingleRace(), weatherForecast != null);
                         profile.getManager().saveProfiles();
                         initialStandingsReceived = true;
                         immutablePlayerMap = new HashMap<>(playerMap);
@@ -59,7 +59,7 @@ public class Client extends Game implements Runnable {
                         continue;
                     }
                     finalStandings = standings.getStats();
-                    profile.standingsReceived(finalStandings, null, standings.isSingleRace());
+                    profile.standingsReceived(finalStandings, null, standings.isSingleRace(), weatherForecast != null);
                     profile.getManager().saveProfiles();
                     repaint();
                     break;

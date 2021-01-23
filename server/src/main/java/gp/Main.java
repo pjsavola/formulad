@@ -106,8 +106,8 @@ public class Main extends Game implements Runnable {
         }
         allPlayers.sort((p1, p2) -> p1.compareTo(p2, stoppedPlayers));
         standings = new ArrayList<>(allPlayers);
-        notifyAll(new FinalStandings(stats, resultStorage != null));
         if (weatherForecast != null) notifyAll(new WeatherNotification(weatherForecast));
+        notifyAll(new FinalStandings(stats, resultStorage != null));
         current = waitingPlayers.remove(0);
     }
 

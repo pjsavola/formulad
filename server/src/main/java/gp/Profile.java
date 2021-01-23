@@ -52,13 +52,15 @@ public class Profile implements Serializable {
         long timeUsedMs;
         List<UUID> standings;
         boolean isChampionshipRace;
+        boolean weather;
 
-        private Result(String trackId, int totalLaps, int totalHitpoints, int gridPosition, boolean isSingleRace) {
+        private Result(String trackId, int totalLaps, int totalHitpoints, int gridPosition, boolean isSingleRace, boolean weather) {
             this.trackId = trackId;
             this.totalLaps = totalLaps;
             this.totalHitpoints = totalHitpoints;
             this.gridPosition = gridPosition;
             this.isChampionshipRace = !isSingleRace;
+            this.weather = weather;
         }
 
         private void complete(int position, int turns, int remainingHitpoints, int completedLaps, double coveredDistance, long timeUsedMs, List<UUID> standings) {
@@ -149,7 +151,7 @@ public class Profile implements Serializable {
         return manager;
     }
 
-    public void standingsReceived(PlayerStats[] standings, String trackId, boolean isSingleRace) {
+    public void standingsReceived(PlayerStats[] standings, String trackId, boolean isSingleRace, boolean weather) {
         final List<UUID> players = new ArrayList<>();
         PlayerStats myStats = null;
         for (PlayerStats stats : standings) {
@@ -160,7 +162,7 @@ public class Profile implements Serializable {
         }
         if (myStats != null) {
             if (trackId != null) {
-                results.add(new Result(trackId, myStats.lapsToGo, myStats.hitpoints, myStats.gridPosition, isSingleRace));
+                results.add(new Result(trackId, myStats.lapsToGo, myStats.hitpoints, myStats.gridPosition, isSingleRace, weather));
             } else {
                 final Result lastResult = results.get(results.size() - 1);
                 if (!lastResult.complete) {

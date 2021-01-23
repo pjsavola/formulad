@@ -297,11 +297,11 @@ public class ManualAI extends BaseAI {
         if (notification instanceof FinalStandings) {
             final FinalStandings standings = (FinalStandings) notification;
             if (!initialStandingsReceived) {
-                profile.standingsReceived(standings.getStats(), data.getTrackId(), standings.isSingleRace());
+                profile.standingsReceived(standings.getStats(), data.getTrackId(), standings.isSingleRace(), weatherForecast != null);
                 profile.getManager().saveProfiles();
                 initialStandingsReceived = true;
             } else {
-                profile.standingsReceived(standings.getStats(), null, standings.isSingleRace());
+                profile.standingsReceived(standings.getStats(), null, standings.isSingleRace(), weatherForecast != null);
                 profile.getManager().saveProfiles();
             }
         }
