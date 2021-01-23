@@ -18,6 +18,7 @@ public class Tires implements Serializable {
     }
 
     public int getOvershootDamage(Weather weather) {
+        if (weather == null) return 1;
         switch (type) {
             case HARD:
                 return 1;
@@ -31,8 +32,8 @@ public class Tires implements Serializable {
         throw new RuntimeException("Invalid tire type");
     }
 
-    public boolean canUse() {
-        return type == Type.SOFT && age <= 1;
+    public boolean canUse(Weather weather) {
+        return weather != null && weather == Weather.RAIN && type == Type.SOFT && age <= 1;
     }
 
     public int getAge() {

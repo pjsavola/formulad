@@ -276,7 +276,7 @@ public final class LocalPlayer extends Player {
         final boolean rain = weather == Weather.RAIN;
         final int overshootMultiplier = tires == null ? 1 : tires.getOvershootDamage(weather);
         final List<ValidMove> validMoves = new ArrayList<>();
-        if (tires != null && tires.canUse() && !rain) {
+        if (tires != null && tires.canUse(weather) && !rain) {
             final Map<Node, DamageAndPath> targets = findTargetNodes(roll + 1, forbiddenNodes);
             for (Map.Entry<Node, DamageAndPath> e : targets.entrySet()) {
                 final int damage = e.getValue().getDamage();

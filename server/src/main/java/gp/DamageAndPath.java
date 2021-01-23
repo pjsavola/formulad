@@ -23,7 +23,7 @@ public class DamageAndPath {
         return damage;
     }
 
-    List<Node> getPath() {
+    public List<Node> getPath() {
         return path;
     }
 }

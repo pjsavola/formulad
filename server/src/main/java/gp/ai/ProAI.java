@@ -331,18 +331,42 @@ public class ProAI extends BaseAI {
                 .collect(Collectors.toSet());
         final int minGear = Math.max(1, player.getGear() - Math.min(4, player.getHitpoints()));
         final int maxGear = Math.min(location.isPit() ? 4 : 6, player.getGear() + 1);
+        final Weather weather = getWeather(0);
+        final int overshootMultiplier = tires == null ? 1 : tires.getOvershootDamage(weather);
         final Map<Integer, List<Integer>> gearToScore = new HashMap<>();
         for (int gear = minGear; gear <= maxGear; ++gear) {
             final int finalGear = gear;
             final int[] distribution = Gear.getDistribution(gear);
             for (int roll : distribution) {
                 final Map<Node, DamageAndPath> res = NodeUtil.findTargetNodes(location, gear, roll, player.getHitpoints(), player.getStops(), player.getLapsToGo(), blockedNodes);
-                int maxScore = res.entrySet().stream().map(e -> evaluate(e.getKey(), e.getValue().getDamage(), finalGear)).mapToInt(Integer::intValue).max().orElse(Scores.MIN);
-                if (tires != null && tires.canUse()) {
+                final Set<Node> slideNodes = new HashSet<>();
+                if (weather == Weather.RAIN) {
+                    final Iterator<Map.Entry<Node, DamageAndPath>> it = res.entrySet().iterator();
+                    while (it.hasNext()) {
+                        final Map.Entry<Node, DamageAndPath> e = it.next();
+                        if (e.getKey().isCurve() || e.getValue().getDamage() > 0) {
+                            slideNodes.add(e.getKey());
+                            it.remove();
+                        }
+                    }
+                }
+                int maxScore = res.entrySet().stream().map(e -> evaluate(e.getKey(), e.getValue().getDamage() * overshootMultiplier, finalGear)).mapToInt(Integer::intValue).max().orElse(Scores.MIN);
+                if (tires != null && tires.canUse(weather)) {
                     final Map<Node, DamageAndPath> resOpt = NodeUtil.findTargetNodes(location, gear, roll + 1, player.getHitpoints(), player.getStops(), player.getLapsToGo(), blockedNodes);
-                    final int optMaxScore = resOpt.entrySet().stream().map(e -> evaluate(e.getKey(), e.getValue().getDamage(), finalGear)).mapToInt(Integer::intValue).max().orElse(Scores.MIN);
+                    final int optMaxScore = resOpt.entrySet().stream().map(e -> evaluate(e.getKey(), e.getValue().getDamage() * overshootMultiplier, finalGear)).mapToInt(Integer::intValue).max().orElse(Scores.MIN);
                     if (optMaxScore > maxScore) {
                         maxScore = optMaxScore;
+                    }
+                }
+                if (!slideNodes.isEmpty()) {
+                    final int slide = tires != null && tires.getType() == Tires.Type.WET ? 1 : 3;
+                    final Map<Node, DamageAndPath> targets = NodeUtil.findTargetNodes(location, gear, roll + slide, player.getHitpoints(), player.getStops(), player.getLapsToGo(), blockedNodes);
+                    final int slideScore = targets.entrySet().stream()
+                            .filter(e -> e.getValue().getPath().stream().anyMatch(slideNodes::contains))
+                            .map(e -> evaluate(e.getKey(), e.getValue().getDamage() * overshootMultiplier, finalGear))
+                            .mapToInt(Integer::intValue).max().orElse(Scores.MIN);
+                    if (slideScore > maxScore) {
+                        maxScore = slideScore;
                     }
                 }
                 gearToScore.computeIfAbsent(gear, g -> new ArrayList<>()).add(maxScore);
@@ -432,7 +456,7 @@ public class ProAI extends BaseAI {
 
     private int getGearAvg(int gear) {
         int avg = Gear.getAvg(gear);
-        if (tires != null && tires.canUse()) {
+        if (tires != null && tires.canUse(getWeather(0))) {
             ++avg;
         }
         return avg;
@@ -440,7 +464,7 @@ public class ProAI extends BaseAI {
 
     private int getGearMax(int gear) {
         int max = Gear.getMax(gear);
-        if (tires != null && tires.canUse()) {
+        if (tires != null && tires.canUse(getWeather(0))) {
             ++max;
         }
         return max;
