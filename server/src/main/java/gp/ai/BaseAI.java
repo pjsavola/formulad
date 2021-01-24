@@ -82,6 +82,10 @@ public abstract class BaseAI implements AI {
             if (Main.random.nextInt(2) == 0) return new Tires(Tires.Type.SOFT);
             else return new Tires(Tires.Type.HARD);
         }
+        if (free) {
+            if (Main.random.nextInt(2) == 0) return new Tires(Tires.Type.SOFT);
+            else return new Tires(Tires.Type.HARD);
+        }
         return current;
     }
 }
