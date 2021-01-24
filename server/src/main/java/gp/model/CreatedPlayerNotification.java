@@ -12,9 +12,10 @@ public class CreatedPlayerNotification extends Notification implements Serializa
     private final int lapsToGo;
     private final int[] colors;
     private final double angle;
+    private final Tires tires;
     private boolean isControlled;
 
-    public CreatedPlayerNotification(String playerId, String name, int nodeId, int hitpoints, int lapsToGo, int[] colors, double angle) {
+    public CreatedPlayerNotification(String playerId, String name, int nodeId, int hitpoints, int lapsToGo, int[] colors, double angle, Tires tires) {
         super(playerId);
         this.name = name;
         this.nodeId = nodeId;
@@ -22,6 +23,7 @@ public class CreatedPlayerNotification extends Notification implements Serializa
         this.lapsToGo = lapsToGo;
         this.colors = colors;
         this.angle = angle;
+        this.tires = tires;
     }
 
     public String getName() {
@@ -46,6 +48,10 @@ public class CreatedPlayerNotification extends Notification implements Serializa
 
     public double getGridAngle() {
         return angle;
+    }
+
+    public Tires getTires() {
+        return tires;
     }
 
     public boolean isControlled() {

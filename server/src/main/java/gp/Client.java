@@ -193,6 +193,7 @@ public class Client extends Game implements Runnable {
         player.setName(notification.getName());
         player.setHitpoints(notification.getHitpoints());
         player.setLapsRemaining(notification.getLapsRemaining());
+        player.setTires(notification.getTires());
         if (notification.isControlled()) {
             if (controlledPlayer != null) {
                 Main.log.log(Level.SEVERE, "Client assigneed to control multiple players");

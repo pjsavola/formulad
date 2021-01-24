@@ -170,7 +170,7 @@ public class Main extends Game implements Runnable {
         allPlayers.add(player);
         player.setGridPosition(gridPosition + 1);
         aiMap.put(player, ai.getKey());
-        return new CreatedPlayerNotification(current.getId(), name, startNode.getId(), maxHitpoints, laps, ai.getValue().getColors(), startNode.getGridAngle());
+        return new CreatedPlayerNotification(current.getId(), name, startNode.getId(), maxHitpoints, laps, ai.getValue().getColors(), startNode.getGridAngle(), defaultTires);
     }
 
     void notifyAll(Object notification) {
