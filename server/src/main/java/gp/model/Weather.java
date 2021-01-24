@@ -1,5 +1,6 @@
 package gp.model;
 
+import gp.Main;
 import jdk.internal.org.objectweb.asm.commons.RemappingAnnotationAdapter;
 
 import java.util.Arrays;
@@ -9,8 +10,6 @@ import java.util.stream.Collectors;
 
 public enum Weather {
     DRY, RAIN;
-
-    private final static Random rand = new Random();
 
     public static class Params {
         public int rainProbability;
@@ -24,7 +23,7 @@ public enum Weather {
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
         while (i < turns) {
-            final int next = rand.nextInt(3) - 1;
+            final int next = Main.random.nextInt(3) - 1;
             sum += next;
             randomMotion[i++] = sum;
             min = Math.min(min, sum);

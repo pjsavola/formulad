@@ -2,6 +2,7 @@ package gp.ai;
 
 import java.util.*;
 
+import gp.Main;
 import gp.model.*;
 
 public class BeginnerAI extends BaseAI {
@@ -9,7 +10,6 @@ public class BeginnerAI extends BaseAI {
     private Map<String, PlayerState> playerMap;
     private Node location;
     private PlayerState player;
-    private Random random = new Random();
     public boolean debug;
 
     public BeginnerAI(TrackData data) {
@@ -444,7 +444,7 @@ public class BeginnerAI extends BaseAI {
         if (bestIndices.isEmpty()) {
             return new SelectedIndex().index(0);
         }
-        return new SelectedIndex().index(bestIndices.get(random.nextInt(bestIndices.size())));
+        return new SelectedIndex().index(bestIndices.get(Main.random.nextInt(bestIndices.size())));
     }
 
     public static Map<Node, Integer> getNodeDistances(Node startNode, int maxDistance) {

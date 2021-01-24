@@ -1,6 +1,7 @@
 package gp.ai;
 
 import gp.DamageAndPath;
+import gp.Main;
 import gp.NodeUtil;
 import gp.Player;
 import gp.model.*;
@@ -14,7 +15,6 @@ public class ProAI extends BaseAI {
     private Map<String, PlayerState> playerMap;
     private Node location;
     private PlayerState player;
-    private final Random random = new Random();
     public boolean debug;
     public boolean debug2;
 
@@ -421,7 +421,7 @@ public class ProAI extends BaseAI {
                 bestIndices.add(i);
             }
         }
-        return new SelectedIndex().index(bestIndices.get(random.nextInt(bestIndices.size())));
+        return new SelectedIndex().index(bestIndices.get(Main.random.nextInt(bestIndices.size())));
     }
 
     private void debug(String msg) {

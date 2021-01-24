@@ -67,6 +67,7 @@ public class Main extends Game implements Runnable {
     static boolean sounds = true;
     static PreviousSettings settings = new PreviousSettings();
     public static final int minGridSize = 6;
+    public static final Random random = new Random();
 
     static {
         try {
@@ -89,7 +90,7 @@ public class Main extends Game implements Runnable {
         this.lobby = lobby;
         this.resultStorage = resultStorage;
         LocalPlayer.animationDelayInMillis = params.animationDelayInMillis;
-        final long seed = params.seed == null ? new Random().nextLong() : params.seed;
+        final long seed = params.seed == null ? Main.random.nextLong() : params.seed;
         this.rng = new Random(seed);
         log.info("Initializing RNG with seed " + seed);
         gearTimeoutInMillis = params.gearTimeoutInMillis;
@@ -613,7 +614,6 @@ public class Main extends Game implements Runnable {
                              InputStreamReader ir = new InputStreamReader(fis, StandardCharsets.UTF_8);
                              final BufferedReader br = new BufferedReader(ir)) {
                             final Set<String> players = new HashSet<>();
-                            final Random random = new Random();
                             int emptyLines = 0;
                             while ((line = br.readLine()) != null) {
                                 final String[] parts = line.trim().split(",");

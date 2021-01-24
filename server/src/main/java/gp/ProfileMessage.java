@@ -19,7 +19,6 @@ public class ProfileMessage implements Serializable {
 
     static ProfileMessage pending = new ProfileMessage("...", false);
 
-    private static Random random = new Random();
     private static String[] randomNames = new String[] { "Mika", "Keke", "Kimi", "Heikki", "Leo", "Valtteri", "Nico", "Michael", "Lewis", "Sebastian", "Max", "Fernando" };
     private static String[] backupRandomNames = new String[] { "Lando", "Carlos", "Alexander", "George", "Daniel", "Esteban", "Pierre", "Daniil", "Romain", "Kevin", "Nicholas", "Robert", "Charles", "Antonio" };
 
@@ -36,13 +35,13 @@ public class ProfileMessage implements Serializable {
             }
             name = "Player " + i;
         } else {
-            name = validNames.get(random.nextInt(validNames.size()));
+            name = validNames.get(Main.random.nextInt(validNames.size()));
         }
         final ProfileMessage profile = new ProfileMessage(name, true);
-        profile.colors[0] = random.nextInt(0xFFFFFF + 1);
-        profile.colors[1] = random.nextInt(0xFFFFFF + 1);
+        profile.colors[0] = Main.random.nextInt(0xFFFFFF + 1);
+        profile.colors[1] = Main.random.nextInt(0xFFFFFF + 1);
         profile.colors[2] = profile.colors[0];
-        profile.colors[3] = random.nextInt(0xFFFFFF + 1);
+        profile.colors[3] = Main.random.nextInt(0xFFFFFF + 1);
         profile.aiType = AI.Type.AMATEUR;
         return profile;
     }

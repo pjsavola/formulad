@@ -11,7 +11,6 @@ public class ExampleAI extends BaseAI {
     private Map<String, PlayerState> playerMap;
     private Node location;
     private PlayerState player;
-    private Random random = new Random();
 
     public ExampleAI(TrackData data) {
         super(data);
@@ -50,6 +49,6 @@ public class ExampleAI extends BaseAI {
             // Flaw in this AI, just select something valid
             return new SelectedIndex().index(0);
         }
-        return new SelectedIndex().index(bestTargets.get(random.nextInt(bestTargets.size())));
+        return new SelectedIndex().index(bestTargets.get(Main.random.nextInt(bestTargets.size())));
     }
 }

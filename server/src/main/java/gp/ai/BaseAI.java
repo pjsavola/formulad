@@ -17,7 +17,6 @@ public abstract class BaseAI implements AI {
     Tires tires;
     List<Weather> weatherForecast;
     int weatherIndex;
-    private final Random random = new Random();
 
     BaseAI(TrackData data) {
         this.data = data;
@@ -74,11 +73,11 @@ public abstract class BaseAI implements AI {
             }
         }
         if (current.getType() == Tires.Type.WET) {
-            if (random.nextInt(2) == 0) return new Tires(Tires.Type.SOFT);
+            if (Main.random.nextInt(2) == 0) return new Tires(Tires.Type.SOFT);
             else return new Tires(Tires.Type.HARD);
         }
         if (current.getType() == Tires.Type.SOFT && current.getAge() > 0) {
-            if (random.nextInt(2) == 0) return new Tires(Tires.Type.SOFT);
+            if (Main.random.nextInt(2) == 0) return new Tires(Tires.Type.SOFT);
             else return new Tires(Tires.Type.HARD);
         }
         return current;

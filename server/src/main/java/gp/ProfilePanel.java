@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Random;
 
 class ProfilePanel extends JPanel {
-    private static Random random = new Random();
     private class CarPreview extends JPanel {
         final int width = 100;
         final int height = 50;
@@ -71,7 +70,7 @@ class ProfilePanel extends JPanel {
             }
             @Override
             public void actionPerformed(ActionEvent e) {
-                final int color = random.nextInt(0xFFFFFF + 1);
+                final int color = Main.random.nextInt(0xFFFFFF + 1);
                 activeProfile.setColor(index, color);
                 carPreview.repaint();
                 field.setText(Integer.toHexString(color));
@@ -177,7 +176,6 @@ class ProfilePanel extends JPanel {
             public void mouseClicked(MouseEvent e) {
                 final JFrame frame = (JFrame) getTopLevelAncestor();
                 final JDialog dialog = new JDialog(frame);
-                final Random random = new Random();
 
                 final DefaultListModel<String> model = new DefaultListModel<>();
                 profiles.forEach(profile -> model.addElement(profile.getName()));
@@ -193,8 +191,8 @@ class ProfilePanel extends JPanel {
                         if (profiles.stream().noneMatch(p -> p.getName().equals(result))) {
                             final Profile newProfile = new Profile(activeProfile.getManager(), result);
                             newProfile.setActive(true);
-                            newProfile.setColor(0, random.nextInt(0xFFFFFF));
-                            newProfile.setColor(1, random.nextInt(0xFFFFFF));
+                            newProfile.setColor(0, Main.random.nextInt(0xFFFFFF));
+                            newProfile.setColor(1, Main.random.nextInt(0xFFFFFF));
                             newProfile.setColor(2, newProfile.getColor(0));
                             profiles.add(newProfile);
                             activeProfile.setActive(false);

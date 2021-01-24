@@ -1,5 +1,6 @@
 package gp.ai;
 
+import gp.Main;
 import gp.model.*;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -12,7 +13,6 @@ public class AmateurAI extends BaseAI {
     private Node location;
     private PlayerState player;
     private int stopsNeeded;
-    private Random random = new Random();
     public boolean debug = true;
 
     public AmateurAI(TrackData data) {
@@ -176,8 +176,6 @@ public class AmateurAI extends BaseAI {
         return new gp.model.Gear().gear(gear).tires(tires);
     }
 
-    private Random r = new Random();
-
     private Map<Integer, List<Integer>> gearMaskToScores = new HashMap<>();
     private Map<Integer, Integer> gearMaskToMaxScore = new HashMap<>();
     private Map<Integer, Integer> gearMaskToMinScore = new HashMap<>();
@@ -249,7 +247,7 @@ public class AmateurAI extends BaseAI {
                 garageMax = -1;
             }
             final int maxGear = Math.min(inPits ? 4 : 6, gear + 1);
-            if (lapsToGo > 0 && minDistanceToPits < movePermit && minDistanceToPits < Gear.getMin(maxGear) && hitpoints < r.nextInt(maxHitpoints) && minGear <= 4) {
+            if (lapsToGo > 0 && minDistanceToPits < movePermit && minDistanceToPits < Gear.getMin(maxGear) && hitpoints < Main.random.nextInt(maxHitpoints) && minGear <= 4) {
                 System.out.println("Decided to pit");
                 this.maxGear = 4;
                 searchDepth = 1;
@@ -316,7 +314,7 @@ public class AmateurAI extends BaseAI {
                         if (stopsToDo > 0 && !enteredNextCurve && movePermit < Gear.getMin(i)) break;
                     }
                     final int[] distribution = Gear.getDistribution(i);
-                    final int roll = distribution[r.nextInt(distribution.length)];
+                    final int roll = distribution[Main.random.nextInt(distribution.length)];
                     final GearEvaluator next = new GearEvaluator(this, i, roll, inPits);
                     next.randomWalk();
                     canBreak = true;
@@ -619,7 +617,7 @@ public class AmateurAI extends BaseAI {
             debug("No candidiates left, using default move");
             return new SelectedIndex().index(0);
         }
-        return new SelectedIndex().index(bestIndices.get(random.nextInt(bestIndices.size())));
+        return new SelectedIndex().index(bestIndices.get(Main.random.nextInt(bestIndices.size())));
     }
 
     public static Map<Node, Integer> getNodeDistances(Node startNode, int maxDistance) {
