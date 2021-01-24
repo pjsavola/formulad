@@ -338,7 +338,7 @@ public class ProAI extends BaseAI {
             final int finalGear = gear;
             final int[] distribution = Gear.getDistribution(gear);
             for (int roll : distribution) {
-                final Map<Node, DamageAndPath> res = NodeUtil.findTargetNodes(location, gear, roll, player.getHitpoints(), player.getStops(), player.getLapsToGo(), blockedNodes);
+                final Map<Node, DamageAndPath> res = NodeUtil.findTargetNodes(location, gear, roll, player.getHitpoints(), player.getStops(), player.getLapsToGo(), blockedNodes, player.getLapsToGo() == totalLaps);
                 final Set<Node> slideNodes = new HashSet<>();
                 if (weather == Weather.RAIN) {
                     final Iterator<Map.Entry<Node, DamageAndPath>> it = res.entrySet().iterator();
@@ -355,7 +355,7 @@ public class ProAI extends BaseAI {
                         .map(e -> evaluate(e.getKey(), e.getValue().getDamage() * overshootMultiplier, finalGear))
                         .mapToInt(Integer::intValue).max().orElse(Scores.MIN);
                 if (tires != null && tires.canUse(weather)) {
-                    final Map<Node, DamageAndPath> resOpt = NodeUtil.findTargetNodes(location, gear, roll + 1, player.getHitpoints(), player.getStops(), player.getLapsToGo(), blockedNodes);
+                    final Map<Node, DamageAndPath> resOpt = NodeUtil.findTargetNodes(location, gear, roll + 1, player.getHitpoints(), player.getStops(), player.getLapsToGo(), blockedNodes, player.getLapsToGo() == totalLaps);
                     final int optMaxScore = resOpt.entrySet().stream()
                             .filter(e -> e.getValue().getDamage() * overshootMultiplier < player.getHitpoints())
                             .map(e -> evaluate(e.getKey(), e.getValue().getDamage() * overshootMultiplier, finalGear))
@@ -366,7 +366,7 @@ public class ProAI extends BaseAI {
                 }
                 if (!slideNodes.isEmpty()) {
                     final int slide = tires != null && tires.getType() == Tires.Type.WET ? 1 : 3;
-                    final Map<Node, DamageAndPath> targets = NodeUtil.findTargetNodes(location, gear, roll + slide, player.getHitpoints(), player.getStops(), player.getLapsToGo(), blockedNodes);
+                    final Map<Node, DamageAndPath> targets = NodeUtil.findTargetNodes(location, gear, roll + slide, player.getHitpoints(), player.getStops(), player.getLapsToGo(), blockedNodes, player.getLapsToGo() == totalLaps);
                     final int slideScore = targets.entrySet().stream()
                             .filter(e -> e.getValue().getPath().stream().anyMatch(slideNodes::contains))
                             .filter(e -> e.getValue().getDamage() * overshootMultiplier < player.getHitpoints())

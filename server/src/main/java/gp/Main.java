@@ -68,6 +68,7 @@ public class Main extends Game implements Runnable {
     static PreviousSettings settings = new PreviousSettings();
     public static final int minGridSize = 6;
     public static final Random random = new Random();
+    private final int totalLaps;
 
     static {
         try {
@@ -110,6 +111,7 @@ public class Main extends Game implements Runnable {
         if (weatherForecast != null) notifyAll(new WeatherNotification(weatherForecast));
         notifyAll(new FinalStandings(stats, resultStorage != null));
         current = waitingPlayers.remove(0);
+        totalLaps = params.laps;
     }
 
     private void createGrid(Params params, List<PlayerSlot> slots, JFrame frame) {
@@ -238,7 +240,7 @@ public class Main extends Game implements Runnable {
             }
             roll = current.roll(rng);
             repaint();
-            final Moves allMoves = current.findAllTargets(roll, data.getTrackId(), players, getWeather());
+            final Moves allMoves = current.findAllTargets(roll, data.getTrackId(), players, getWeather(), totalLaps);
             if (current.getLeeway() <= 0) {
                 log.info("Player " + current.getNameAndId() + " used his timeout leeway and was dropped from the game");
                 current.stop();

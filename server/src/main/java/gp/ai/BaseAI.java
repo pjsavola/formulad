@@ -17,6 +17,7 @@ public abstract class BaseAI implements AI {
     Tires tires;
     List<Weather> weatherForecast;
     int weatherIndex;
+    int totalLaps;
 
     BaseAI(TrackData data) {
         this.data = data;
@@ -41,6 +42,7 @@ public abstract class BaseAI implements AI {
                 playerId = createdPlayer.getPlayerId();
             }
             maxHitpoints = createdPlayer.getHitpoints();
+            totalLaps = createdPlayer.getLapsRemaining();
         } else if (notification instanceof WeatherNotification) {
             weatherForecast = ((WeatherNotification) notification).getWeatherForecast();
         } else if (notification instanceof Standings) {

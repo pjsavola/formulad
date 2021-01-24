@@ -266,7 +266,7 @@ public final class LocalPlayer extends Player {
         }
     }
 
-    Moves findAllTargets(int roll, String gameId, List<LocalPlayer> players, Weather weather) {
+    Moves findAllTargets(int roll, String gameId, List<LocalPlayer> players, Weather weather, int totalLaps) {
         int braking = 0;
         final Set<Node> forbiddenNodes = players
             .stream()
@@ -277,7 +277,7 @@ public final class LocalPlayer extends Player {
         final int overshootMultiplier = tires == null ? 1 : tires.getOvershootDamage(weather);
         final List<ValidMove> validMoves = new ArrayList<>();
         if (tires != null && tires.canUse(weather) && !rain) {
-            final Map<Node, DamageAndPath> targets = findTargetNodes(roll + 1, forbiddenNodes);
+            final Map<Node, DamageAndPath> targets = findTargetNodes(roll + 1, forbiddenNodes, totalLaps);
             for (Map.Entry<Node, DamageAndPath> e : targets.entrySet()) {
                 final int damage = e.getValue().getDamage();
                 if (damage < hitpoints) {
@@ -292,7 +292,7 @@ public final class LocalPlayer extends Player {
         }
         final Set<Node> slideNodes = new HashSet<>();
         while (braking < hitpoints) {
-            final Map<Node, DamageAndPath> targets = findTargetNodes(roll - braking, forbiddenNodes);
+            final Map<Node, DamageAndPath> targets = findTargetNodes(roll - braking, forbiddenNodes, totalLaps);
             for (Map.Entry<Node, DamageAndPath> e : targets.entrySet()) {
                 if (rain && (e.getKey().isCurve() || e.getValue().getDamage() > 0)) {
                     slideNodes.add(e.getKey());
@@ -317,7 +317,7 @@ public final class LocalPlayer extends Player {
             final int slide = tires != null && tires.getType() == Tires.Type.WET ? 1 : 3;
             braking = 0;
             while (braking < hitpoints) {
-                final Map<Node, DamageAndPath> targets = findTargetNodes(roll + slide - braking, forbiddenNodes);
+                final Map<Node, DamageAndPath> targets = findTargetNodes(roll + slide - braking, forbiddenNodes, totalLaps);
                 for (Map.Entry<Node, DamageAndPath> e : targets.entrySet()) {
                     if (e.getValue().getPath().stream().noneMatch(slideNodes::contains)) {
                         continue;
@@ -341,8 +341,8 @@ public final class LocalPlayer extends Player {
         return new Moves().game(new GameId().gameId(gameId)).moves(validMoves);
     }
 
-    private Map<Node, DamageAndPath> findTargetNodes(int roll, Set<Node> forbiddenNodes) {
-        return NodeUtil.findTargetNodes(node, gear, roll, hitpoints, curveStops, lapsToGo, forbiddenNodes);
+    private Map<Node, DamageAndPath> findTargetNodes(int roll, Set<Node> forbiddenNodes, int totalLaps) {
+        return NodeUtil.findTargetNodes(node, gear, roll, hitpoints, curveStops, lapsToGo, forbiddenNodes, lapsToGo == totalLaps);
     }
 
     static void possiblyAddEngineDamage(List<LocalPlayer> players, Random rng) {
