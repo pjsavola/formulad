@@ -278,9 +278,11 @@ public abstract class Game extends JPanel implements PlayerRenderer {
         // Other thread may replace this.standings with a new object, but it's not mutated
         final List<Player> standings = this.standings;
         if (standings == null) return;
-        UIUtil.drawInfoBox(g2d, panelDim, standings.size(), infoBoxCorner, getInfoBoxWidth());
+        int rowCount = standings.size();
+        if (getWeather() != null) ++rowCount;
+        UIUtil.drawInfoBox(g2d, panelDim, rowCount, infoBoxCorner, getInfoBoxWidth());
         final int x = UIUtil.getX(infoBoxCorner, panelDim, getInfoBoxWidth());
-        final int y = UIUtil.getY(infoBoxCorner, panelDim, 5 + 15 * standings.size());
+        int y = UIUtil.getY(infoBoxCorner, panelDim, 5 + 15 * rowCount);
         int i = 0;
         Weather weather = getWeather();
         if (weather != null) {

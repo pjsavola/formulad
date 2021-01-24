@@ -13,7 +13,7 @@ public class AmateurAI extends BaseAI {
     private Node location;
     private PlayerState player;
     private int stopsNeeded;
-    public boolean debug = true;
+    public boolean debug = false;
 
     public AmateurAI(TrackData data) {
         super(data);
