@@ -1,11 +1,9 @@
 package gp.model;
 
 import gp.Main;
-import jdk.internal.org.objectweb.asm.commons.RemappingAnnotationAdapter;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 public enum Weather {
