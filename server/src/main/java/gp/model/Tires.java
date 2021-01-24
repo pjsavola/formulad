@@ -6,6 +6,11 @@ import java.io.Serializable;
 public class Tires implements Serializable {
     public enum Type { HARD, SOFT, WET }
 
+    private static final Color soft1 = new Color(0xCC0000);
+    private static final Color soft2 = new Color(0xFF0000);
+    private static final Color soft3 = new Color(0xFF7777);
+    private static final Color wet1 = new Color(0x5555FF);
+    private static final Color wet2 = new Color(0x9999FF);
     private final Type type;
     private int age;
 
@@ -49,9 +54,9 @@ public class Tires implements Serializable {
             case HARD:
                 return Color.BLACK;
             case WET:
-                return age < 3 ? Color.BLUE : Color.CYAN;
+                return age < 3 ? wet1 : wet2;
             case SOFT:
-                return age <= 1 ? Color.RED : (age < 3 ? Color.PINK : Color.WHITE);
+                return age <= 1 ? soft1 : (age < 3 ? soft2 : soft3);
         }
         throw new RuntimeException("Invalid tire type");
     }

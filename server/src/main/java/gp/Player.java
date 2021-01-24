@@ -228,6 +228,20 @@ public class Player {
         g.fillRect(5, 3, 1, 2);
         g.fillRect(-4, -4, 1, 2);
         g.fillRect(-4, 3, 1, 2);
+        if (tires != null && tires.getColor() != Color.BLACK) {
+            g.setColor(Color.BLACK);
+            g.fillRect(3, -3, 2, 1);
+            g.fillRect(3, 3, 2, 1);
+            g.fillRect(-6, -3, 2, 1);
+            g.fillRect(-6, 3, 2, 1);
+        }
+        if (tires != null && tires.getColor() != Color.DARK_GRAY) {
+            g.setColor(Color.DARK_GRAY);
+            g.fillRect(5, -3, 1, 1);
+            g.fillRect(5, 3, 1, 1);
+            g.fillRect(-4, -3, 1, 1);
+            g.fillRect(-4, 3, 1, 1);
+        }
     }
 
     static void draw(Graphics2D g, int x, int y, double angle, int[] colorCodes, double scale) {
@@ -263,6 +277,12 @@ public class Player {
             g.setColor(Color.BLACK);
             g.drawString("S: " + Integer.toString(curveStops), x + infoBoxWidth - 90, y);
             g.drawString("L: " + Integer.toString(lapsToGo + 1), x + infoBoxWidth - 60, y);
+        }
+        if (tires != null) {
+            MapEditor.drawOval(g, x + infoBoxWidth - 190, y - 5, 13, 13, true, Color.BLACK, 1);
+            MapEditor.drawOval(g, x + infoBoxWidth - 190, y - 5, 7, 7, true, Color.DARK_GRAY, 1);
+            MapEditor.drawOval(g, x + infoBoxWidth - 190, y - 5, 9, 9, false, tires.getColor(), 1);
+
         }
     }
 

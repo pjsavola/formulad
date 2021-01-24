@@ -470,7 +470,6 @@ public class MapEditor extends JPanel {
             final Point p = neighbor.getLocation();
             drawOval(g2d, p.x, p.y, DIAMETER, DIAMETER, true, Color.BLUE, 1);
         }
-
     }
 
     boolean open() {
