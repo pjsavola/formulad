@@ -445,7 +445,7 @@ public class MapEditor extends JPanel {
         for (Node node : nodes) {
             drawNode(g2d, node);
         }
-        UIUtil.drawInfoBox(g2d, panelDim, 10, infoBoxCorner);
+        UIUtil.drawInfoBox(g2d, panelDim, 10, infoBoxCorner, UIUtil.infoBoxWidth);
         final int x = UIUtil.getX(infoBoxCorner, panelDim, UIUtil.infoBoxWidth);
         final int y = UIUtil.getY(infoBoxCorner, panelDim, 5 + 15 * 10);
         if (selectedNode != null) {

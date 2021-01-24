@@ -288,16 +288,16 @@ public abstract class Game extends JPanel implements PlayerRenderer {
         // Other thread may replace this.standings with a new object, but it's not mutated
         final List<Player> standings = this.standings;
         if (standings == null) return;
-        UIUtil.drawInfoBox(g2d, panelDim, standings.size(), infoBoxCorner);
+        UIUtil.drawInfoBox(g2d, panelDim, standings.size(), infoBoxCorner, getInfoBoxWidth());
         int i = 0;
         for (Player player : standings) {
             if (player == getCurrent()) {
-                UIUtil.drawTurnMarker(g2d, panelDim, standings.size(), infoBoxCorner, i);
+                UIUtil.drawTurnMarker(g2d, panelDim, standings.size(), infoBoxCorner, i, getInfoBoxWidth());
             }
-            final int x = UIUtil.getX(infoBoxCorner, panelDim, UIUtil.infoBoxWidth);
+            final int x = UIUtil.getX(infoBoxCorner, panelDim, getInfoBoxWidth());
             final int y = UIUtil.getY(infoBoxCorner, panelDim, 5 + 15 * standings.size());
             player.draw(g2d, x + 15, y + i * 15 + 10, 0);
-            player.drawStats(g2d, x + 30, y + i * 15 + 15, hitpointMap);
+            player.drawStats(g2d, x + 30, y + i * 15 + 15, hitpointMap, getInfoBoxWidth());
             ++i;
         }
     }
@@ -463,5 +463,9 @@ public abstract class Game extends JPanel implements PlayerRenderer {
 
     Weather getWeather(int offset) {
         return weatherForecast == null ? null : weatherForecast.get(Math.min(weatherForecast.size() - 1, weatherIndex + offset));
+    }
+
+    int getInfoBoxWidth() {
+        return weatherForecast == null ? UIUtil.infoBoxWidth : UIUtil.infoBoxWidth + 20;
     }
 }

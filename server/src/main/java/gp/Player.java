@@ -245,24 +245,24 @@ public class Player {
         g.translate(-x, -y);
     }
 
-    void drawStats(Graphics2D g, int x, int y, Map<String, Integer> hitpointMap) {
+    void drawStats(Graphics2D g, int x, int y, Map<String, Integer> hitpointMap, int infoBoxWidth) {
         g.setColor(Color.BLACK);
         g.setFont(statsFont);
         g.drawString(name, x, y);
         if (stopped) {
-            g.drawString(hitpoints > 0 ? "Finished" : "DNF", x + UIUtil.infoBoxWidth - 170, y);
+            g.drawString(hitpoints > 0 ? "Finished" : "DNF", x + infoBoxWidth - 170, y);
         } else {
             final Integer savedHitpooints = hitpointMap.get(playerId);
             if (savedHitpooints != null && savedHitpooints != hitpoints) {
                 g.setColor(savedHitpooints > hitpoints ? Color.RED : Color.GREEN);
             }
-            g.drawString("HP: " + Integer.toString(hitpoints), x + UIUtil.infoBoxWidth - 170, y);
+            g.drawString("HP: " + Integer.toString(hitpoints), x + infoBoxWidth - 170, y);
             g.setColor(Color.BLACK);
             g.setColor(getGearColor(gear));
-            g.drawString("G: " + Integer.toString(gear), x + UIUtil.infoBoxWidth - 120, y);
+            g.drawString("G: " + Integer.toString(gear), x + infoBoxWidth - 120, y);
             g.setColor(Color.BLACK);
-            g.drawString("S: " + Integer.toString(curveStops), x + UIUtil.infoBoxWidth - 90, y);
-            g.drawString("L: " + Integer.toString(lapsToGo + 1), x + UIUtil.infoBoxWidth - 60, y);
+            g.drawString("S: " + Integer.toString(curveStops), x + infoBoxWidth - 90, y);
+            g.drawString("L: " + Integer.toString(lapsToGo + 1), x + infoBoxWidth - 60, y);
         }
     }
 

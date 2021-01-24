@@ -28,8 +28,7 @@ class UIUtil {
         return 0;
     }
 
-    static void drawInfoBox(Graphics2D g2d, Dimension dim, int playerCount, MapEditor.Corner corner) {
-        final int w = infoBoxWidth;
+    static void drawInfoBox(Graphics2D g2d, Dimension dim, int playerCount, MapEditor.Corner corner, int w) {
         final int h = 5 + 15 * playerCount;
         final int x = getX(corner, dim, w);
         final int y = getY(corner, dim, h);
@@ -39,8 +38,7 @@ class UIUtil {
         g2d.drawRect(x, y, w, h);
     }
 
-    static void drawTurnMarker(Graphics2D g2d, Dimension dim, int playerCount, MapEditor.Corner corner, int i) {
-        final int w = infoBoxWidth;
+    static void drawTurnMarker(Graphics2D g2d, Dimension dim, int playerCount, MapEditor.Corner corner, int i, int w) {
         final int h = 5 + 15 * playerCount;
         final int x = getX(corner, dim, w);
         final int y = getY(corner, dim, h);
