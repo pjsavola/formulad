@@ -231,16 +231,6 @@ public abstract class Game extends JPanel implements PlayerRenderer {
             final Point point = getPoint(gearCorner);
             if (point != null) {
                 MapEditor.drawOval(g2d, point.x, point.y, 50, 50, true, Color.BLACK, 1);
-                Weather weather = getWeather();
-                if (weather != null) {
-                    g.setColor(weather == Weather.DRY ? Color.WHITE : Color.BLUE);
-                    g.fillRect(point.x - 39, point.y - 39, 10, 10);
-                    for (int i = 1; i < 300; ++i) {
-                        weather = getWeather(i);
-                        g.setColor(weather == Weather.DRY ? Color.WHITE : Color.BLUE);
-                        g.fillRect(point.x - 25 + 3 * i, point.y - 39, 3, 10);
-                    }
-                }
             }
         }
         drawTargets(g2d);
@@ -289,13 +279,34 @@ public abstract class Game extends JPanel implements PlayerRenderer {
         final List<Player> standings = this.standings;
         if (standings == null) return;
         UIUtil.drawInfoBox(g2d, panelDim, standings.size(), infoBoxCorner, getInfoBoxWidth());
+        final int x = UIUtil.getX(infoBoxCorner, panelDim, getInfoBoxWidth());
+        final int y = UIUtil.getY(infoBoxCorner, panelDim, 5 + 15 * standings.size());
         int i = 0;
+        Weather weather = getWeather();
+        if (weather != null) {
+            g2d.setColor(weather == Weather.DRY ? Color.WHITE : Color.BLUE);
+            g2d.fillRect(x + 3, y + 2, 18, 14);
+            boolean text = false;
+            for (int round = 1; round < 24; ++round) {
+                final Weather nextWeather = getWeather(round);
+                if (nextWeather != weather && !text) {
+                    g2d.setColor(Color.BLACK);
+                    g2d.setFont(statsFont);
+                    final String str = Integer.toString(round);
+                    final int width = g2d.getFontMetrics().stringWidth(str);
+                    g2d.drawString(str, x + 7 + width / 2, y + 13);
+                    text = true;
+                }
+                weather = getWeather(round);
+                g2d.setColor(weather == Weather.DRY ? Color.WHITE : Color.BLUE);
+                g2d.fillRect(x + 11 + round * 12, y + 2, 10, 14);
+            }
+            ++i;
+        }
         for (Player player : standings) {
             if (player == getCurrent()) {
                 UIUtil.drawTurnMarker(g2d, panelDim, standings.size(), infoBoxCorner, i, getInfoBoxWidth());
             }
-            final int x = UIUtil.getX(infoBoxCorner, panelDim, getInfoBoxWidth());
-            final int y = UIUtil.getY(infoBoxCorner, panelDim, 5 + 15 * standings.size());
             player.draw(g2d, x + 15, y + i * 15 + 10, 0);
             player.drawStats(g2d, x + 30, y + i * 15 + 15, hitpointMap, getInfoBoxWidth());
             ++i;
