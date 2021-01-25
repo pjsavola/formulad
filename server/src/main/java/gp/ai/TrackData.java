@@ -300,7 +300,7 @@ public class TrackData implements Serializable {
         ++areaIndex;
         final Node pitEntry = pit.getValue();
         if (pitEntry != null) {
-            prevNodeMap.get(pitEntry).stream().map(Node::getDistance).min(Double::compareTo).ifPresent(min -> pitEntry.setDistance(min - 0.4));
+            prevNodeMap.get(pitEntry).stream().map(Node::getDistance).max(Double::compareTo).ifPresent(max -> pitEntry.setDistance(max + 0.1));
         }
         while (pit.getValue() != null) {
             final Node node = pit.getValue();
