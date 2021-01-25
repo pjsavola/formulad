@@ -279,7 +279,7 @@ public final class LocalPlayer extends Player {
         if (tires != null && tires.canUse(weather) && !rain) {
             final Map<Node, DamageAndPath> targets = findTargetNodes(roll + 1, forbiddenNodes, totalLaps);
             for (Map.Entry<Node, DamageAndPath> e : targets.entrySet()) {
-                final int damage = e.getValue().getDamage();
+                final int damage = e.getValue().getDamage() * overshootMultiplier;
                 if (damage < hitpoints) {
                     validMoves.add(new ValidMove()
                             .nodeId(e.getKey().getId())
@@ -298,7 +298,7 @@ public final class LocalPlayer extends Player {
                     slideNodes.add(e.getKey());
                     continue;
                 }
-                final int damage = e.getValue().getDamage() + braking;
+                final int damage = e.getValue().getDamage() * overshootMultiplier + braking;
                 if (damage < hitpoints) {
                     validMoves.add(new ValidMove()
                         .nodeId(e.getKey().getId())
@@ -322,7 +322,7 @@ public final class LocalPlayer extends Player {
                     if (e.getValue().getPath().stream().noneMatch(slideNodes::contains)) {
                         continue;
                     }
-                    final int damage = e.getValue().getDamage() + braking;
+                    final int damage = e.getValue().getDamage() * overshootMultiplier + braking;
                     if (damage < hitpoints) {
                         validMoves.add(new ValidMove()
                                 .nodeId(e.getKey().getId())
