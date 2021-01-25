@@ -292,11 +292,11 @@ public abstract class Game extends JPanel implements PlayerRenderer {
             for (int round = 1; round < 24; ++round) {
                 final Weather nextWeather = getWeather(round);
                 if (nextWeather != weather && !text) {
-                    g2d.setColor(Color.BLACK);
+                    g2d.setColor(weather == Weather.DRY ? Color.BLACK : Color.WHITE);
                     g2d.setFont(statsFont);
                     final String str = Integer.toString(round);
                     final int width = g2d.getFontMetrics().stringWidth(str);
-                    g2d.drawString(str, x + 7 + width / 2, y + 13);
+                    g2d.drawString(str, x + 12 - width / 2, y + 13);
                     text = true;
                 }
                 weather = getWeather(round);
