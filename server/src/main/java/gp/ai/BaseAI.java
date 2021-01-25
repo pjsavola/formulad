@@ -58,7 +58,7 @@ public abstract class BaseAI implements AI {
     Tires getBestTires(Tires current, int lapsToGo, boolean free) {
         if (current == null) return null;
         int rainCount = 0;
-        for (int i = 1; i < 20; ++i) {
+        for (int i = 5; i < 24; ++i) {
             Weather w = getWeather(i);
             if (w == Weather.RAIN) ++rainCount;
         }
