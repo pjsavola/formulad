@@ -307,7 +307,7 @@ public abstract class Game extends JPanel implements PlayerRenderer {
         }
         for (Player player : standings) {
             if (player == getCurrent()) {
-                UIUtil.drawTurnMarker(g2d, panelDim, standings.size(), infoBoxCorner, i, getInfoBoxWidth());
+                UIUtil.drawTurnMarker(g2d, panelDim, rowCount, infoBoxCorner, i, getInfoBoxWidth());
             }
             player.draw(g2d, x + 15, y + i * 15 + 10, 0);
             player.drawStats(g2d, x + 30, y + i * 15 + 15, hitpointMap, getInfoBoxWidth());
