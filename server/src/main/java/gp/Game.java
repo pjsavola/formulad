@@ -108,7 +108,6 @@ public abstract class Game extends JPanel implements PlayerRenderer {
             final double oldScale = scale;
             scale = Math.min(4.0, scale * 1.1);
             if (scale != oldScale) {
-                setPreferredSize(new Dimension((int) (backgroundImage.getWidth() * scale), (int) (backgroundImage.getHeight() * scale)));
                 frame.pack();
                 frame.setSize(Math.min(screenSize.width, frame.getWidth()), Math.min(screenSize.height - 100, frame.getHeight()));
             }
@@ -118,7 +117,6 @@ public abstract class Game extends JPanel implements PlayerRenderer {
             final double oldScale = scale;
             scale = Math.max(1.0, scale / 1.1);
             if (scale != oldScale) {
-                setPreferredSize(new Dimension((int) (backgroundImage.getWidth() * scale), (int) (backgroundImage.getHeight() * scale)));
                 frame.pack();
                 frame.setSize(Math.min(screenSize.width, frame.getWidth()), Math.min(screenSize.height - 100, frame.getHeight()));
             }
@@ -150,6 +148,11 @@ public abstract class Game extends JPanel implements PlayerRenderer {
         }).start();
     }
 
+    @Override
+    public Dimension getPreferredSize() {
+        return new Dimension((int) (backgroundImage.getWidth() * scale), (int) (backgroundImage.getHeight() * scale));
+    }
+
     void initTrack(TrackData data) {
         this.data = data;
         infoBoxCorner = data.getInfoBoxCorner();
@@ -157,7 +160,6 @@ public abstract class Game extends JPanel implements PlayerRenderer {
         nodes.addAll(data.getNodes());
         backgroundImage = data.getBackgroundImage();
         panelDim = new Dimension(backgroundImage.getWidth(), backgroundImage.getHeight());
-        setPreferredSize(panelDim);
         frame.pack();
         // Figure out best corner for gear rolls
         final List<MapEditor.Corner> possibleCorners = new ArrayList<>();
