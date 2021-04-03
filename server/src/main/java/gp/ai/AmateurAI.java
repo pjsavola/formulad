@@ -308,7 +308,10 @@ public class AmateurAI extends BaseAI {
                 }
                 boolean canBreak = false;
                 while (i <= maxGear) {
-                    if (!AIUtil.validateGear(hitpoints, gear, i, inPits)) continue;
+                    if (!AIUtil.validateGear(hitpoints, gear, i, inPits)) {
+                        ++i;
+                        continue;
+                    }
                     if (canBreak) {
                         if (movePermitToNextCornerWithoutOthers < Gear.getMin(i)) break; // maybe something else in final corner(s)?
                         if (stopsToDo > 0 && !enteredNextCurve && movePermit < Gear.getMin(i)) break;
