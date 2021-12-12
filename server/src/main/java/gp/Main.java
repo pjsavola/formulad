@@ -693,7 +693,7 @@ public class Main extends Game implements Runnable {
                     return;
                 }
                 final String selectedSeason = model.getElementAt(index);
-                final Season season = existingSeasons.get(selectedSeason);
+                final Season season = existingSeasons.get(selectedSeason.toLowerCase());
                 if (season != null) {
                     season.updateProfileInfo(profiles);
                     dialog.setVisible(false);
