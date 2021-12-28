@@ -150,6 +150,9 @@ public abstract class Game extends JPanel implements PlayerRenderer {
 
     @Override
     public Dimension getPreferredSize() {
+        if (backgroundImage == null) {
+            return super.getPreferredSize();
+        }
         return new Dimension((int) (backgroundImage.getWidth() * scale), (int) (backgroundImage.getHeight() * scale));
     }
 
