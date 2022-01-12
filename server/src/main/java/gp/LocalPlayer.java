@@ -444,8 +444,12 @@ public final class LocalPlayer extends Player {
     }
 
     void changeTires(Tires tires) {
-        if (tires != null && tires != this.tires) {
-            if (gear == 0 || node.hasGarage()) {
+        if (tires != null && (gear == 0 || node.hasGarage())) {
+            if (tires == this.tires && tires.getAge() > 0) {
+                // Automatically change too old tires
+                tires = new Tires(tires.getType());
+            }
+            if (tires != this.tires) {
                 setTires(tires);
                 ((Main) panel).notifyAll(new TireChangeNotification(playerId, tires));
             }

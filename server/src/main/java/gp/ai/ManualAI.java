@@ -18,6 +18,7 @@ import java.util.Set;
 public class ManualAI extends BaseAI {
 
     private int hitpoints;
+    private int lapsToGo;
     private Node location;
     private final AI ai;
     private final JFrame frame;
@@ -48,6 +49,7 @@ public class ManualAI extends BaseAI {
         for (PlayerState playerState : gameState.getPlayers()) {
             if (playerId.equals(playerState.getPlayerId())) {
                 hitpoints = playerState.getHitpoints();
+                lapsToGo = playerState.getLapsToGo();
                 gear = playerState.getGear();
                 location = data.getNodes().get(playerState.getNodeId());
                 stopCount = playerState.getStops();
@@ -77,7 +79,11 @@ public class ManualAI extends BaseAI {
                 final MenuItem item = new MenuItem(label);
                 item.setShortcut(new MenuShortcut(KeyEvent.VK_0 + newGear));
                 final int finalNewGear = newGear;
-                item.addActionListener(e -> selectedGear.setValue(finalNewGear));
+                item.addActionListener(e -> {
+                    if (confirmSuspiciousTireChoice()) {
+                        selectedGear.setValue(finalNewGear);
+                    }
+                });
                 game.actionMenu.add(item);
             }
         }
@@ -120,7 +126,9 @@ public class ManualAI extends BaseAI {
                     }
                 } else if (c >= '1' && c <= '6') {
                     if (AIUtil.validateGear(hitpoints, gear, c - '0', inPits)) {
-                        selectedGear.setValue(c - '0');
+                        if (confirmSuspiciousTireChoice()) {
+                            selectedGear.setValue(c - '0');
+                        }
                     }
                 } else if (c == 'd') {
                     game.debug = !game.debug;
@@ -308,5 +316,37 @@ public class ManualAI extends BaseAI {
             }
         }
         ai.notify(notification);
+    }
+
+    private boolean confirmSuspiciousTireChoice() {
+        if (tires != null && (gear == 0 || location.hasGarage())) {
+            if (weatherForecast != null) {
+                int rainyTurns = 0;
+                for (int i = 5; i < 24; ++i) {
+                    if (getWeather(i) == Weather.RAIN) {
+                        ++rainyTurns;
+                    }
+                }
+                if (rainyTurns > 10 && tires.getType() != Tires.Type.WET) {
+                    final int confirmed = JOptionPane.showConfirmDialog(game,
+                            "It seems rainy and you haven't selected wet tires. Are you sure?", "Confirm",
+                            JOptionPane.YES_NO_OPTION);
+                    return confirmed == JOptionPane.YES_OPTION;
+                }
+                if (rainyTurns < 5 && tires.getType() == Tires.Type.WET) {
+                    final int confirmed = JOptionPane.showConfirmDialog(game,
+                            "It seems dry and you have selected wet tires. Are you sure?", "Confirm",
+                            JOptionPane.YES_NO_OPTION);
+                    return confirmed == JOptionPane.YES_OPTION;
+                }
+            }
+            if (tires.getType() == Tires.Type.HARD && lapsToGo <= 1) {
+                final int confirmed = JOptionPane.showConfirmDialog(game,
+                        "There is only one lap remaining and you haven't selected soft tires. Are you sure?", "Confirm",
+                        JOptionPane.YES_NO_OPTION);
+                return confirmed == JOptionPane.YES_OPTION;
+            }
+        }
+        return true;
     }
 }
