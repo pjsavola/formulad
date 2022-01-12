@@ -15,6 +15,7 @@ public class ProfileMessage implements Serializable {
     private boolean local;
     private boolean ai;
     private transient AI.Type aiType;
+    private transient int hpMultiplier = 100;
     transient Profile originalProfile;
 
     static ProfileMessage pending = new ProfileMessage("...", false);
@@ -54,11 +55,33 @@ public class ProfileMessage implements Serializable {
             colors[1] = Integer.parseInt(line[3]);
             colors[2] = colors[0];
             colors[3] = 0x000000;
-            return new ProfileMessage(UUID.fromString(line[0]), line[1], colors, Boolean.parseBoolean(line[4]), AI.Type.valueOf(line[5]));
+            String ai = line[5];
+            final AI.Type type;
+            final int hpMultiplier;
+            if (ai.contains("-")) {
+                String[] aiParams = ai.split("-");
+                type = AI.Type.valueOf(aiParams[0]);
+                hpMultiplier = Integer.parseInt(aiParams[1]);
+            } else {
+                type = AI.Type.valueOf(ai);
+                hpMultiplier = 100;
+            }
+            return new ProfileMessage(UUID.fromString(line[0]), line[1], colors, Boolean.parseBoolean(line[4]), type, hpMultiplier);
         } else if (line.length == 5) {
             // New format
             final int[] colors = Arrays.stream(line[2].split(";")).mapToInt(Integer::parseInt).toArray();
-            return new ProfileMessage(UUID.fromString(line[0]), line[1], colors, Boolean.parseBoolean(line[3]), AI.Type.valueOf(line[4]));
+            String ai = line[4];
+            final AI.Type type;
+            final int hpMultiplier;
+            if (ai.contains("-")) {
+                String[] aiParams = ai.split("-");
+                type = AI.Type.valueOf(aiParams[0]);
+                hpMultiplier = Integer.parseInt(aiParams[1]);
+            } else {
+                type = AI.Type.valueOf(ai);
+                hpMultiplier = 100;
+            }
+            return new ProfileMessage(UUID.fromString(line[0]), line[1], colors, Boolean.parseBoolean(line[3]), type, hpMultiplier);
         } else {
             return null;
         }
@@ -66,16 +89,18 @@ public class ProfileMessage implements Serializable {
 
     String toLine() {
         final String colorString = Arrays.stream(colors).mapToObj(Integer::toString).collect(Collectors.joining(";"));
-        return id + "," + name + "," + colorString + "," + ai + "," + aiType;
+        final String aiString = hpMultiplier != 0 && hpMultiplier != 100 ? (aiType + "-" + hpMultiplier) : aiType.toString();
+        return id + "," + name + "," + colorString + "," + ai + "," + aiString;
     }
 
-    private ProfileMessage(UUID id, String name, int[] colors, boolean ai, AI.Type aiType) {
+    private ProfileMessage(UUID id, String name, int[] colors, boolean ai, AI.Type aiType, int hpMultiplier) {
         this.id = id;
         this.name = name;
         this.colors = colors;
         local = true;
         this.ai = ai;
         this.aiType = aiType;
+        this.hpMultiplier = hpMultiplier;
     }
 
     private ProfileMessage(String name, boolean ai) {
@@ -132,12 +157,17 @@ public class ProfileMessage implements Serializable {
         aiType = type;
     }
 
+    void setHpMultiplier(int multiplier) {
+        hpMultiplier = multiplier;
+    }
+
     AI createAI(TrackData data) {
+        final int multiplier = hpMultiplier == 0 ? 100 : hpMultiplier;
         if (aiType == null) return null;
         switch (aiType) {
-            case BEGINNER: return new BeginnerAI(data);
-            case AMATEUR: return new AmateurAI(data);
-            case PRO: return new ProAI(data);
+            case BEGINNER: return new BeginnerAI(data) { @Override public int getHitpointsMultiplier() { return multiplier; }};
+            case AMATEUR: return new AmateurAI(data) { @Override public int getHitpointsMultiplier() { return multiplier; }};
+            case PRO: return new ProAI(data) { @Override public int getHitpointsMultiplier() { return multiplier; }};
         }
         return null;
     }

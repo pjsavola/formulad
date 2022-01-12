@@ -29,5 +29,7 @@ public interface AI {
      */
     SelectedIndex selectMove(Moves moves);
 
+    default int getHitpointsMultiplier() { return 100; }
+
     void notify(Object notification);
 }

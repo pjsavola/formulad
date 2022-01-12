@@ -9,6 +9,8 @@ public class SettingsField extends JPanel {
     private final JTextField lapsField;
     private final int min;
     private final int max;
+    public static final int maxHP = 30;
+    public static final int minHP = 1;
 
     SettingsField(JPanel parent, String name, String initialValue, int minValue, int maxValue) {
         super(new FlowLayout(FlowLayout.LEFT));

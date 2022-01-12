@@ -13,6 +13,7 @@ import java.util.Set;
 
 public class PlayerSlot extends JButton {
     private static AI.Type selectedType;
+    private static int selectedHpMultiplier = 100;
     private class CarIcon implements Icon {
         @Override
         public void paintIcon(Component c, Graphics g, int x, int y) {
@@ -56,16 +57,29 @@ public class PlayerSlot extends JButton {
         addActionListener(e -> {
             if (profile == null) {
                 profile = ProfileMessage.pending;
+
+                final JPanel buttonPane = new JPanel();
+                buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.Y_AXIS));
+                final SettingsField multiplier = new SettingsField(buttonPane, "HP %", Integer.toString(selectedHpMultiplier), 10, 200);
+
                 final JDialog dialog = new JDialog(frame);
                 final JButton addAiButton = new JButton("Add AI");
                 final JRadioButton difficultyButton1 = new JRadioButton("Beginner");
                 final JRadioButton difficultyButton2 = new JRadioButton("Amateur");
                 final JRadioButton difficultyButton3 = new JRadioButton("Pro");
                 addAiButton.addActionListener(e13 -> {
+                    int hpMultiplier = 100;
+                    try {
+                        hpMultiplier = multiplier.getValue();
+                    } catch (NumberFormatException ex) {
+                        return;
+                    }
                     final ProfileMessage aiProfile = ProfileMessage.createRandomAIProfile(getUsedAINames(slots));
                     final AI.Type type = difficultyButton1.isSelected() ? AI.Type.BEGINNER : (difficultyButton2.isSelected() ? AI.Type.AMATEUR : AI.Type.PRO);
                     selectedType = type;
+                    selectedHpMultiplier = hpMultiplier;
                     aiProfile.setAIType(type);
+                    aiProfile.setHpMultiplier(hpMultiplier);
                     setProfile(aiProfile);
                     dialog.setVisible(false);
                     dialog.dispose();
@@ -90,6 +104,16 @@ public class PlayerSlot extends JButton {
                 final JList<String> list = new JList<>(model);
                 final JButton selectButton = new JButton("Select");
                 selectButton.addActionListener(e12 -> {
+                    int hpMultiplier = 100;
+                    try {
+                        hpMultiplier = multiplier.getValue();
+                    } catch (NumberFormatException ex) {
+                        return;
+                    }
+                    if (lobby != null && hpMultiplier != 100) {
+                        JOptionPane.showConfirmDialog(buttonPane, "HP % should always be 100 for human players in multiplayer games", "Error", JOptionPane.DEFAULT_OPTION);
+                        return;
+                    }
                     final int index = list.getSelectedIndex();
                     if (index == -1) {
                         return;
@@ -97,7 +121,9 @@ public class PlayerSlot extends JButton {
                     final ProfileMessage selectedProfile = localProfiles.remove(index);
                     final AI.Type type = difficultyButton1.isSelected() ? AI.Type.BEGINNER : (difficultyButton2.isSelected() ? AI.Type.AMATEUR : AI.Type.PRO);
                     selectedType = type;
+                    selectedHpMultiplier = hpMultiplier;
                     selectedProfile.setAIType(type);
+                    selectedProfile.setHpMultiplier(hpMultiplier);
                     selectedProfile.setLocal();
                     setProfile(selectedProfile);
                     dialog.setVisible(false);
@@ -119,13 +145,13 @@ public class PlayerSlot extends JButton {
                 list.setVisibleRowCount(5);
                 final JScrollPane listScrollPane = new JScrollPane(list);
 
-                final JPanel buttonPane = new JPanel();
-                buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.Y_AXIS));
+
                 buttonPane.add(selectButton);
                 buttonPane.add(addAiButton);
                 buttonPane.add(difficultyButton1);
                 buttonPane.add(difficultyButton2);
                 buttonPane.add(difficultyButton3);
+                buttonPane.add(multiplier);
                 buttonPane.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 
                 final JPanel contents = new JPanel(new GridLayout(0, 2));

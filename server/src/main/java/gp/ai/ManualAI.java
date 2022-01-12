@@ -349,4 +349,10 @@ public class ManualAI extends BaseAI {
         }
         return true;
     }
+
+    @Override
+    public int getHitpointsMultiplier()
+    {
+        return ai == null ? super.getHitpointsMultiplier() : ai.getHitpointsMultiplier();
+    }
 }

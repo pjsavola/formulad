@@ -138,7 +138,7 @@ public class Season implements Comparable<Season>, TrackSelector {
         rightPanel.add(playerPanel);
         rightPanel.add(randomTrackOrder);
         rightPanel.add(tireChanges);
-        final SettingsField hitpoints = new SettingsField(panel, "Hitpoints", Integer.toString(Main.settings.maxHitpoints), 1, 30);
+        final SettingsField hitpoints = new SettingsField(panel, "Hitpoints", Integer.toString(Main.settings.maxHitpoints), SettingsField.minHP, SettingsField.maxHP);
         rightPanel.add(hitpoints);
         final PointDistributionField pointDistributionField = new PointDistributionField(panel, "Point distribution", defaultPointDistribution);
         rightPanel.add(pointDistributionField);
@@ -434,6 +434,8 @@ public class Season implements Comparable<Season>, TrackSelector {
                             leewayMs = Integer.parseInt(parts[4]);
                             if (parts.length > 5) {
                                 maxHitpoints = Integer.parseInt(parts[5]);
+                                maxHitpoints = Math.max(SettingsField.minHP, maxHitpoints);
+                                maxHitpoints = Math.min(SettingsField.maxHP, maxHitpoints);
                             } else {
                                 maxHitpoints = 18;
                             }

@@ -158,7 +158,10 @@ public class Main extends Game implements Runnable {
         final String playerId = "p" + (playerCount + 1);
         final int gridPosition = startingOrder.get(playerCount);
         final Node startNode = grid.get(gridPosition);
-        final LocalPlayer player = new LocalPlayer(playerId, startNode, startNode.getGridAngle(), laps, this, leeway, maxHitpoints, defaultTires, ai.getValue().getColors());
+        int totalHP = maxHitpoints * ai.getKey().getHitpointsMultiplier() / 100;
+        totalHP = Math.min(SettingsField.maxHP, totalHP);
+        totalHP = Math.max(SettingsField.minHP, totalHP);
+        final LocalPlayer player = new LocalPlayer(playerId, startNode, startNode.getGridAngle(), laps, this, leeway, totalHP, defaultTires, ai.getValue().getColors());
         current = player;
         log.info("Initializing player " + playerId);
         final String name = ai.getValue().getName();
@@ -413,7 +416,7 @@ public class Main extends Game implements Runnable {
         final JCheckBox randomStartingOrder = new JCheckBox("Randomize starting order", settings.randomStartOrder);
         final JCheckBox tireChanges = new JCheckBox("Enable weather rules", settings.tireChanges);
         final SettingsField laps = new SettingsField(lobbyPanel, "Laps", Integer.toString(settings.laps), 1, 200);
-        final SettingsField hitpoints = new SettingsField(lobbyPanel, "Hitpoints", Integer.toString(settings.maxHitpoints), 1, 30);
+        final SettingsField hitpoints = new SettingsField(lobbyPanel, "Hitpoints", Integer.toString(settings.maxHitpoints), SettingsField.minHP, SettingsField.maxHP);
         final SettingsField animationDelay = new SettingsField(lobbyPanel, "Animation delay (ms)", Integer.toString(settings.animationDelay), 0, 1000);
         final SettingsField time = new SettingsField(lobbyPanel, "Time per turn (s)", Integer.toString(settings.timePerTurn), 0, 3600);
         final SettingsField leeway = new SettingsField(lobbyPanel, "Time leeway (s)", Integer.toString(settings.leeway), 0, 36000);
