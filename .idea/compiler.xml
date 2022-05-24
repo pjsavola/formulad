@@ -7,11 +7,14 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="formulad-server" />
+        <module name="gp-online-server" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="formulad-api" target="1.7" />
       <module name="formulad-generator" target="1.5" />
+      <module name="gp-online" target="1.8" />
+      <module name="gp-online-server" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>
