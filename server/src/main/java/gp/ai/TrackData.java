@@ -92,7 +92,7 @@ public class TrackData implements Serializable {
     private static int processFinishLine(List<Node> nodes, Map<Node, List<Node>> prevNodeMap, Deque<Node> work, Deque<Node> curves) {
         final List<Node> edges = nodes.stream().filter(Node::hasFinish).collect(Collectors.toList());
         final int laneCount = edges.size();
-        if (laneCount < 3 || laneCount > 4) {
+        if (laneCount < 2 || laneCount > 4) {
             throw new RuntimeException("Invalid finish line width " + laneCount);
         }
         final Set<Node> children = new HashSet<>();
@@ -100,6 +100,15 @@ public class TrackData implements Serializable {
         if (laneCount == 4) {
             if (children.size() != 2) {
                 throw new RuntimeException("Malformed Finish line of width 4");
+            }
+            edges.stream().filter(n -> !children.contains(n)).forEach(n -> {
+                n.setDistance(0.0);
+                work.addLast(n);
+            });
+        }
+        else if (laneCount == 2) {
+            if (children.size() != 1) {
+                throw new RuntimeException("Malformed Finish line of width 2");
             }
             edges.stream().filter(n -> !children.contains(n)).forEach(n -> {
                 n.setDistance(0.0);

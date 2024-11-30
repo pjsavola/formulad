@@ -894,47 +894,47 @@ public class MapEditor extends JPanel {
     }
 
     private void showLanes() {
-        if (!showLanes) {
-            int laneCount;
-            try {
-                laneCount = TrackData.updateDistances(nodes, attributes);
-            } catch (Exception e) {
-                // Something failed. Assume 3 lanes which is the standard.
-                laneCount = 3;
-            }
-            try {
-                // Calculate lanes
-                List<Node> sortedNodes = nodes
-                        .stream()
-                        .filter(n -> n.getDistance() >= 0.0)
-                        .filter(n -> n.getType() != NodeType.PIT)
-                        .sorted(Comparator.comparingInt(n1 -> TrackLanes.distanceToInt(n1.getDistance())))
-                        .collect(Collectors.toList());
-                lanes = TrackLanes.initLanes(laneCount, sortedNodes, new HashMap<>());
-                sortedNodes = sortedNodes.subList(lanes.length, sortedNodes.size());
-                sortedNodes.forEach(node -> {
-                    final TrackLanes.Lane matchingLane = Arrays
-                            .stream(lanes)
-                            .filter(lane -> lane.canContinueTo(node))
-                            .min(Comparator.comparingInt(l -> TrackLanes.distanceToInt(l.getDistance())))
-                            .orElse(null);
-                    if (matchingLane == null) {
-                        throw new RuntimeException("Internal error when calculating lanes: " + node.getId());
-                    }
-                    matchingLane.addNode(node);
-                });
-            } catch (Exception e) {
-                JOptionPane.showConfirmDialog(this, "Error when calculating lanes: " + e.getMessage(), "Lane calculation error", JOptionPane.DEFAULT_OPTION);
-            }
+        //There was a lot of debugging
+    if (!showLanes) {
+        int laneCount;
+        try {
+            laneCount = TrackData.updateDistances(nodes, attributes);
+        } catch (Exception e) {
+            // Something failed. Assume 3 lanes which is the standard.
+            laneCount = 3;
         }
-        showDistances = false;
-        showIdentifiers = false;
-        showLanes = !showLanes;
-        if (lanes == null) {
-            showLanes = false;
+        try {
+            // Calculate lanes
+            List<Node> sortedNodes = nodes
+                    .stream()
+                    .filter(n -> n.getDistance() >= 0.0)
+                    .filter(n -> n.getType() != NodeType.PIT)
+                    .sorted(Comparator.comparingInt(n1 -> TrackLanes.distanceToInt(n1.getDistance())))
+                    .collect(Collectors.toList());
+            lanes = TrackLanes.initLanes(laneCount, sortedNodes, new HashMap<>());
+            sortedNodes.forEach(node -> {
+                final TrackLanes.Lane matchingLane = Arrays
+                        .stream(lanes)
+                        .filter(lane -> lane.canContinueTo(node))
+                        .min(Comparator.comparingInt(l -> TrackLanes.distanceToInt(l.getDistance())))
+                        .orElse(null);
+                if (matchingLane == null) {
+                    throw new RuntimeException("Internal error when calculating lanes: " + node.getId());
+                }
+                matchingLane.addNode(node);
+            });
+        } catch (Exception e) {
+            JOptionPane.showConfirmDialog(this, "Error when calculating lanes: " + e.getMessage(), "Lane calculation error", JOptionPane.DEFAULT_OPTION);
         }
-        repaint();
     }
+    showDistances = false;
+    showIdentifiers = false;
+    showLanes = !showLanes;
+    if (lanes == null) {
+        showLanes = false;
+    }
+    repaint();
+}
 
     private void validateTrack() {
 	    try {
