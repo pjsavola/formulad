@@ -22,20 +22,34 @@
         <module>server</module>
     </modules>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.7.0</version>
-                <configuration>
-                    <source>${used.java.version}</source>
-                    <target>${used.java.version}</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.7.0</version>
+            <configuration>
+                <source>${used.java.version}</source>
+                <target>${used.java.version}</target>
+            </configuration>
+        </plugin>
+        <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>3.0.0</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>java</goal>
+                    </goals>
+                </execution>
+            </executions>
+            <configuration>
+                <mainClass>gp.Main</mainClass>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
     <dependencies>
         <dependency>
             <groupId>com.pholser</groupId>
