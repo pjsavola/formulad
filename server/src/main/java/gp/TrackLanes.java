@@ -6,8 +6,6 @@ import gp.ai.NodeType;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import javax.swing.JOptionPane;
-
 public class TrackLanes {
     static class Lane {
         private final List<Node> nodes = new ArrayList<>();
@@ -190,13 +188,9 @@ public class TrackLanes {
             lanes[0] = new Lane(finishLine.get(middleIndex == 2 ? 0 : 1), collisionMap);
             lanes[1] = new Lane(finishLine.get(middleIndex), collisionMap);
             lanes[2] = new Lane(finishLine.get(middleIndex == 2 ? 1 : 2), collisionMap);
-        }
-        //This was needed to make two lanes available; tho, im not sure what does it do
-        else if (laneCount == 2)
-        {
-            final int middleIndex = finishLine.get(0).getDistance() == finishLine.get(1).getDistance() ? 1 : 0;
-            lanes[0] = new Lane(finishLine.get(middleIndex == 1 ? 0 : 1), collisionMap);
-            lanes[1] = new Lane(finishLine.get(middleIndex), collisionMap);
+        } else if (laneCount == 2) {
+            lanes[0] = new Lane(finishLine.get(0), collisionMap);
+            lanes[1] = new Lane(finishLine.get(1), collisionMap);
         } else {
             final Node node1 = finishLine.get(0);
             final Node node2 = finishLine.get(1);
