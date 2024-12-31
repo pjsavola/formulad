@@ -4,6 +4,9 @@ import javax.swing.*;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class WindowChanger extends WindowAdapter {
     private final JFrame frame;
@@ -13,6 +16,8 @@ public class WindowChanger extends WindowAdapter {
     private Game game;
     private String name;
     private boolean confirm;
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
     WindowChanger(JFrame frame, JPanel mainMenu) {
         this.frame = frame;
         this.mainMenu = mainMenu;
@@ -32,6 +37,8 @@ public class WindowChanger extends WindowAdapter {
         this.game = game;
         this.name = name;
         this.confirm = confirm;
+        final Runnable task = frame::repaint;
+        scheduler.schedule(task, 100, TimeUnit.MILLISECONDS);
     }
 
     @Override
