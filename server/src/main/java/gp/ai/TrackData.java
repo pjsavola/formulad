@@ -248,6 +248,11 @@ public class TrackData implements Serializable {
                         if (next.getDistance() >= 0.0) {
                             return;
                         }
+                        if (next.getType() == NodeType.PIT) {
+                            pit.setValue(next);
+                            next.setDistance(node.getDistance() - 0.4);
+                            return;
+                        }
                         if (!next.isCurve()) {
                             work.add(next);
                             return;
